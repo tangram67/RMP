@@ -7,8 +7,8 @@ An optimized and direct mode of transferring data to the underlying ALSA sound s
 The user interface is a web interface based on Bootstrap 3, The interface is fully responsive over a wide range of clients.
 The UI can be linked to the desktop of mobile devices (see manifest.json for Chrome/Chromium based Browsers).
 
-All supported codecs (DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3) are using native decoders.
-SACD formats are also supported by using DoP (DSD over PCM) for compatible DA converters.
+All supported codecs (**DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3**) are using native decoders.
+SACD formats are also supported by using **DoP (DSD over PCM)** for compatible DA converters.
 
 Metadata (MP3) tags are read with exceptional high performance. Libraries with more than 150.000 entries have been tested and confirmed to work smoothly.
 Playlist management and export is supported. Also internet readio streaming is supported and radio station are managed via the Web UI.
