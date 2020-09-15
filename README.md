@@ -66,4 +66,4 @@ The application is build in the ./build folder and installed in ./build/bin fold
 The folder **"setup"** countains an init.d script and a default settings script. Use this scripts as a template to setup your system.
 Edit the **"defaults"** file to match the username used by the setup scripts as mentioned above.
 
-Have a cup of coffee and relax  :tea:
+Have a cup of coffee and relax&nbsp;&nbsp;:tea:
