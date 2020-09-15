@@ -5,7 +5,7 @@ The audio interface is focused on exact timing and intelligent content buffering
 An optimized and direct mode of transferring data to the underlying ALSA sound system is used for best sonic performance.
 
 The user interface is a web interface based on Bootstrap 3, The interface is fully responsive over a wide range of clients.
-The UI can be linked to the desktop of mobile devices by via manifest file.
+The UI can be linked to the desktop of mobile devices (see manifest.json for Chrome/Chromium based Browsers).
 
 All supported codecs (DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3) are using native decoders.
 SACD formats are also supported by using DoP (DSD over PCM) for compatible DA converters.
