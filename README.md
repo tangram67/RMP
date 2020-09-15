@@ -49,7 +49,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 
 ## Start the application
 
-1. Execute **./build/bin/rmp -N -P**
+1. Execute **./build/bin/rmp -N -P**, parameter **-d** can be used to start deamonized
 2. The application should start nomally and the webinterface should be accessible via **http://localhost:8099**
 3. Configure your your DA converter and content folders under **"Settigs/Player"** and do a library scan
 4. Your library and the artwork sould show up in the various library views (Media, Artist, Album, ...)
