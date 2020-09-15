@@ -34,28 +34,28 @@ No errors should be shown and the static library file (.a) should be in be in ea
 
 ## Compile the application
 
-1. Execute ./bootstrap in root project folder
-2. Execute make -j4
-3. Execute sudo make install-strip
+1. Execute **./bootstrap** in root project folder
+2. Execute **make -j4**
+3. Execute **sudo make install-strip**
 
 The application is build in the ./build folder and installed in ./build/bin folder as "rmp"
 
 ## Start the application for the first time
 
-1. Execute ./build/bin/rmp -N -P
-2. The application may produce some warnigs and/or error messages, but the default configuration will be installed in /etc/dbApps/rmp/
-3. Edit /etc/dbApps/rmp/webserver.conf
-4. Set the webroot entry "DocumentRoot = /path/to/the/webroot/" the real webroot path in your system
+1. Execute **./build/bin/rmp -N -P**
+2. The application may produce some warnigs and/or error messages, but the default configuration will be installed in **/etc/dbApps/rmp/**
+3. Edit **/etc/dbApps/rmp/webserver.conf**
+4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** the real webroot path in your system
 
 ## Start the application
 
-1. Execute ./build/bin/rmp -N -P
-2. The application should start nomally and the webinterface should be accessible via http://localhost:8099
-3. Configure your content folders under "Settigs/Player" and do a library scan
+1. Execute **./build/bin/rmp -N -P**
+2. The application should start nomally and the webinterface should be accessible via **http://localhost:8099**
+3. Configure your content folders under **"Settigs/Player"** and do a library scan
 4. Your library ant the artwork sould show up in the various library views (Media, Artist, Album, ...)
 
 ## Install the mediaplayer in your system
 
-The folder "setup" countains an init.d script and a default setting script. Use this scripts as a template to setup aour system.
+The folder **"setup"** countains an init.d script and a default setting script. Use this scripts as a template to setup aour system.
 
-## Enjoy ;-)
+**Enjoy ;-)**
