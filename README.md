@@ -33,7 +33,7 @@ Change to the folder **"setup"** and execute the following scripts as root:
 1. Change to the folder **"curl"** and execute **./build.sh**
 2. Change to the folder **"mpg123"** and execute **./build.sh**
 
-No errors should be shown and the static library file (\*.a) should be in be in each folder.
+No errors should be shown and a static library file (\*.a) should be found in each folder.
 
 ## Compile the application
 
