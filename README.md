@@ -56,6 +56,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 
 ## Install the mediaplayer in your system
 
-The folder **"setup"** countains an init.d script and a default setting script. Use this scripts as a template to setup aour system.
+The folder **"setup"** countains an init.d script and a default setting script. Use this scripts as a template to setup your system.
+
 
 **Enjoy ;-)**
