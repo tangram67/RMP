@@ -15,7 +15,7 @@ Playlist management and export is supported. Also internet readio streaming is s
 
 Coverart is extracted from the file metatdat or from a JPEG or PNG file in the album folder (cover.jpg, cover.png, folder.jpg, folder.png)
 
-These are only the basic features, there are much more functions supported than mentioned here...
+These are only the basic features, there are lots of functions and possibilities that are not mentioned here...
 
 ## Setup prerequisites
 
