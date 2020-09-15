@@ -1,0 +1,203 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          rmp
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      autofs $network $named alsa-utils
+# Should-Stop:       autofs $network $named alsa-utils
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Highest End Media Player
+# Description:       Start the Highest End Media Player service.
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+NAME=rmp
+DESC="Highest End Media Player"
+DAEMON=/usr/local/bin/rmp
+RMP_CONF=/etc/dbApps/rmp/rmp.conf
+RMP_OPTS="-N -P"
+RMP_START="yes"
+TAR="/bin/tar"
+REMOVE="/bin/rm"
+MOVE="/bin/mv"
+COPY="/bin/cp"
+CHOWN="/bin/chown"
+MKDIR="/bin/mkdir"
+CHMOD="/bin/chmod"
+
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Exit if daemon not installed
+if [ ! -x "$DAEMON" ]; then
+	log_failure_msg \
+		"$DAEMON not found, exiting now!"
+fi
+
+# Set debug mode
+if [ -n "$RMP_DEBUG" ]; then
+    set -x
+fi
+
+CONF_DIR=$(dirname $RMP_CONF)
+EXE_DIR=$(dirname $DAEMON)
+EXE_NAME=$(basename $DAEMON)
+DATABASE_CONF="$CONF_DIR/database.conf"
+WEBSERVER_CONF="$CONF_DIR/webserver.conf"
+
+PID_FILE=$(sed -n 's/^[[:space:]]*PIDFile[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $RMP_CONF)
+RMP_USER=$(sed -n 's/^[[:space:]]*RunAsUser[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $RMP_CONF)
+LOG_DIR=$(sed -n 's/^[[:space:]]*LoggingFolder[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $RMP_CONF)
+DATABASE_DIR=$(sed -n 's/^[[:space:]]*DataFolder[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $DATABASE_CONF)
+UPLOAD_DIR=$(sed -n 's/^[[:space:]]*UploadFolder[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $WEBSERVER_CONF)
+WEBSERVER_ROOT=$(sed -n 's/^[[:space:]]*DocumentRoot[[:space:]]*=[[:space:]]"\?\([^"]*\)\"\?/\1/p' $WEBSERVER_CONF)
+UPDATE_FILE="$UPLOAD_DIR/$NAME.update.tar.gz"
+UPDATE_PROG="$UPLOAD_DIR/$EXE_NAME"
+UPDATE_WEB_ROOT="$UPLOAD_DIR/wwwroot"
+NOW=$(date +"%Y-%m-%d_%H-%M-%S")
+
+
+rmp_prepare () {
+	# Create application folders and set owner as set in config file
+	PID_DIR=$(dirname "$PID_FILE")
+    if [ ! -d "$PID_DIR" ]; then
+		log_daemon_msg "Create folder $PID_DIR"
+        $MKDIR -m 0755 $PID_DIR
+        $CHOWN $RMP_USER:audio $PID_DIR
+    fi
+    if [ ! -d "$CONF_DIR" ]; then
+		log_daemon_msg "Create folder $CONF_DIR"
+        $MKDIR -m 0755 $CONF_DIR
+        $CHOWN -R $RMP_USER:audio $CONF_DIR
+    fi
+    if [ ! -d "$LOG_DIR" ]; then
+		log_daemon_msg "Create folder $LOG_DIR"
+        $MKDIR -m 0755 $LOG_DIR
+        $CHOWN -R $RMP_USER:audio $LOG_DIR
+    fi
+    if [ ! -d "$DATABASE_DIR" ]; then
+		log_daemon_msg "Create folder $DATABASE_DIR"
+        $MKDIR -m 0755 $DATABASE_DIR
+        $CHOWN -R $RMP_USER:audio $DATABASE_DIR
+    fi
+}
+
+
+rmp_update () {
+	if [ -f $UPDATE_FILE ]; then
+		$TAR xf $UPDATE_FILE -C $UPLOAD_DIR
+		if [ -f $UPDATE_PROG ]; then
+		    log_daemon_msg "Updating application from $UPDATE_FILE" "$NAME"
+			[ -f $DAEMON ] && $MOVE "$DAEMON" "$DAEMON.$NOW"
+			$COPY $UPDATE_PROG $DAEMON
+			$CHOWN $RMP_USER:audio $DAEMON
+			$CHMOD 755 $DAEMON
+			$REMOVE -f $UPDATE_PROG
+		fi		
+		if [ -d $UPDATE_WEB_ROOT ]; then
+		    log_daemon_msg "Updating webroot from $UPDATE_WEB_ROOT" "$NAME"
+			$COPY -rf $UPDATE_WEB_ROOT/* $WEBSERVER_ROOT
+			$CHOWN -R $RMP_USER:$RMP_USER $WEBSERVER_ROOT
+			$REMOVE -rf $UPDATE_WEB_ROOT
+		fi
+		$REMOVE $UPDATE_FILE
+	fi
+}
+
+
+
+rmp_test_update () {
+	cp /home/$RMP_USER/RMP_Base_Project/build/rmp.update.tar.gz $UPLOAD_DIR
+	[ ! -d /tmp/rmp ] && mkdir /tmp/rmp
+	[ ! -d /tmp/rmp/wwwroot ] && mkdir /tmp/rmp/wwwroot
+	DAEMON="/tmp/rmp/base"
+	WEBSERVER_ROOT="/tmp/rmp/wwwroot/"
+	rmp_update
+}
+
+rmp_start () {
+	rmp_update
+
+    if [ "$RMP_START" != "yes" ]; then
+        log_action_msg "Not starting HMP: disabled by /etc/default/$NAME".
+        exit 0
+    fi
+
+    log_daemon_msg "Starting $DESC" "$NAME"
+
+    if [ -z "$PID_FILE" -o -z "$RMP_USER" ]; then
+        log_failure_msg \
+            "$RMP_CONF must have PID file and user set, not staring daemon."
+        exit 1
+    fi
+
+	rmp_prepare
+
+    start-stop-daemon --start --quiet --oknodo --pidfile "$PID_FILE" \
+        --exec "$DAEMON" -- $RMP_OPTS -d -c "$RMP_CONF"
+    log_end_msg $?
+}
+
+rmp_stop () {
+    if [ -z "$PID_FILE" ]; then
+        log_failure_msg \
+            "$RMP_CONF must have pid_file set; cannot stop daemon."
+        exit 1
+    fi
+
+    log_daemon_msg "Stopping $DESC" "$NAME"
+    start-stop-daemon --stop --quiet --oknodo --retry 5 --pidfile "$PID_FILE" \
+        --exec $DAEMON
+    log_end_msg $?
+}
+
+case "$1" in
+    prepare)
+        rmp_prepare
+        ;;
+    update)
+		rmp_stop
+        rmp_update
+        ;;
+    update-restart)
+		rmp_stop
+        rmp_update
+        rmp_start
+        ;;
+    start)
+        rmp_start
+        ;;
+    stop)
+        rmp_stop
+        ;;
+    status)
+    	status_of_proc -p $PID_FILE $DAEMON $NAME
+		;;
+    restart|force-reload)
+        rmp_stop
+        rmp_start
+        ;;
+    force-start)
+        rmp_start
+        ;;
+    force-restart)
+        rmp_stop
+        rmp_start
+        ;;
+    force-reload)
+		rmp_stop
+		rmp_start
+		;;
+    test-update)
+        rmp_test_update
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|force-reload}"
+        exit 2
+        ;;
+esac

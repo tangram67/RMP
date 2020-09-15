@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Get home directory
+SCRIPT=`realpath $0`
+HOME=`dirname $SCRIPT`
+PREFIX=$HOME/build
+
+# Delete everything that was build before
+rm *.in
+make distclean
+make clean
+
+# Remove ALL files!
+[ -f aclocal.m4 ]    && rm aclocal.m4
+[ -f autoconf.h ]    && rm autoconf.h
+[ -f autoconf.h.in ] && rm autoconf.h.in
+[ -f config.log ]    && rm config.log
+[ -f config.status ] && rm config.status
+[ -f configure ]     && rm configure
+[ -f Makefile ]      && rm Makefile
+[ -f Makefile.in ]   && rm Makefile.in
+[ -f stamp-h1 ]      && rm stamp-h1
+
+# Rebuild autotools configuration
+aclocal
+autoreconf --verbose --force
+automake --add-missing --copy
+touch AUTHORS NEWS README ChangeLog
+
+# Generate makefiles
+./configure --enable-curl-https --prefix=$PREFIX
+
