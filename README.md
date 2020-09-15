@@ -11,7 +11,7 @@ All supported codecs (**DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3**) are using nativ
 **SACD** formats are also supported by using **DoP (DSD over PCM)** for compatible DA converters.
 
 Metadata (MP3) tags are read with exceptional high performance. Libraries with more than 150.000 entries have been tested and confirmed to work smoothly.
-Playlist management and export is supported. Also internet readio streaming is supported and radio station are managed via the Web UI.
+Playlist management and export is supported. Also internet readio streaming is supported and radio stations are managed via the Web UI.
 
 Coverart is extracted from the file metatdat or from a JPEG or PNG file in the album folder (cover.jpg, cover.png, folder.jpg, folder.png)
 
