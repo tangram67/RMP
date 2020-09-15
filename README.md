@@ -8,7 +8,7 @@ The user interface is a web interface based on Bootstrap 3, The interface is ful
 The UI can be linked to the desktop of mobile devices (see manifest.json for Chrome/Chromium based Browsers).
 
 All supported codecs (**DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3**) are using native decoders.
-SACD formats are also supported by using **DoP (DSD over PCM)** for compatible DA converters.
+**SACD** formats are also supported by using **DoP (DSD over PCM)** for compatible DA converters.
 
 Metadata (MP3) tags are read with exceptional high performance. Libraries with more than 150.000 entries have been tested and confirmed to work smoothly.
 Playlist management and export is supported. Also internet readio streaming is supported and radio station are managed via the Web UI.
@@ -21,14 +21,14 @@ This are only the basics, there are much more functions supported than mentioned
 
 Change to the folder "setup" and execute the following scripts as root:
 
-1. install_languages.sh ... Installs the needed system languages (see also the documentation of your Linux distribution)
-2. install_prerequsites.sh ... Install all necessary libraries (the names or version might differ in your ditribution)
-3. setup_folders <username> ... Setup the needed folders in your system and set the ownership for the given non-root user
+1. **install_languages.sh** ... Installs the needed system languages (see also the documentation of your Linux distribution)
+2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
+3. **setup_folders <username>** ... Setup the needed folders in your system and set the ownership for the given non-root user
 
 ## Compile static libraries
 
-1. Change to the folder "curl" and execute ./build.sh
-2. Change to the folder "mpg123" and execute ./build.sh
+1. Change to the folder **"curl"** and execute **./build.sh**
+2. Change to the folder **"mpg123"** and execute **./build.sh**
 
 No errors should be shown and the static library file (.a) should be in be in each folder.
 
