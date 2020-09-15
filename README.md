@@ -2,7 +2,7 @@
 
 The **Reference Music Player** is a full featured C++ music player software for Linux based operating systems.
 The audio interface is focused on exact timing and intelligent content buffering.
-An optimized and direct mode of transferring data to the underlying ALSA sound system is used for best sonic performance. The application can be optimized in many ways to deliver best results (process priority and NICE level, CPU affinity, memory usage for buffering, audio output timing, etc.).
+An optimized and direct mode of transferring data to the underlying ALSA sound system is used for best sonic performance. The application can be optimized in many ways to deliver best results (process priority and NICE level, CPU affinity, memory usage for buffering, audio output timing, etc.). The software is dedicated to High-End music afficinados and technophile users. 
 
 The user interface is web based and build on top of Bootstrap 3. The interface is fully responsive over a wide range of clients.
 The UI can be linked to the desktop of mobile devices (see manifest.json handling for Chrome/Chromium based Browsers).
