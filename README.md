@@ -57,7 +57,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 3. Configure your your DA converter and content folders under **"Settigs/Player"** and do a library scan
 4. Your library and the artwork sould show up in the various library views (Media, Artist, Album, ...)
 
-## Install the mediaplayer in your system
+## Installing the mediaplayer
 
 The folder **"setup"** countains an init.d script and a default setting script. Use this scripts as a template to setup your system.
 
