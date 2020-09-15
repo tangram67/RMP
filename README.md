@@ -67,4 +67,4 @@ The folder **"setup"** countains an init.d script and a default setting script. 
 Edit the **"defaults"** file to match the username used by the setup scripts as mentioned above.
 
 
-__Have a cup of coffee and relax ;-)__
+<h2>Have a cup of coffee and relax ;-)<h2>
