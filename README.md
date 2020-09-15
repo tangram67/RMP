@@ -1,6 +1,6 @@
 # RMP - The Reference Music Player
 
-The **Reference Music Player** is a full featured C++ music player software.
+The **Reference Music Player** is a full featured C++ music player software for Linux based operating systems.
 The audio interface is focused on exact timing and intelligent content buffering.
 An optimized and direct mode of transferring data to the underlying ALSA sound system is used for best sonic performance.
 
@@ -19,7 +19,7 @@ These are only the basic features, there are much more functions supported than 
 
 ## Setup prerequisites
 
-Change to the folder "setup" and execute the following scripts as root:
+Change to the folder **"setup"** and execute the following scripts as root:
 
 1. **install_languages.sh** ... Installs the needed system languages (see also the documentation of your Linux distribution)
 2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
@@ -30,9 +30,11 @@ Change to the folder "setup" and execute the following scripts as root:
 1. Change to the folder **"curl"** and execute **./build.sh**
 2. Change to the folder **"mpg123"** and execute **./build.sh**
 
-No errors should be shown and the static library file (.a) should be in be in each folder.
+No errors should be shown and the static library file (\*.a) should be in be in each folder.
 
 ## Compile the application
+
+The build is local, no files will be installed in your system folders by the following commands:
 
 1. Execute **./bootstrap** in root project folder
 2. Execute **make -j4**
@@ -43,7 +45,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 ## Start the application for the first time
 
 1. Execute **./build/bin/rmp -N -P**
-2. The application may produce some warnigs and/or error messages, but the default configuration will be installed in **/etc/dbApps/rmp/**
+2. The application may produce some warnigs and/or error messages, but nevertheless the default configuration will be installed in **/etc/dbApps/rmp/**
 3. Edit **/etc/dbApps/rmp/webserver.conf**
 4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** the real webroot path in your system
 
