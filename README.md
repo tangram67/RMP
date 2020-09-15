@@ -26,9 +26,9 @@ Change to the folder **"setup"** and execute the following scripts as root:
 
 1. **install_languages.sh** ... Installs the needed system languages (see also the documentation of your Linux distribution)
 2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
-3. **setup_folders <username>** ... Setup the needed folders in your system and set the ownership for the given non-root user
+3. **setup_folders.sh \<username\>** ... Setup the needed folders in your system and set the ownership for the given non-root user
   
-Install the webroot content from https://github.com/tangram67/RMP-Webroot to a local folder (e.g. in your home directory).
+Install the webroot content from https://github.com/tangram67/RMP-Webroot to a local folder, e.g. in the users home directory. This user must match the username parameter of the **"setup_folders.sh"** script.
 
 ## Compile static libraries
 
@@ -64,6 +64,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 ## Installing the mediaplayer
 
 The folder **"setup"** countains an init.d script and a default setting script. Use this scripts as a template to setup your system.
+Edit the **"defaults"** file to match the username used by the setub scripts as metioned above.
 
 
 __Enjoy ;-)__
