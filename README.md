@@ -28,7 +28,7 @@ Change to the folder **"setup"** and execute the following scripts as root:
 2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
 3. **setup_folders <username>** ... Setup the needed folders in your system and set the ownership for the given non-root user
   
-Install the webroot conten from https://github.com/tangram67/RMP-Webroot to a local folder (e.g. in your home directory).
+Install the webroot content from https://github.com/tangram67/RMP-Webroot to a local folder (e.g. in your home directory).
 
 ## Compile static libraries
 
