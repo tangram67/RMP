@@ -1,4 +1,4 @@
-# RMP
+# RMP - The Reference Music Player
 
 The **Reference Music Player** is a full featured C++ music player software.
 The audio interface is focused on exact timing and intelligent content buffering.
@@ -17,7 +17,7 @@ Coverart is extracted from the file metatdat or from a JPEG or PNG file in the a
 
 This are only the basics, there are much more functions supported than mentioned here...
 
-## Setup prerequsites
+## Setup prerequisites
 
 Change to the folder "setup" and execute the following scripts as root:
 
