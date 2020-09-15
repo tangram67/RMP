@@ -1,4 +1,0 @@
-DAEMON=/home/<runasuser>/RMP_Base_Project/build/bin/rmp
-RMP_CONF=/etc/dbApps/rmp/rmp.conf
-RMP_OPTS="-N -P"
-RMP_START="yes"
