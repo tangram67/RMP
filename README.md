@@ -27,6 +27,8 @@ Change to the folder **"setup"** and execute the following scripts as root:
 1. **install_languages.sh** ... Installs the needed system languages (see also the documentation of your Linux distribution)
 2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
 3. **setup_folders <username>** ... Setup the needed folders in your system and set the ownership for the given non-root user
+  
+Install the webroot conten from https://github.com/tangram67/RMP-Webroot to a local folder (e.g. in your home directory).
 
 ## Compile static libraries
 
@@ -50,7 +52,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 1. Execute **./build/bin/rmp -N -P**
 2. The application may produce some warnigs and/or error messages, but nevertheless the default configuration will be installed in **/etc/dbApps/rmp/**
 3. Edit **/etc/dbApps/rmp/webserver.conf**
-4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** the real webroot path in your system
+4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** to the real webroot path in your system
 
 ## Start the application
 
