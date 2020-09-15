@@ -14,7 +14,7 @@ Metadata (MP3) tags are read with exceptional high performance. Libraries with m
 Playlist management and export is supported. Also internet readio streaming is supported and radio stations are managed via the Web UI.
 
 Coverart is extracted from the file metatdat or from a JPEG or PNG file in the album folder (cover.jpg, cover.png, folder.jpg, folder.png).
-Various library views are available: Grouped by artist, grouped by album in list form, grouped by media type (CD, DVD, BD, HD, etc.).
+Various library views are available: grouped by artist, grouped by album in list form, grouped by media type (CD, DVD, BD, HD, etc.).
 
 These are only the basic features, there are lots of functions and possibilities that are not mentioned here...
 
