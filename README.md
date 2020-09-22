@@ -45,7 +45,7 @@ The build is local, no files will be installed in your system folders by the fol
 2. Execute **make -j4**
 3. Execute **sudo make install-strip**
 
-The application is build in the ./build folder and installed in ./build/bin folder as "rmp". Please note that the rmp binary file wil loose the capability settings when copied to a different location. The root folder contains a batch file setcap.sh to restore all needed capabilities of the binary, execute **sudo ./setcap /new/path/rmp** as root accordingly to the new path of the binary file.
+The application is build in the ./build folder and installed in ./build/bin folder as "rmp". Please note that the rmp binary file wil loose the capability settings when copied to a different location. The root folder contains a batch file "setcap.sh" to restore all needed capabilities of the binary. Execute **sudo ./setcap.sh /new/path/rmp** as root accordingly to the new path of the binary file.
 
 ## Start the application for the first time
 
