@@ -249,6 +249,10 @@
 #  define GCC_HAS_CXA_DEMANGLE
 #endif
 
+#if GCC_VERSION >= 50100
+#  define GCC_HAS_CODEVCT
+#endif
+
 #ifdef STL_HAS_CONSTEXPR
 #  define STATIC_CONST static constexpr const
 #else

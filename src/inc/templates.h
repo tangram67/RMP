@@ -289,7 +289,7 @@ template<typename iterator_t>
 template<typename value_t>
 	inline value_t pred(value_t value) {
 #ifdef STL_HAS_STATIC_ASSERT
-		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::pred : Argument <value> is neither arithmetic, nor iterator type.");
+		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::pred() Argument <value> is neither arithmetic, nor iterator type.");
 #endif
 		return --value;
 	}
@@ -297,7 +297,7 @@ template<typename value_t>
 template<typename value_t>
 	inline value_t succ(value_t value) {
 #ifdef STL_HAS_STATIC_ASSERT
-		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::succ : Argument <value> is neither arithmetic, nor iterator type.");
+		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::succ() Argument <value> is neither arithmetic, nor iterator type.");
 #endif
 		return ++value;
 	}
@@ -312,7 +312,7 @@ template<typename value_t>
 template<typename value_t>
 	inline value_t align(value_t value, const unsigned char byte) {
 #ifdef STL_HAS_STATIC_ASSERT
-		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::align : Argument <value> is neither arithmetic, nor iterator type.");
+		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::align() Argument <value> is neither arithmetic, nor iterator type.");
 #endif
 		if (byte == 0)
 			return value;
@@ -323,7 +323,7 @@ template<typename value_t>
 template<typename value_t>
 	value_t roundUp(value_t value, const size_t multiple) {
 #ifdef STL_HAS_STATIC_ASSERT
-		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::roundUp : Argument <value> is neither arithmetic, nor iterator type.");
+		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::roundUp() Argument <value> is neither arithmetic, nor iterator type.");
 #endif
 		if (multiple == 0)
 			return value;
@@ -334,7 +334,7 @@ template<typename value_t>
 template<typename value_t>
 	value_t roundDown(value_t value, const size_t multiple) {
 #ifdef STL_HAS_STATIC_ASSERT
-		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::roundDown : Argument <value> is neither arithmetic, nor iterator type.");
+		static_assert(std::is_scalar<decltype(value)>::value || is_iterator<decltype(value)>::value, "util::roundDown() Argument <value> is neither arithmetic, nor iterator type.");
 #endif
 		if (multiple == 0)
 			return value;

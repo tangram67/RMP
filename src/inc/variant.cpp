@@ -1906,7 +1906,7 @@ EVariantType TVariant::guessType(const std::string& value, const size_t depth, c
 
 	retVal = EVT_STRING;
 
-	if (!OK && util::isLocalTime(value)) {
+	if (!OK && util::isInternationalTime(value)) {
 		OK = true;
 		retVal = EVT_TIME;
 		// if (d) std::cout << "TVariant::guessType(EVT_TIME) for \"" << value << "\"" << std::endl;

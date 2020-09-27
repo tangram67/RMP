@@ -840,6 +840,54 @@ bool sysutil::getSystemMemory(sysutil::TMemInfo& memory) {
 	return (found > 0);
 }
 
+bool getProcValue(const std::string& line, const std::string& item, uint64_t& value) {
+	// Read same value only once!
+	if (0 == value) {
+		if (0 == util::strncasecmp(line, item, item.size())) {
+			TStringList list;
+			list.split(line, ':');
+			if (list.size() > 1) {
+				value = util::strToUnsigned64(list[1], 0, syslocale, 16);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+uint64_t sysutil::getProcessorSerial() {
+	int found = 0;
+	size_t serial = 0;
+	std::string fileName = "/proc/cpuinfo";
+	if (fileExists(fileName)) {
+		uint64_t psn = 0;
+		TStringList items;
+		items.loadFromFile(fileName);
+		if (!items.empty()) {
+			// Read entry for serial number:
+			//   Hardware	: BCM2835
+			//   Revision	: a02100
+			//   Serial		: 000000001661b9b7 <-- Read this entry
+			//   Model		: Raspberry Pi Compute Module 3 Plus Rev 1.0
+			std::string line;
+			for (size_t i=0; i<items.size(); ++i) {
+				line = trim(items[i]);
+
+				if (getProcValue(line, "Serial", psn)) {
+					serial = psn;
+					++found;
+				}
+
+				// All items found?
+				if (found > 0)
+					break;
+			}
+
+		}
+	}
+	return serial;
+}
+
 bool sysutil::getDiskSpace(const std::string& path, TDiskSpace& disk) {
 	disk.clear();
 	if (!path.empty()) {

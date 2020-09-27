@@ -1472,7 +1472,6 @@ void TApplication::initialize(int argc, char *argv[]) {
 
 		// Setup serial number and license keys
 		bool serialok  = false;
-		std::string mac;
 #ifdef USE_KEYLOK_DONGLE
 		if (isLicensed()) {
 			// Base36 --> CZ00000 + Keyloc serial number
@@ -1480,18 +1479,27 @@ void TApplication::initialize(int argc, char *argv[]) {
 			serialok = true;
 		}
 #endif
+		// Try to read processor serial number on ARM based systems
 		if (!serialok) {
-			// Fallback to MAC address
+			size_t psn = sysutil::getProcessorSerial();
+			if (psn > 0) {
+				serial10 = psn;
+				serialok = true;
+			}
+		}
+		// Fallback to MAC address
+		if (!serialok) {
 			std::string eth0 = sysutil::getDefaultAdapter();
 			if (!eth0.empty()) {
-				mac = sysutil::getMacAddress(eth0);
+				std::string mac = sysutil::getMacAddress(eth0);
 				if (!mac.empty()) {
 					mac = util::replace(mac, ":", "");
-					serial10 = util::strToInt64(mac, 0, syslocale, 16);
+					serial10 = util::strToUnsigned64(mac, 0, syslocale, 16);
+					serialok = true;
 				}
 			}
 		}
-		serial36 = mac.empty() ? util::TBase36::encode(serial10, true) : mac;
+		serial36 = util::TBase36::encode(serial10, true);
 		getLicenseBaseURL();
 		getLicenseKey();
 
@@ -1581,6 +1589,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		else
 			logger(app::ELogBase::LOG_APP, "[Application] Application is in trial mode.");
 #endif
+		logger(app::ELogBase::LOG_APP, "[Application] Application serial number (%:%)", serial10, serial36);
 
 		// Check for further license keys
 		config->readSection(APP_LICENSE, licenses);

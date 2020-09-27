@@ -242,8 +242,11 @@ enum EDateTimeFormat {
 	EDT_RFC1123,     // Mon, 16 Sep 2019 18:19:02 GMT
 	EDT_LOCAL_SHORT, // Localized timestamp
 	EDT_LOCAL_LONG,  // Localized timestamp + millisec .123
+	EDT_LOCAL_DATE,  // Localized date
+	EDT_LOCAL_TIME,  // Localized time
 	EDT_LOCAL = EDT_LOCAL_SHORT,
-	EDT_DEFAULT = EDT_STANDARD
+	EDT_DEFAULT = EDT_STANDARD,
+	EDT_INVALID
 };
 
 
@@ -284,7 +287,7 @@ inline std::string dateTimeToStrA(const TTimePart time, const TTimePart millisec
 	return dateTimeToStr(time, millisecond, type, locale);
 }
 
-bool isLocalTime(const std::string& time);
+bool isInternationalTime(const std::string& time);
 bool isUniversalTime(const std::string& time);
 
 bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milliseconds);
@@ -530,8 +533,8 @@ public:
 
 	const std::string& asHuman(int limit = 2) const;
 	const std::wstring& asWideHuman(int limit = 2) const;
-	const std::string& asString() const;
-	const std::wstring& asWideString() const;
+	const std::string& asString(const EDateTimeFormat type = EDT_INVALID) const;
+	const std::wstring& asWideString(const EDateTimeFormat type = EDT_INVALID) const;
 	const std::string& asRFC1123() const;
 	const std::wstring& asWideRFC1123() const;
 	const std::string& asISO8601() const;

@@ -45,6 +45,7 @@ bool getSystemMemory(sysutil::TMemInfo& memory);
 bool getDiskSpace(const std::string& path, TDiskSpace& disk);
 bool getIsolatedCPUs(std::string& cpu);
 size_t getWatchFileLimit();
+uint64_t getProcessorSerial();
 
 std::string getSysErrorMessage(int errnum);
 std::string getInetErrorMessage(int errnum);

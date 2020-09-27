@@ -158,6 +158,12 @@ std::string dateTimeToStr (
 			case EDT_LOCAL_LONG:
 				fmt = LOCAL_DATE_TIME_FORMAT_A;
 				break;
+			case EDT_LOCAL_DATE:
+				fmt = LOCAL_DATE_FORMAT_A;
+				break;
+			case EDT_LOCAL_TIME:
+				fmt = LOCAL_TIME_FORMAT_A;
+				break;
 			case EDT_ISO8601:
 				fmt = ISO_DATE_TIME_FORMAT_A;
 				break;
@@ -190,6 +196,8 @@ std::string dateTimeToStr (
 
 			case EDT_LOCAL_SHORT:
 			case EDT_LOCAL_LONG:
+			case EDT_LOCAL_DATE:
+			case EDT_LOCAL_TIME:
 			case EDT_SYSTEM:
 				{
 					// Calculate time string representation via strftime
@@ -261,6 +269,12 @@ std::wstring dateTimeToStrW (
 			case EDT_LOCAL_LONG:
 				fmt = LOCAL_DATE_TIME_FORMAT_W;
 				break;
+			case EDT_LOCAL_DATE:
+				fmt = LOCAL_DATE_FORMAT_W;
+				break;
+			case EDT_LOCAL_TIME:
+				fmt = LOCAL_TIME_FORMAT_W;
+				break;
 			case EDT_ISO8601:
 				fmt = ISO_DATE_TIME_FORMAT_W;
 				break;
@@ -293,6 +307,8 @@ std::wstring dateTimeToStrW (
 
 			case EDT_LOCAL_SHORT:
 			case EDT_LOCAL_LONG:
+			case EDT_LOCAL_DATE:
+			case EDT_LOCAL_TIME:
 			case EDT_SYSTEM:
 				{
 					// Calculate time string representation via strftime
@@ -391,11 +407,11 @@ bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milli
 	const char* s;
 	char* q;
 	TTimeStamp ts;
-	std::string /*s,*/ t = time;
+	std::string t = time;
 	util::trimLeft(t);
 
 	// Consistency check
-	if (!isLocalTime(t))
+	if (!isInternationalTime(t))
 		return false;
 
 	errno = EXIT_SUCCESS;
@@ -420,26 +436,29 @@ bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milli
 	if (ts.day < 1 || ts.day > 31)
 		return false;
 
-	p = s + 11;
-	ts.hour = strtol(p, &q, 10);
-	if (EXIT_SUCCESS != errno || p == q)
-		return false;
-	if (ts.hour < 0 || ts.hour > 23)
-		return false;
+	// Parse time part if existing...
+	if (t.size() > 10) {
+		p = s + 11;
+		ts.hour = strtol(p, &q, 10);
+		if (EXIT_SUCCESS != errno || p == q)
+			return false;
+		if (ts.hour < 0 || ts.hour > 23)
+			return false;
 
-	p = s + 14;
-	ts.minute = strtol(p, &q, 10);
-	if (EXIT_SUCCESS != errno || p == q)
-		return false;
-	if (ts.minute < 0 || ts.minute > 59)
-		return false;
+		p = s + 14;
+		ts.minute = strtol(p, &q, 10);
+		if (EXIT_SUCCESS != errno || p == q)
+			return false;
+		if (ts.minute < 0 || ts.minute > 59)
+			return false;
 
-	p = s + 17;
-	ts.second = strtol(p, &q, 10);
-	if (EXIT_SUCCESS != errno || p == q)
-		return false;
-	if (ts.second < 0 || ts.second > 59)
-		return false;
+		p = s + 17;
+		ts.second = strtol(p, &q, 10);
+		if (EXIT_SUCCESS != errno || p == q)
+			return false;
+		if (ts.second < 0 || ts.second > 59)
+			return false;
+	}
 
 	// Try to read 3 digits milliseconds, ignore on error
 	if (t.size() >= 23) {
@@ -456,13 +475,28 @@ bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milli
 	return true;
 }
 
-bool isLocalTime(const std::string& time) {
-	// Consistency check
-	if (time.size() < 19)
-		return false;
+bool isInternationalTime(const std::string& time) {
+	// Check timstamps like "2016-10-23 20:44:11", "2016-10-23T20:44:11" or "2016-10-23" (date only!)
+	//                       123456789-123456789
+	if (time.size() > 10) {
 
-	if (time[4] != '-' || time[7] != '-' || time[10] != ' ' || time[13] != ':' || time[16] != ':')
-		return false;
+		// Is date and time string?
+		if (time.size() < 19)
+			return false;
+
+		if (time[4] != '-' || time[7] != '-' || !(time[10] == ' ' || time[10] == 'T') || time[13] != ':' || time[16] != ':')
+			return false;
+
+	} else {
+
+		// Is date only string?
+		if (time.size() < 10)
+			return false;
+
+		if (time[4] != '-' || time[7] != '-')
+			return false;
+
+	}
 
 	return true;
 }
@@ -1006,8 +1040,7 @@ TDateTime::TDateTime(const TTimePart value) : locale(&syslocale) {
 	setTime(value);
 }
 
-void TDateTime::clear()
-{
+void TDateTime::clear() {
 	reset();
 	ts.clear();
 	cts.msec = ts.time.mills();
@@ -1043,6 +1076,7 @@ void TDateTime::change() {
 }
 
 void TDateTime::prime() {
+	type = EDT_DEFAULT;
 	valid = false;
 	slimit = -1;
 	wlimit = -1;
@@ -1693,6 +1727,14 @@ std::string TDateTime::dateTimeToStr(const EDateTimeFormat type) const {
 			}
 			break;
 
+		case EDT_LOCAL_DATE:
+			fmt = LOCAL_DATE_FORMAT_A;
+			break;
+
+		case EDT_LOCAL_TIME:
+			fmt = LOCAL_TIME_FORMAT_A;
+			break;
+
 		case EDT_LOCAL_SHORT:
 			fmt = util::assigned(locale) ? locale->getTimeFormat() : LOCAL_DATE_TIME_FORMAT_A;
 			break;
@@ -1846,6 +1888,8 @@ std::string TDateTime::dateTimeToStr(const EDateTimeFormat type) const {
 
 		case EDT_LOCAL_SHORT:
 		case EDT_LOCAL_LONG:
+		case EDT_LOCAL_DATE:
+		case EDT_LOCAL_TIME:
 		case EDT_SYSTEM:
 			if (util::assigned(locale) && valid) {
 				retVal = formatLocalDateTime(fmt, *locale);
@@ -1917,6 +1961,14 @@ std::wstring TDateTime::dateTimeToWideStr(const EDateTimeFormat type) const {
 					fmt = STD_LONG_DATE_TIME_FORMAT_W;
 					break;
 			}
+			break;
+
+		case EDT_LOCAL_DATE:
+			fmt = LOCAL_DATE_FORMAT_W;
+			break;
+
+		case EDT_LOCAL_TIME:
+			fmt = LOCAL_TIME_FORMAT_W;
 			break;
 
 		case EDT_LOCAL_SHORT:
@@ -2072,6 +2124,8 @@ std::wstring TDateTime::dateTimeToWideStr(const EDateTimeFormat type) const {
 
 		case EDT_LOCAL_SHORT:
 		case EDT_LOCAL_LONG:
+		case EDT_LOCAL_DATE:
+		case EDT_LOCAL_TIME:
 		case EDT_SYSTEM:
 			if (util::assigned(locale) && valid) {
 				retVal = formatLocalDateTime(fmt, *locale);
@@ -2108,16 +2162,22 @@ std::wstring TDateTime::dateTimeToWideStr(const EDateTimeFormat type) const {
 }
 
 
-const std::string& TDateTime::asString() const {
+const std::string& TDateTime::asString(const EDateTimeFormat type) const {
+	if (type != EDT_INVALID) {
+		setFormat(type);
+	}
 	if (stime.empty()) {
-		stime = dateTimeToStr(type);
+		stime = dateTimeToStr(this->type);
 	}
 	return stime;
 }
 
-const std::wstring& TDateTime::asWideString() const {
+const std::wstring& TDateTime::asWideString(const EDateTimeFormat type) const {
+	if (type != EDT_INVALID) {
+		setFormat(type);
+	}
 	if (wtime.empty())
-		wtime = dateTimeToWideStr(type);
+		wtime = dateTimeToWideStr(this->type);
 	return wtime;
 }
 
