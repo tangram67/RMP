@@ -52,7 +52,7 @@ The application is build in the ./build folder and installed in ./build/bin fold
 1. Execute **./build/bin/rmp -N -P**
 2. The application may produce some warnigs and/or error messages, but nevertheless the default configuration will be installed in **/etc/dbApps/rmp/** (if the script **setup_folders.sh \<username\>** was successfully executed and therefore the necessary folders do exist with the correct accress rights for the given usen)
 3. Edit **/etc/dbApps/rmp/webserver.conf**
-4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** to the real webroot path in your system
+4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** to the real webroot path in your system (by using the path where the content from https://github.com/tangram67/RMP-Webroot is located)
 
 ## Start the application
 
