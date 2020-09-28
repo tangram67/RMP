@@ -53,6 +53,8 @@ The application is build in the ./build folder and installed in ./build/bin fold
 3. Edit **/etc/dbApps/rmp/webserver.conf**
 4. Set the webroot entry **"DocumentRoot = /path/to/the/webroot/"** to the real webroot path in your system (by using the path where the content from https://github.com/tangram67/RMP-Webroot is located)
 
+Warning: Do not change any configuration file settings unless you are really sure what you are doing!
+
 ## Start the application
 
 1. Execute **./build/bin/rmp -N -P**, parameter **-d** can be used to start daemonized
