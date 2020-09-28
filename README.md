@@ -63,7 +63,12 @@ The application is build in the ./build folder and installed in ./build/bin fold
 
 ## Installing the mediaplayer
 
-The folder **"setup"** countains an init.d script and a default settings script. Use this scripts as a template to setup your system.
-Edit the **"defaults"** file to match the username used by the setup scripts as mentioned above.
+The folder **"setup"** countains an init.d script and a default settings script. Use this helper script as a template to setup your system environment.
+Edit the **"defaults"** file to match the username used by the setup scripts as mentioned above. 
+
+1. Copy the startup script **rmp** from **setup/init.d** to **/etc/init.d/**
+2. Copy the **defaults** file to **/etc/defaults/**
+3. Enable the **Reference Music Player** on system startup via **sudo update-rc.d rmp defaults**
+4. Start the **Reference Music Player** as a service via **sudo service rmp start**
 
 Have a cup of coffee and relax&nbsp;&nbsp;:tea:
