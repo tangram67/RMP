@@ -12,7 +12,7 @@ All supported codecs (**DSF, DFF, FLAC, WAVE, AIFF, ALAC, MP3**) are using _nati
 
 Metadata (MP3) tags are read with exceptional high performance. Libraries with more than 150.000 entries have been tested and confirmed to work faster than any other professionally sold software. Playlist management and export is supported. Also internet readio streaming is supported. Radio stations are managed via the Web UI.
 
-Coverart is extracted from the file metatdat or from a JPEG or PNG file in the album folder (cover.jpg, cover.png, folder.jpg, folder.png).
+Coverart is extracted from the file metatdata or from a JPEG or PNG file located in the album folder (named cover.jpg, cover.png, folder.jpg or folder.png).
 Various library views are available: grouped by artist, grouped by album in list form, grouped by media type (CD, DVD, BD, HD, etc.). Also a full text library search ("Google sytle") is supported.
 
 The core framework used for this application is based on parts of **RAD.web©**. If you are interested in more details, please visit www.dbrinkmeier.de (German language only for now).
