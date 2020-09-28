@@ -5,6 +5,7 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
+locale-gen de_DE.UTF-8
 locale-gen fr_FR.UTF-8
 locale-gen it_IT.UTF-8
 locale-gen es_ES.UTF-8
