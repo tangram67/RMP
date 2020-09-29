@@ -1,6 +1,6 @@
 # RMP - The Reference Music Player
 
-![alt text](https://github.com/tangram67/RMP/master/rmp-750x420.jpg?raw=true)
+![alt text](https://github.com/tangram67/RMP/blob/master/rmp-750x420.jpg?raw=true)
 
 The **Reference Music Player** is a full featured C++ music player software for Linux based operating systems.
 The audio interface is focused on exact timing and intelligent content buffering.
