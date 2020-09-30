@@ -1094,6 +1094,22 @@ void TDateTime::sync(const EDateTimeZone tz) {
 	}
 }
 
+void TDateTime::setTimeStamp() {
+	ts.year      = ctm.tm_year + 1900;
+	ts.month     = ctm.tm_mon + 1;
+	ts.day       = ctm.tm_mday;
+	ts.dayOfYear = ctm.tm_yday;
+	ts.dayOfWeek = ctm.tm_wday;
+	ts.hour      = ctm.tm_hour;
+	ts.minute    = ctm.tm_min;
+	ts.second    = ctm.tm_sec;
+	ts.isDaylightSaving = (ctm.tm_isdst > 0);
+	if (timezone != ETZ_UTC && ts.isDaylightSaving) {
+		// Daylight saving is always 1 hour
+		ts.offset = 3600;
+	}
+	reset();
+}
 
 // Remark: Only valid for dates from 1971 to 2035 (?)
 bool TDateTime::getLocalTime(const TTimePart& time) {
@@ -1112,25 +1128,11 @@ bool TDateTime::getUTCTime(const TTimePart& time) {
 	return false;
 }
 
-void TDateTime::setTimeStamp() {
-	ts.year      = ctm.tm_year + 1900;
-	ts.month     = ctm.tm_mon + 1;
-	ts.day       = ctm.tm_mday;
-	ts.dayOfYear = ctm.tm_yday;
-	ts.dayOfWeek = ctm.tm_wday;
-	ts.hour      = ctm.tm_hour;
-	ts.minute    = ctm.tm_min;
-	ts.second    = ctm.tm_sec;
-	ts.isDaylightSaving = (ctm.tm_isdst > 0);
-	reset();
-}
-
-
 TTimePart TDateTime::utcTimeOffset() const {
 	if (!utcOffsOK) {
 		TTimePart now = ts.time.seconds();
 		TTimePart utc = util::localTimeToUTC(now);
-		utcOffs = now - utc;
+		utcOffs = now - utc - ts.offset;
 		utcOffsOK = true;
 	}
 	return utcOffs;

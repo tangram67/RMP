@@ -369,6 +369,7 @@ private:
 		hour = 0;
 		minute = 0;
 		second = 0;
+		offset = 0;
 		isDaylightSaving = false;
 	}
 
@@ -382,6 +383,7 @@ public:
 	TTimePart hour;
 	TTimePart minute;
 	TTimePart second;
+	TTimePart offset;
 	bool isDaylightSaving;
 	
 	void clear() {
@@ -399,6 +401,7 @@ public:
 		hour = value.hour;
 		minute = value.minute;
 		second = value.second;
+		offset = value.offset;
 		isDaylightSaving = value.isDaylightSaving;
 	}
 
@@ -450,10 +453,10 @@ private:
 	TTimePart mdiff();
 	TTimePart sdiff();
 	
-	bool getUTCTime(const TTimePart& time);
-	bool getLocalTime(const TTimePart& time);
 	void setTimeStamp();
 	void setLocalTime(const EDateTimeZone tz);
+	bool getLocalTime(const TTimePart& time);
+	bool getUTCTime(const TTimePart& time);
 
 	std::string formatLocalDateTime(const char* fmt, const app::TLocale& locale) const;
 	std::string formatUTCDateTime(const char* fmt) const;
