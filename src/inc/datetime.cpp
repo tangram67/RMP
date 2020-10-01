@@ -1129,7 +1129,7 @@ TTimePart TDateTime::utcTimeOffset() const {
 	if (!utcOffsOK) {
 		TTimePart now = ts.time.seconds();
 		TTimePart utc = util::localTimeToUTC(now);
-		utcOffs = now - utc - ts.offset;
+		utcOffs = now - utc + ts.offset;
 		utcOffsOK = true;
 	}
 	return utcOffs;
