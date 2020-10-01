@@ -1104,10 +1104,7 @@ void TDateTime::setTimeStamp() {
 	ts.minute    = ctm.tm_min;
 	ts.second    = ctm.tm_sec;
 	ts.isDaylightSaving = (ctm.tm_isdst > 0);
-	if (timezone != ETZ_UTC && ts.isDaylightSaving) {
-		// Daylight saving is always 1 hour
-		ts.offset = 3600;
-	}
+	ts.offset = (timezone != ETZ_UTC && ts.isDaylightSaving) ? 3600 : 0;
 	reset();
 }
 
