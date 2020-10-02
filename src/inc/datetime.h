@@ -310,11 +310,12 @@ inline std::string systemDateTimeToStrA(const TTimePart time, const app::TLocale
 	return systemDateTimeToStr(time, locale);
 };
 
+TTimePart dateTimeFromTimeParts(const TTimeStamp time, const EDateTimeZone tz);
 TTimePart dateTimeFromTimeParts(const TTimeStamp time, bool isUTC = false);
 TTimePart dayOfYear(TTimePart year, TTimePart month, TTimePart day);
 
 std::string timeToHuman(TTimePart time, int limit = 2, const app::ELocale locale = app::ELocale::sysloc);
-std::wstring timeToHumanW(TTimePart time, int limit, const app::ELocale locale = app::ELocale::sysloc);
+std::wstring timeToHumanW(TTimePart time, int limit = 2, const app::ELocale locale = app::ELocale::sysloc);
 
 
 typedef struct CTimeValue {
@@ -370,7 +371,7 @@ private:
 		minute = 0;
 		second = 0;
 		offset = 0;
-		isDaylightSaving = false;
+		isDST = false;
 	}
 
 public:
@@ -384,7 +385,7 @@ public:
 	TTimePart minute;
 	TTimePart second;
 	TTimePart offset;
-	bool isDaylightSaving;
+	bool isDST;
 	
 	void clear() {
 		time.clear();
@@ -402,7 +403,7 @@ public:
 		minute = value.minute;
 		second = value.second;
 		offset = value.offset;
-		isDaylightSaving = value.isDaylightSaving;
+		isDST = value.isDST;
 	}
 
 	TTimeStamp& operator = (const TTimeStamp &value) {
@@ -518,7 +519,7 @@ public:
 	TTimePart microns() const { return ts.time.microns(); };
 	TTimePart utcOffset() const { return utcTimeOffset(); };
 
-	bool isDayLightSaving() const { return ts.isDaylightSaving; };
+	bool isDST() const { return ts.isDST; };
 	EDateTimeZone getTimeZone() const { return timezone; };
 
 	void setFormat(const EDateTimeFormat value) const;

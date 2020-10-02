@@ -729,6 +729,10 @@ bool isUniversalTime(const std::string& time) {
 }
 
 
+TTimePart dateTimeFromTimeParts(const TTimeStamp time, const EDateTimeZone tz) {
+	return dateTimeFromTimeParts(time, ETZ_UTC == tz);
+}
+
 // Convert time parts year, month, day, hour, minute and second to local time
 // Parameter UTC = true if source time is UTC (a.k.a. GMT)
 TTimePart dateTimeFromTimeParts(const TTimeStamp time, bool isUTC) {
@@ -1103,8 +1107,8 @@ void TDateTime::setTimeStamp() {
 	ts.hour      = ctm.tm_hour;
 	ts.minute    = ctm.tm_min;
 	ts.second    = ctm.tm_sec;
-	ts.isDaylightSaving = (ctm.tm_isdst > 0);
-	ts.offset = (timezone != ETZ_UTC && ts.isDaylightSaving) ? 3600 : 0;
+	ts.isDST = (ctm.tm_isdst > 0);
+	ts.offset = (timezone != ETZ_UTC && ts.isDST) ? 3600 : 0;
 	reset();
 }
 
