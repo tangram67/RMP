@@ -23,6 +23,10 @@
 #include "syslocale.h"
 #include "gcc.h"
 
+#if not defined USE_DST_TIMESTAMP
+#  define DO_NOT_USE_DST_TIMESTAMP
+#endif
+
 namespace util {
 
 //

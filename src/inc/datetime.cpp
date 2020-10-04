@@ -1133,7 +1133,11 @@ TTimePart TDateTime::utcTimeOffset() const {
 	if (!utcOffsOK) {
 		TTimePart now = ts.time.seconds();
 		TTimePart utc = util::localTimeToUTC(now);
+#ifdef USE_DST_TIMESTAMP
 		utcOffs = now - utc + ts.offset;
+#else
+		utcOffs = now - utc;
+#endif
 		utcOffsOK = true;
 	}
 	return utcOffs;
@@ -1161,6 +1165,11 @@ std::string TDateTime::utcTimeOffsetAsString(const bool longOffsetDate) const {
 		} else {
 			sutcoffs = "Z";
 		}
+#ifdef USE_DST_TIMESTAMP
+		if (ts.isDST) {
+			sutcoffs += " DST";
+		}
+#endif
 	}
 	return sutcoffs;
 }
