@@ -2690,12 +2690,14 @@ bool util::createDirektory(std::string directoryName, mode_t mode) {
 		std::string dir;
 		int retVal;
 
+		// Normalize folder name (add trailing slash)
 		validPath(directoryName);
 
-		while((pos = directoryName.find_first_of(sysutil::PATH_SEPERATOR, pre)) != std::string::npos){
+		// Create folders by recursion
+		while((pos = directoryName.find_first_of(sysutil::PATH_SEPERATOR, pre)) != std::string::npos) {
 			dir = directoryName.substr(0, pos++);
 			pre = pos;
-			if(dir.size() == 0) continue; // if leading / first time is 0 length
+			if(dir.size() == 0) continue; // Length is zero on leading slash
 			if((retVal = __s_mkdir(dir, mode)) && errno != EEXIST){
 				return (retVal == EXIT_SUCCESS);
 			}
