@@ -17,7 +17,7 @@ Metadata (MP3) tags are read with exceptional high performance. Libraries with m
 Coverart is extracted from the file metatdata or from a JPEG or PNG file located in the album folder (named cover.jpg, cover.png, folder.jpg or folder.png).
 Various library views are available: grouped by artist, grouped by album in list form, grouped by media type (CD, DVD, BD, HD, etc.). Also a full text library search ("Google sytle") is supported.
 
-The core framework used for this application is based on parts of **RAD.web©**. If you are interested in more details, please visit www.dbrinkmeier.de (German language only for now).
+The core framework used for this application is based on parts of **RAD.web©**. If you are interested in more details, please visit www.dbrinkmeier.de or cantact me via e-mail develop@dbrinkmeier.de
 
 These are only the basic features, there are lots of functions and possibilities that are not mentioned here...
 
