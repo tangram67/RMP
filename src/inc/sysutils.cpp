@@ -219,7 +219,7 @@ bool sysutil::getGroupID(const std::string& groupName, gid_t& gid) {
 	int r;
 
 	if (!groupName.empty()) {
-		size = sysconf(_SC_GETPW_R_SIZE_MAX);
+		size = sysconf(_SC_GETGR_R_SIZE_MAX);
 		if (size <= 0)    /* Value was indeterminate */
 			size = 16384; /* Should be more than enough */
 		TBuffer buffer(size);
@@ -256,7 +256,7 @@ std::string sysutil::getGroupName(const gid_t gid) {
 	struct group *result = NULL;
 	int r;
 
-	size = sysconf(_SC_GETPW_R_SIZE_MAX);
+	size = sysconf(_SC_GETGR_R_SIZE_MAX);
 	if (size <= 0)    /* Value was indeterminate */
 		size = 16384; /* Should be more than enough */
 	TBuffer buffer(size);
