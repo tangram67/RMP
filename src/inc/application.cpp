@@ -1097,7 +1097,9 @@ void TApplication::initialize(int argc, char *argv[]) {
 		bool userChanged = false;
 		if (daemonize) {
 			// Detach application from console and change user
-			daemonizer(sysdat.app.userName, sysdat.app.groupName, userChanged);
+			// --> Allow serial port and GPIO access
+			// --> TODO Read supplemental groups from configuration
+			daemonizer(sysdat.app.userName, sysdat.app.groupName, {"gpio", "dialout"}, userChanged);
 
 			// Reopen configuration file as new user
 			if (userChanged) {
@@ -2861,7 +2863,7 @@ void TApplication::writeDebugFile(const std::string& fileName, const std::string
 	}
 }
 
-void TApplication::daemonizer(const std::string& runAsUser, const std::string& runAsGroup, bool& userChanged) {
+void TApplication::daemonizer(const std::string& runAsUser, const std::string& runAsGroup, const app::TStringVector& supplementalGroups, bool& userChanged) {
 	// The daemon startup code was taken in parts from the Linux Daemon Writing HOWTO
 	// Written by Devin Watson <dmwatson@comcast.net>
 	// The HOWTO is Copyright by Devin Watson, under the terms of the BSD License.
@@ -2879,8 +2881,7 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	if (pid < 0)
 		throw app_error("TApplication::daemonizer::fork() failed.");
 
-	/* If we got a good PID, then
-	   we can exit the parent process. */
+	/* If we got a good PID, then we can exit the parent process. */
 	if (pid > 0)
 		exit(EXIT_SUCCESS);
 
@@ -2952,37 +2953,30 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 				}
 
 				// Set supplemental groups
-				// --> Allow serial port and GPIO access
-				gid_t sgid;
-				gid_t sgroups[5];
-				size_t scnt = 0;
+				if (!supplementalGroups.empty()) {
+					gid_t sgid;
+					gid_t sgroups[util::succ(supplementalGroups.size())];
+					size_t scnt = 0;
 
-				// Add "dialout" group for serial port access
-				if (runAsGroup != "dialout") {
-					if (sysutil::getGroupID("dialout", sgid)) {
-						if (sgid != gid) {
-							sgroups[scnt] = sgid;
-							scnt++;
+					// Add named groups as supplemental groups to list
+					for (size_t i=0; i<supplementalGroups.size(); ++i) {
+						const std::string& gname = supplementalGroups[i];
+						if (runAsGroup != gname) {
+							if (sysutil::getGroupID(gname, sgid)) {
+								if (sgid != gid) {
+									sgroups[scnt] = sgid;
+									scnt++;
+								}
+							}
 						}
 					}
-				}
 
-				// Add "gpio" group for GPIO access
-				if (runAsGroup != "gpio") {
-					if (sysutil::getGroupID("gpio", sgid)) {
-						if (sgid != gid) {
-							sgroups[scnt] = sgid;
-							scnt++;
+					// Attach supplemental group list to current process
+					if (scnt > 0) {
+						errnum = setgroups(scnt, sgroups);
+						if (errnum < EXIT_SUCCESS) {
+							throw sys_error("TApplication::daemonizer::setgroups() failed.");
 						}
-					}
-				}
-
-				// Add supplemental groups to current process
-				// TODO Read supplemental groups from configuration
-				if (scnt > 0) {
-					errnum = setgroups(scnt, sgroups);
-					if (errnum < 0) {
-						throw sys_error("TApplication::daemonizer::setgroups() failed.");
 					}
 				}
 

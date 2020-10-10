@@ -191,7 +191,7 @@ private:
 	void setConsole();
 	void restoreConsole();
 
-	void daemonizer(const std::string& runAsUser, const std::string& runAsGroup, bool& userChanged);
+	void daemonizer(const std::string& runAsUser, const std::string& runAsGroup, const app::TStringVector& supplementalGroups, bool& userChanged);
 	void parseCommandLine(int argc, char *argv[]);
 	sql::EDatabaseType parseDefaultDatabaseType(const std::string& description) const;
 
