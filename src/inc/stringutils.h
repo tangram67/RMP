@@ -143,6 +143,7 @@ public:
 	void assign(const std::string& csv, const char delimiter);
 	void assign(const std::string& csv, const char* delimiters);
 	void assign(const std::string& csv, const std::string& delimiters);
+	void assign(const app::TStringVector& vector);
 	void assign(const util::TStringList& list);
 
 	size_t readText(void const * const data, size_t const size);
@@ -179,12 +180,14 @@ public:
 	inline const_iterator first() const { return begin(); };
 	inline const_iterator last() const { return util::pred(end()); };
 
+	TStringList& operator = (const app::TStringVector& vector);
 	TStringList& operator = (const TStringList& list);
 	TStringList& operator = (const std::string& csv);
 	operator bool () const { return !empty(); };
 
 	TStringList();
 	TStringList(const TStringList& list);
+	TStringList(const app::TStringVector& vector);
 	TStringList(const std::string& csv, const char delimiter);
 	virtual ~TStringList();
 };

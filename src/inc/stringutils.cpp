@@ -26,6 +26,10 @@ TStringList::TStringList() {
 TStringList::~TStringList() {
 }
 
+TStringList::TStringList(const app::TStringVector& vector) {
+	assign(vector);
+}
+
 TStringList::TStringList(const TStringList& list) {
 	assign(list);
 }
@@ -74,7 +78,6 @@ std::string TStringList::asString(const char delimiter, const EExportType type) 
 		bool html = type == ET_EXPORT_HTML;
 		bool trimmed = util::isMemberOf(type, ET_EXPORT_TRIMMED,ET_EXPORT_HTML);
 		bool isWindows = delimiter == '\r';
-		bool isNone = delimiter == NUL;
 		const_iterator last = this->last();
 		const_iterator it = begin();
 
@@ -92,7 +95,7 @@ std::string TStringList::asString(const char delimiter, const EExportType type) 
 					if (isWindows) {
 						s += html::THTML::encode(trim(*it)) + "\r\n";
 					} else {
-						s += isNone ? html::THTML::encode(trim(*it)) : html::THTML::encode(trim(*it)) + delimiter;
+						s += html::THTML::encode(trim(*it)) + delimiter;
 					}
 				} else {
 					if (isWindows) {
@@ -103,9 +106,9 @@ std::string TStringList::asString(const char delimiter, const EExportType type) 
 						}
 					} else {
 						if (trimmed) {
-							s += isNone ? trim(*it) : trim(*it) + delimiter;
+							s += trim(*it) + delimiter;
 						} else {
-							s += isNone ? *it : *it + delimiter;
+							s += *it + delimiter;
 						}
 					}
 				}
@@ -115,7 +118,7 @@ std::string TStringList::asString(const char delimiter, const EExportType type) 
 			if (isWindows) {
 				s += html::THTML::encode(trim(*it)) + "\r\n";
 			} else {
-				s += isNone ? html::THTML::encode(trim(*it)) : html::THTML::encode(trim(*it)) + delimiter;
+				s += html::THTML::encode(trim(*it)) + delimiter;
 			}
 		} else {
 			if (trimmed) {
@@ -490,6 +493,15 @@ void TStringList::sort(util::ESortOrder order) {
 }
 
 
+void TStringList::assign(const app::TStringVector& vector) {
+	clear();
+	if (!vector.empty()) {
+		TStringList::const_iterator it = vector.begin();
+		for (; it != vector.end(); ++it)
+			add(*it);
+	}
+}
+
 void TStringList::assign(const util::TStringList& list) {
 	clear();
 	if (!list.empty()) {
@@ -517,6 +529,11 @@ void TStringList::assign(const std::string& csv, const char* delimiters) {
 void TStringList::assign(const std::string& csv, const std::string& delimiters) {
 	clear();
 	split(csv, delimiters);
+}
+
+TStringList& TStringList::operator = (const app::TStringVector& vector) {
+	assign(vector);
+	return *this;
 }
 
 TStringList& TStringList::operator = (const TStringList& list) {
