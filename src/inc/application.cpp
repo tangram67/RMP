@@ -16,6 +16,7 @@
 #include <sys/resource.h>
 #include <sys/prctl.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <unistd.h>
 #include <execinfo.h>
 #include <ucontext.h>
@@ -2948,6 +2949,41 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 					errnum = cap_free(caps);
 					if (util::checkFailed(errnum))
 						throw sys_error("TApplication::daemonizer::cap_free(1) failed.", errnum);
+				}
+
+				// Set supplemental groups
+				// --> Allow serial port and GPIO access
+				gid_t sgid;
+				gid_t sgroups[5];
+				size_t scnt = 0;
+
+				// Add "dialout" group for serial port access
+				if (runAsGroup != "dialout") {
+					if (sysutil::getGroupID("dialout", sgid)) {
+						if (sgid != gid) {
+							sgroups[scnt] = sgid;
+							scnt++;
+						}
+					}
+				}
+
+				// Add "gpio" group for GPIO access
+				if (runAsGroup != "gpio") {
+					if (sysutil::getGroupID("gpio", sgid)) {
+						if (sgid != gid) {
+							sgroups[scnt] = sgid;
+							scnt++;
+						}
+					}
+				}
+
+				// Add supplemental groups to current process
+				// TODO Read supplemental groups from configuration
+				if (scnt > 0) {
+					errnum = setgroups(scnt, sgroups);
+					if (errnum < 0) {
+						throw sys_error("TApplication::daemonizer::setgroups() failed.");
+					}
 				}
 
 				// Change user and group ID

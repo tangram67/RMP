@@ -185,6 +185,8 @@ bool sysutil::getIsolatedCPUs(std::string& cpu) {
 
 
 bool sysutil::getUserID(const std::string& userName, uid_t& uid, gid_t& gid) {
+	uid = 0;
+	gid = 0;
 	size_t size;
 	struct passwd pwd;
 	struct passwd *result = NULL;
@@ -209,6 +211,7 @@ bool sysutil::getUserID(const std::string& userName, uid_t& uid, gid_t& gid) {
 }
 
 bool sysutil::getGroupID(const std::string& groupName, gid_t& gid) {
+	gid = 0;
 	size_t size;
 	struct group grp;
 	struct group *result = NULL;
