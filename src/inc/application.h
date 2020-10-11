@@ -52,6 +52,7 @@ STATIC_CONST char* EXCP_FILE   = "/tmp/exception.dmp";
 STATIC_CONST char* APP_CONFIG  = "Global";
 STATIC_CONST char* APP_LICENSE = "License";
 STATIC_CONST char* LICENCE_BASE_URL = "http://www.dbrinkmeier.de/licenses/";
+STATIC_CONST char* SUPPLEMENTAL_GROUP_LIST = "gpio;dialout;audio;spi;i2c";
 
 STATIC_CONST int SOFT_LOCK_LIMIT = 0xFFFF;
 STATIC_CONST int MAX_DUMP_SIZE = 50;

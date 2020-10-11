@@ -1016,6 +1016,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		// Read user to run under from configuration
 		sysdat.app.userName = config->readString("RunAsUser", sysutil::getUserName(uid));
 		sysdat.app.groupName = config->readString("RunAsGroup", sysutil::getUserName(uid));
+		sysdat.app.groupList = config->readString("SupplementalGroups", SUPPLEMENTAL_GROUP_LIST);
 
 		// Which folder to use as working directory (PWD)
 		sysdat.app.setTempDir = config->readBool("UseTempDirAsPwd", sysdat.app.setTempDir);
@@ -1097,9 +1098,8 @@ void TApplication::initialize(int argc, char *argv[]) {
 		bool userChanged = false;
 		if (daemonize) {
 			// Detach application from console and change user
-			// --> Allow serial port and GPIO access
-			// --> TODO Read supplemental groups from configuration
-			daemonizer(sysdat.app.userName, sysdat.app.groupName, {"gpio", "dialout"}, userChanged);
+			// --> Allow serial port, GPIO (et al.) access
+			daemonizer(sysdat.app.userName, sysdat.app.groupName, sysdat.app.groupList, userChanged);
 
 			// Reopen configuration file as new user
 			if (userChanged) {
@@ -1217,6 +1217,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		config->writeInteger("Handles", sysdat.app.handles);
 		config->writeString("RunAsUser", sysdat.app.userName);
 		config->writeString("RunAsGroup", sysdat.app.groupName);
+		config->writeString("SupplementalGroups", sysdat.app.groupList.csv());
 		config->writeBool("DisableSwappiness", noswap, INI_BLYES);
 
 		// Create log files

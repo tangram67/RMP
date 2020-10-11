@@ -57,6 +57,7 @@ struct CApplicationConfig {
 	std::string hostName;
 	std::string userName;
 	std::string groupName;
+	util::TStringList groupList;
 	std::string currentFolder;
 	std::string dataFolder;
 	std::string configFolder;
