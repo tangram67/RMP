@@ -113,6 +113,7 @@ private:
 	mutable app::TMutex terminateMtx;
 	app::TMutex stopMtx;
 	app::TMutex haltedMtx;
+	app::TMutex shutdownMtx;
 	app::TMutex unpreparedMtx;
 	app::TMutex storageMtx;
 	util::TStringList workingFolders;
@@ -170,7 +171,8 @@ private:
     bool stopped;
     bool unprepared;
 	bool terminated;
-	bool shutdown;
+	bool terminating;
+	bool rebooting;
 	bool multiple;
 	bool skipCheck;
 	bool useMQTT;
@@ -710,6 +712,9 @@ public:
 	void finalize();
 	void cleanup();
 	void update();
+
+	bool reboot();
+	bool shutdown();
 
 	int result() const { return error; };
 

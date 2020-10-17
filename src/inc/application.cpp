@@ -424,7 +424,8 @@ TApplication::TApplication() : TThreadAffinity(), args(false) {
 	watchThd = 0;
 	udevThd = 0;
 	commThd = 0;
-	shutdown = false;
+	rebooting = false;
+	terminating = false;
 	signalThreadRunning = false;
 	signalThreadStarted = false;
 	watchThreadRunning = false;
@@ -2562,12 +2563,12 @@ void TApplication::signalHandler(int signal) {
 
 void TApplication::suicide() {
 	// Force instant terminate on second try!
-	if (shutdown) {
+	if (terminating) {
 		restoreConsole();
 		deletePidFile();
 		std::terminate();
 	}
-	shutdown = true;
+	terminating = true;
 }
 
 int TApplication::signalThreadHandler() {
@@ -3010,6 +3011,55 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	daemonized = true;
 }
 
+bool TApplication::shutdown() {
+	app::TLockGuard<app::TMutex> lock(shutdownMtx);
+	if (!rebooting) {
+		//
+		// Execute shutdown by command line
+		// Edit "sudoers" with "sudo visudo" with the following content:
+		//
+		//  # Cmnd alias specification
+		//  Cmnd_Alias SYSTEM = /sbin/shutdown, /sbin/halt, /sbin/reboot, /sbin/poweroff
+		//
+		//  # User privilege specification
+		//  root    ALL=(ALL:ALL) ALL
+		//  pi      ALL=(root) NOPASSWD: SYSTEM
+		//
+		int retVal;
+		std::string output;
+		util::TStringList result;
+		std::string commandLine = "sudo poweroff -p";
+		if (util::executeCommandLine(commandLine, output, retVal, false, 10) ) {
+			rebooting = true;
+		}
+	}
+	return rebooting;
+}
+
+bool TApplication::reboot() {
+	app::TLockGuard<app::TMutex> lock(shutdownMtx);
+	if (!rebooting) {
+		//
+		// Execute reboot by command line
+		// Edit "sudoers" with "sudo visudo" with the following content:
+		//
+		//  # Cmnd alias specification
+		//  Cmnd_Alias SYSTEM = /sbin/shutdown, /sbin/halt, /sbin/reboot, /sbin/poweroff
+		//
+		//  # User privilege specification
+		//  root    ALL=(ALL:ALL) ALL
+		//  pi      ALL=(root) NOPASSWD: SYSTEM
+		//
+		int retVal;
+		std::string output;
+		util::TStringList result;
+		std::string commandLine = "sudo reboot --reboot";
+		if (util::executeCommandLine(commandLine, output, retVal, false, 10) ) {
+			rebooting = true;
+		}
+	}
+	return rebooting;
+}
 
 ssize_t TApplication::onAplicationSocketData(const inet::TUnixServerSocket& socket, const app::THandle handle) {
 	// Discarded....
