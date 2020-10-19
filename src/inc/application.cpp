@@ -454,6 +454,7 @@ TApplication::TApplication() : TThreadAffinity(), args(false) {
 	serial36 = util::TBase36::encode(serial10, true);
 	executed = 0;
 	niceLevel = 0;
+	changes = 0;
 }
 
 TApplication::~TApplication() {
@@ -480,6 +481,8 @@ TApplication::~TApplication() {
 	// Leave logger instantiated as long as possible
 	// --> other objects may access logs during delete!
 	util::freeAndNil(sysdat.obj.logger);
+
+	// Free application confi file object
 	util::freeAndNil(config);
 
 	// Restore console input
@@ -672,14 +675,23 @@ const std::string& TApplication::getDisplayName() const {
 const std::string& TApplication::getDescription() const {
 	return sysdat.app.appDescription;
 }
-const std::string& TApplication::getHostName() const {
-	return sysdat.app.hostName;
-}
 const std::string& TApplication::getUserName() const {
 	return sysdat.app.userName;
 }
 const std::string& TApplication::getVersion() const {
 	return sysdat.app.appVersion;
+}
+
+const std::string& TApplication::getHostName() const {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return sysdat.app.hostName;
+}
+void TApplication::setHostName(const std::string& hostName) {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (hostName != sysdat.app.hostName) {
+		sysdat.app.hostName = hostName;
+		++changes;
+	}
 }
 
 TLogFile& TApplication::getExceptionLogger() const {
@@ -911,7 +923,7 @@ void TApplication::updateNamedLicenses() {
 				config->writeString(key, value);
 			}
 		}
-		config->flush();
+		flushConfigSettings();
 		licenses.reset();
 	}
 }
@@ -1529,7 +1541,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		// Write changes to configuration file
 		if (sysdat.log.verbosity > 0)
 			config->debugOutput();
-		config->flush();
+		flushConfigSettings();
 
 		// Log some information about application startup state
 		logger(app::ELogBase::LOG_APP, "[Application] Application [%] started with args %", getVersion(), arguments().asText(' '));
@@ -2234,6 +2246,11 @@ void TApplication::finalize() {
 	// Check for change in license entries
 	updateNamedLicenses();
 
+	// Save configuration changes to disk
+	if (changes > 0) {
+		flushConfigSettings();
+	}
+
 	// Save application storage
 	storage.saveToFile(sysdat.app.storeFile);
 
@@ -2241,6 +2258,11 @@ void TApplication::finalize() {
 	cleanup();
 }
 
+void TApplication::flushConfigSettings() {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	config->flush();
+	changes = 0;
+}
 
 void TApplication::parseCommandLine(int argc, char *argv[]) {
 	int i;

@@ -111,6 +111,7 @@ private:
 	mutable app::TMutex heapMtx;
 	mutable app::TMutex pathMtx;
 	mutable app::TMutex terminateMtx;
+	mutable app::TMutex configMtx;
 	app::TMutex stopMtx;
 	app::TMutex haltedMtx;
 	app::TMutex shutdownMtx;
@@ -153,6 +154,7 @@ private:
 
     size_t executed;
 	TAppModuleList modules;
+	size_t changes;
 
 	TWatchNotifyList watches;
 	util::TVariantValues args;
@@ -224,6 +226,7 @@ private:
 	void writeDebugFile(const std::string& fileName, const std::string& text);
 	void saveCapabilitiesToFile(const std::string& fileName);
 	void notifySystemState(const ESystemState state);
+	void flushConfigSettings();
 
 	void writeStream(std::stringstream& sstrm);
 	PWebServer startWebServer(const std::string& name, const std::string& documentRoot, const bool autostart);
@@ -619,9 +622,11 @@ public:
 	const std::string& getFileBaseName() const;
 	const std::string& getDisplayName() const;
 	const std::string& getDescription() const;
-	const std::string& getHostName() const;
 	const std::string& getUserName() const;
 	const std::string& getVersion() const;
+
+	const std::string& getHostName() const;
+	void setHostName(const std::string& hostName);
 
 	app::TLogFile& getExceptionLogger() const;
 	app::TLogFile& getApplicationLogger() const;
