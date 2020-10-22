@@ -125,6 +125,7 @@ std::string realPath(const std::string& directoryName);
 
 bool createDirektory(std::string directoryName, mode_t mode = 0755);
 bool readDirektory(const std::string& path, app::TStringVector& content, const ESearchDepth depth = SD_ROOT, const bool hidden = false);
+bool readDirektoryContent(const std::string& path, const std::string& filter, app::TStringVector& content, const ESearchDepth depth = SD_ROOT, const bool hidden = false);
 bool readDirectoryTree(const std::string& path, app::TStringVector& content, const ESearchDepth depth = SD_ROOT, const bool hidden = false);
 
 size_t getMountPoints(util::TStringList& mounts, const EMountType type = MT_DISK);
@@ -434,7 +435,6 @@ private:
 
 	void init();
 	bool validIndex(const std::string::size_type idx);
-	PFile add(const std::string& file);
 	int readDirektory(const std::string& path, const ESearchDepth depth = SD_ROOT, const PFile folder = nil, const bool hidden = false);
 	void debugBufferOutput(const std::string& text, const char* p, size_t size);
 
@@ -442,6 +442,8 @@ public:
 	typedef TFileMap::const_iterator const_iterator;
 
 	void clear();
+	PFile add(const std::string& file);
+
 	std::string::size_type size() const { return files.size(); }
 	bool empty() const { return files.empty(); }
 	const_iterator begin() { return files.begin(); };

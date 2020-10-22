@@ -226,7 +226,8 @@ private:
 	void writeDebugFile(const std::string& fileName, const std::string& text);
 	void saveCapabilitiesToFile(const std::string& fileName);
 	void notifySystemState(const ESystemState state);
-	void flushConfigSettings();
+	void flushApplicationSettings();
+	void flushSystemSettings();
 
 	void writeStream(std::stringstream& sstrm);
 	PWebServer startWebServer(const std::string& name, const std::string& documentRoot, const bool autostart);
@@ -248,6 +249,8 @@ private:
 	bool getAndSetStopped();
 	bool getAndSetHalted();
 	bool getAndSetUnprepared();
+
+	bool backupConfigurationFilesWithNolock();
 
 	template<typename signal_t, typename class_t>
 		TEventHandler bindSignalHandler(signal_t &&onSignal, class_t &&owner) {
@@ -617,6 +620,7 @@ public:
 	const std::string& getImportFolder() const;
 	const std::string& getPIDFolder() const;
 	const std::string& getPIDFile() const;
+	const std::string& getBackupFile() const;
 
 	const std::string& getFileName() const;
 	const std::string& getFileBaseName() const;
@@ -732,6 +736,9 @@ public:
 	util::TTimePart getDeallocateTime() const;
 	util::TTimePart getHeapDelay() const;
 	void deallocateHeapMemory();
+
+	void commitApplicationSettings();
+	bool backupConfigurationFiles();
 
 	TApplication();
 	virtual ~TApplication();

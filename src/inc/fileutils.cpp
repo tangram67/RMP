@@ -2738,6 +2738,46 @@ bool util::readDirektory(const std::string& path, app::TStringVector& content, c
 }
 
 
+bool util::readDirektoryContent(const std::string& path, const std::string& pattern, app::TStringVector& content, const ESearchDepth depth, const bool hidden) {
+	bool retVal = false;
+	TDirectory dir;
+	struct dirent *file;
+	if (SD_ROOT == depth)
+		content.clear();
+	std::string root = validPath(path);
+	dir.open(root);
+	if (dir.isOpen()) {
+		while(assigned((file = dir.read()))) {
+			bool ignore = hidden ? 0 == ::strcmp(file->d_name, ".") : file->d_name[0] == '.';
+			if(ignore || (0 == ::strcmp(file->d_name, "..")))
+				continue;
+
+            if (file->d_type == DT_REG) {
+            	bool ok = true;
+            	if (!pattern.empty()) {
+            		ok = fileMatch(pattern, file->d_name);
+            	}
+            	if (ok) {
+            		if (SD_ROOT == depth) {
+            			content.push_back(file->d_name);
+            		} else {
+            			content.push_back(root + file->d_name);
+            		}
+            	}
+            	continue;
+            }
+
+            if (SD_RECURSIVE == depth && file->d_type == DT_DIR) {
+            	readDirektoryContent(validPath(root + file->d_name), pattern, content, depth, hidden);
+            }
+		}
+		retVal = (content.size() > 0);
+		dir.close();
+	}
+	return retVal;
+}
+
+
 bool util::readDirectoryTree(const std::string& path, app::TStringVector& content, const ESearchDepth depth, const bool hidden) {
 	bool retVal = false;
 	TDirectory dir;

@@ -650,6 +650,9 @@ const std::string& TApplication::getPIDFolder() const {
 const std::string& TApplication::getPIDFile() const {
 	return sysdat.app.pidFile;
 }
+const std::string& TApplication::getBackupFile() const {
+	return sysdat.app.backupFile;
+}
 const std::string& TApplication::getDataBaseFolder() const {
 	if (util::assigned(sysdat.obj.session)) {
 		return sysdat.obj.session->getDataFolder();
@@ -923,7 +926,7 @@ void TApplication::updateNamedLicenses() {
 				config->writeString(key, value);
 			}
 		}
-		flushConfigSettings();
+		flushApplicationSettings();
 		licenses.reset();
 	}
 }
@@ -1038,6 +1041,9 @@ void TApplication::initialize(int argc, char *argv[]) {
 		sysdat.app.dataFolder = config->readPath("DataFolder", util::validPath(DATA_BASE_FOLDER + sysdat.app.appDisplayName));
 		if (!createDataFolder())
 			throw util::sys_error("TApplication::initialize() : Creating application data folder failed <" + sysdat.app.dataFolder + ">");
+
+		// Set systen configuration backup file (stored in system data folder)
+		sysdat.app.backupFile = sysdat.app.dataFolder + "settings.tar.gz";
 
 		// PID file storage:
 		// Root user -> /var/run/<AppName>/<AppName>.pid
@@ -1538,11 +1544,6 @@ void TApplication::initialize(int argc, char *argv[]) {
 				throw util::sys_error("TApplication::initialize() : Create serial communication thread failed.");
 		}
 
-		// Write changes to configuration file
-		if (sysdat.log.verbosity > 0)
-			config->debugOutput();
-		flushConfigSettings();
-
 		// Log some information about application startup state
 		logger(app::ELogBase::LOG_APP, "[Application] Application [%] started with args %", getVersion(), arguments().asText(' '));
 		logger(app::ELogBase::LOG_APP, "[Application] Application uses language %", syslocale.getInfo());
@@ -1607,6 +1608,15 @@ void TApplication::initialize(int argc, char *argv[]) {
 			logger(app::ELogBase::LOG_APP, "[Application] Application is in trial mode.");
 #endif
 		logger(app::ELogBase::LOG_APP, "[Application] Application serial number (%:%)", serial10, serial36);
+
+		// Write changes to configuration files
+		if (sysdat.log.verbosity > 0)
+			config->debugOutput();
+		flushApplicationSettings();
+		flushSystemSettings();
+
+		// Create backup of current configuration file settings
+		backupConfigurationFiles();
 
 		// Check for further license keys
 		config->readSection(APP_LICENSE, licenses);
@@ -2239,17 +2249,13 @@ void TApplication::finalize() {
 	sysdat.obj.logger->flush();
 
 	// Flush configuration files
-	if (util::assigned(sysdat.obj.gpioConfig)) sysdat.obj.gpioConfig->flush();
-	if (util::assigned(sysdat.obj.mqttConfig)) sysdat.obj.mqttConfig->flush();
-	if (util::assigned(sysdat.obj.webConfig))  sysdat.obj.webConfig->flush();
+	flushSystemSettings();
 
 	// Check for change in license entries
 	updateNamedLicenses();
 
 	// Save configuration changes to disk
-	if (changes > 0) {
-		flushConfigSettings();
-	}
+	commitApplicationSettings();
 
 	// Save application storage
 	storage.saveToFile(sysdat.app.storeFile);
@@ -2258,10 +2264,61 @@ void TApplication::finalize() {
 	cleanup();
 }
 
-void TApplication::flushConfigSettings() {
+void TApplication::flushApplicationSettings() {
 	app::TLockGuard<app::TMutex> lock(configMtx);
+	config->setSection(APP_CONFIG);
+
+	// Write changed properties to config
+	config->writeString("Hostname", sysdat.app.hostName);
+
 	config->flush();
 	changes = 0;
+}
+
+void TApplication::flushSystemSettings() {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (util::assigned(sysdat.obj.gpioConfig)) sysdat.obj.gpioConfig->flush();
+	if (util::assigned(sysdat.obj.mqttConfig)) sysdat.obj.mqttConfig->flush();
+	if (util::assigned(sysdat.obj.webConfig))  sysdat.obj.webConfig->flush();
+}
+
+
+void TApplication::commitApplicationSettings() {
+	if (changes > 0) {
+		flushApplicationSettings();
+	}
+}
+
+bool TApplication::backupConfigurationFiles() {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return backupConfigurationFilesWithNolock();
+}
+
+bool TApplication::backupConfigurationFilesWithNolock() {
+	bool r = false;
+	int retVal;
+	std::string output;
+	util::TStringList result;
+	const std::string& fileName = getBackupFile();
+	const std::string& folderName = getConfigFolder();
+	util::TStringList content;
+	util::readDirektoryContent(folderName, "*.conf", content);
+	std::string files = content.asString(' ');
+	if (!content.empty()) {
+		std::string commandLine = util::csnprintf("tar -czf % -C % %", fileName, folderName, files);
+		logger(app::ELogBase::LOG_APP, "[Application] Execute backup command $", commandLine);
+		util::deleteFile(fileName);
+		util::executeCommandLine(commandLine, output, retVal, false, 10);
+		r = util::fileExists(fileName);
+		if (r) {
+			logger(app::ELogBase::LOG_APP, "[Application] Configuration file backup saved as <%>", fileName);
+		} else {
+			logger(app::ELogBase::LOG_APP, "[Application] [Error] Saving Configuration file backup as <%> failed.", fileName);
+		}
+	} else {
+		logger(app::ELogBase::LOG_APP, "[Application] [Error] Configuration folder <%> is empty.", folderName);
+	}
+	return r;
 }
 
 void TApplication::parseCommandLine(int argc, char *argv[]) {

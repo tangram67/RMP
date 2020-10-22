@@ -62,6 +62,7 @@ struct CApplicationConfig {
 	std::string dataFolder;
 	std::string configFolder;
 	std::string configFile;
+	std::string backupFile;
 	std::string pidFile;
 	std::string pidFolder;
 	std::string storeFolder;
@@ -100,6 +101,7 @@ struct CApplicationConfig {
 		currentFolder.clear();
 		configFolder.clear();
 		configFile.clear();
+		backupFile.clear();
 		pidFile.clear();
 		tmpFolder.clear();
 		logFolder.clear();
