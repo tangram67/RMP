@@ -76,12 +76,14 @@ private:
 		retVal = checkProperties();
 		if (util::checkFailed(retVal))
 			throw util::app_error("TWorkerThread::createBaseThread() Thread properties not set.");
-		if (!createPersistentThread(creator))
+		const char* desc = !name.empty() ? name.c_str() : nil;
+		if (!createPersistentThread(creator, desc))
 			throw util::app_error("TWorkerThread::createBaseThread() Create thread failed.");
 	}
 
 	void createSignalThread(PThreadMessage message) {
-		if (!createIntermittentThread(message))
+		const char* desc = !name.empty() ? name.c_str() : nil;
+		if (!createIntermittentThread(message, desc))
 			throw util::app_error("TWorkerThread::createSignalThread() Create thread failed.");
 	}
 

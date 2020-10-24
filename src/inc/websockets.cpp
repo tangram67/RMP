@@ -360,7 +360,7 @@ void TWebSockets::start() {
 	if (!util::assigned(thread)) {
 		running = true;
 		app::EThreadStartType execute = running ? app::THD_START_ON_CREATE : app::THD_START_ON_DEMAND;
-		thread = threads->addThread("WebSocket Epoll Thread",
+		thread = threads->addThread("WebSocket-Poll",
 									&app::TWebSockets::eloop,
 									this, execute);
 	}

@@ -2802,7 +2802,38 @@ bool util::readDirectoryTree(const std::string& path, app::TStringVector& conten
             		readDirectoryTree(validPath(root + file->d_name), content, depth, hidden);
             	}
             }
+
+            if (file->d_type == DT_LNK) {
+            	bool debug = false;
+            	size_t size = util::maxPathSize();
+            	util::TBuffer link(size + 1);
+            	std::string fileName = root + file->d_name;
+    			if (debug) std::cout << app::magenta << "util::readDirectoryTree() Linked file name \"" << fileName << "\"" << app::reset << std::endl;
+            	ssize_t r = readlink(fileName.c_str(), link.data(), link.size());
+            	if (r > 0) {
+            		std::string linkName = std::string(link.data(), r);
+            		if (!linkName.empty()) {
+            			fileName = root + linkName;
+            			if (debug) std::cout << app::magenta << "util::readDirectoryTree() Link name \"" << fileName << "\"" << app::reset << std::endl;
+            			std::string realName = util::realName(fileName);
+            			if (!realName.empty()) {
+        					if (debug) std::cout << app::magenta << "util::readDirectoryTree() Real name \"" << fileName << "\" --> \"" << realName << "\"" << app::reset << std::endl;
+            				if (util::folderExists(realName)) {
+            					content.push_back(realName);
+            	            	if (SD_RECURSIVE == depth) {
+            	            		readDirectoryTree(realName, content, depth, hidden);
+            	            	}
+            				} else {
+            					if (debug) std::cout << app::magenta << "util::readDirectoryTree() Folder \"" << realName << "\" does not exists." << app::reset << std::endl;
+            				}
+            			}
+            		}
+            	} else {
+            		if (debug) std::cout << app::magenta << "util::readDirectoryTree() Invalid link size for file \"" << fileName << "\"" << app::reset << std::endl;
+            	}
+            }
 		}
+
 		retVal = (content.size() > 0);
 		dir.close();
 	}

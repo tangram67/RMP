@@ -61,6 +61,7 @@ public:
 	void write(const std::string& text);
 
 	TIntermittentThread();
+	TIntermittentThread(const std::string& name);
 	virtual ~TIntermittentThread();
 };
 
@@ -82,6 +83,7 @@ public:
 	void run();
 
 	TDetachedThread();
+	TDetachedThread(const std::string& name);
 	virtual ~TDetachedThread();
 };
 

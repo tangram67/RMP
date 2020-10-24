@@ -559,7 +559,7 @@ void TAlsaPlayer::logger(int level, const std::string& text) {
 
 
 void TAlsaPlayer::createAlsaThread() {
-	createJoinableThread(thread, alsaThreadDispatcher, this);
+	createJoinableThread(thread, alsaThreadDispatcher, this, "Alsa-Player");
 }
 
 

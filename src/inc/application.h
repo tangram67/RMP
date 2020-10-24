@@ -625,10 +625,15 @@ public:
 	const std::string& getFileName() const;
 	const std::string& getFileBaseName() const;
 	const std::string& getDisplayName() const;
-	const std::string& getDescription() const;
 	const std::string& getUserName() const;
 	const std::string& getVersion() const;
+	const std::string& getBanner() const;
+	const std::string& getLogo() const;
 
+	const std::string& getDescription() const;
+	void setDescription(const std::string& description);
+	const std::string& getJumbotron() const;
+	void setJumbotron(const std::string& description);
 	const std::string& getHostName() const;
 	void setHostName(const std::string& hostName);
 

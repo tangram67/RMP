@@ -25,6 +25,7 @@
 #include "application.h"
 #include "database.h"
 #include "stringutils.h"
+#include "htmlutils.h"
 #include "templates.h"
 #include "mimetypes.h"
 #include "encoding.h"
@@ -675,14 +676,17 @@ const std::string& TApplication::getFileBaseName() const {
 const std::string& TApplication::getDisplayName() const {
 	return sysdat.app.appDisplayName;
 }
-const std::string& TApplication::getDescription() const {
-	return sysdat.app.appDescription;
-}
 const std::string& TApplication::getUserName() const {
 	return sysdat.app.userName;
 }
 const std::string& TApplication::getVersion() const {
 	return sysdat.app.appVersion;
+}
+const std::string& TApplication::getBanner() const {
+	return sysdat.app.appBanner;
+}
+const std::string& TApplication::getLogo() const {
+	return sysdat.app.appLogo;
 }
 
 const std::string& TApplication::getHostName() const {
@@ -693,6 +697,30 @@ void TApplication::setHostName(const std::string& hostName) {
 	app::TLockGuard<app::TMutex> lock(configMtx);
 	if (hostName != sysdat.app.hostName) {
 		sysdat.app.hostName = hostName;
+		++changes;
+	}
+}
+
+const std::string& TApplication::getDescription() const {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return sysdat.app.appDescription;
+}
+void TApplication::setDescription(const std::string& description) {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (description != sysdat.app.appDescription) {
+		sysdat.app.appDescription = description;
+		++changes;
+	}
+}
+
+const std::string& TApplication::getJumbotron() const {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return sysdat.app.appJumbotron;
+}
+void TApplication::setJumbotron(const std::string& description) {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (description != sysdat.app.appJumbotron) {
+		sysdat.app.appJumbotron = description;
 		++changes;
 	}
 }
@@ -1026,6 +1054,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		// Read application description
 		sysdat.app.hostName = config->readString("Hostname", sysdat.app.hostName);
 		sysdat.app.appDescription = config->readString("Description", "Reference Music Player");
+		sysdat.app.appJumbotron = config->readString("Jumbotron", html::THTML::applyFlowControl(sysdat.app.appDescription));
 		sysdat.app.appBanner = config->readString("Banner", "Powered by db Application RAD.web<sup>&reg;</sup>");
 		sysdat.app.appLogo = config->readString("Logo", "/images/logo72.png");
 
@@ -1224,6 +1253,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		config->writePath("DataFolder", sysdat.app.dataFolder);
 		config->writeString("Hostname", sysdat.app.hostName);
 		config->writeString("Description",sysdat.app.appDescription);
+		config->writeString("Jumbotron",sysdat.app.appJumbotron);
 		config->writeString("Banner",sysdat.app.appBanner);
 		config->writeString("Logo",sysdat.app.appLogo);
 		config->writeBool("RunOnce", sysdat.app.runOnce, INI_BLYES);
@@ -1533,14 +1563,14 @@ void TApplication::initialize(int argc, char *argv[]) {
 		hotplug.open("usb");
 
 		// Create event handler threads
-		if (!createJoinableThread(signalThd, signalThreadDispatcher, this))
+		if (!createJoinableThread(signalThd, signalThreadDispatcher, this, "Process-Signals"))
 			throw util::sys_error("TApplication::initialize() : Create signal thread failed.");
-		if (!createJoinableThread(watchThd, watchThreadDispatcher, this))
+		if (!createJoinableThread(watchThd, watchThreadDispatcher, this, "File-Watch"))
 			throw util::sys_error("TApplication::initialize() : Create watch thread failed.");
-		if (!createJoinableThread(udevThd, udevThreadDispatcher, this))
+		if (!createJoinableThread(udevThd, udevThreadDispatcher, this, "UDEV-Events"))
 			throw util::sys_error("TApplication::initialize() : Create hotplug monitoring thread failed.");
 		if (hasTerminal() && sysdat.serial.threaded) {
-			if (!createJoinableThread(commThd, commThreadDispatcher, this))
+			if (!createJoinableThread(commThd, commThreadDispatcher, this, "Console-Reader"))
 				throw util::sys_error("TApplication::initialize() : Create serial communication thread failed.");
 		}
 
@@ -2270,6 +2300,8 @@ void TApplication::flushApplicationSettings() {
 
 	// Write changed properties to config
 	config->writeString("Hostname", sysdat.app.hostName);
+	config->writeString("Description", sysdat.app.appDescription);
+	config->writeString("Jumbotron", sysdat.app.appJumbotron);
 
 	config->flush();
 	changes = 0;
@@ -2303,8 +2335,8 @@ bool TApplication::backupConfigurationFilesWithNolock() {
 	const std::string& folderName = getConfigFolder();
 	util::TStringList content;
 	util::readDirektoryContent(folderName, "*.conf", content);
-	std::string files = content.asString(' ');
 	if (!content.empty()) {
+		std::string files = content.asString(' ');
 		std::string commandLine = util::csnprintf("tar -czf % -C % %", fileName, folderName, files);
 		logger(app::ELogBase::LOG_APP, "[Application] Execute backup command $", commandLine);
 		util::deleteFile(fileName);

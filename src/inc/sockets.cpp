@@ -1603,12 +1603,12 @@ void TSocketController::start() {
 		app::EThreadStartType execute = running ? app::THD_START_ON_CREATE : app::THD_START_ON_DEMAND;
 #ifdef HAS_EPOLL
 		if (useEpoll) {
-			thread = threads->addThread("Socket Poll Thread",
+			thread = threads->addThread("Socket-Poll",
 										&inet::TSocketController::eloop,
 										this, execute);
 		} else {
 #endif
-			thread = threads->addThread("Socket Poll Thread",
+			thread = threads->addThread("Socket-Poll",
 										&inet::TSocketController::loop,
 										this, execute);
 #ifdef HAS_EPOLL

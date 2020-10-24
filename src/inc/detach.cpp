@@ -22,6 +22,11 @@ TIntermittentThread::TIntermittentThread() {
 	init();
 }
 
+TIntermittentThread::TIntermittentThread(const std::string& name) {
+	init();
+	this->name = name;
+}
+
 TIntermittentThread::~TIntermittentThread() {
 }
 
@@ -31,7 +36,8 @@ void TIntermittentThread::init() {
 
 void TIntermittentThread::createDetachedThread(TThreadHandler method) {
 	pthread_t thd = 0;
-	TThreadUtil::createThread(thd, method, THD_CREATE_DETACHED, this);
+	const char* desc = !name.empty() ? name.c_str() : nil;
+	TThreadUtil::createThread(thd, method, THD_CREATE_DETACHED, this, desc);
 }
 
 void TIntermittentThread::write(const std::string& text) {
@@ -88,6 +94,11 @@ void TIntermittentThread::waitFor() {
  */
 TDetachedThread::TDetachedThread() {
 	init();
+}
+
+TDetachedThread::TDetachedThread(const std::string& name) {
+	init();
+	this->name = name;
 }
 
 TDetachedThread::~TDetachedThread() {

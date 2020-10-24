@@ -64,7 +64,7 @@ void TLogFile::init() {
 	reWriteConfig();
 
 	thread.setExecHandler(&app::TLogFile::unlinkThreadMethod, this);
-	thread.setName("app::TLogFile::unlink()");
+	thread.setName("Unlink-" + name);
 	thread.setErrorLog(*this);
 
 	logFolder = util::filePath(logFile);

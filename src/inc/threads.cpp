@@ -240,7 +240,7 @@ pid_t TThreadUtil::gettid() {
 	return (pid_t)syscall(SYS_gettid);
 }
 
-bool TThreadUtil::createObjectThread(pthread_t& thread, TThreadHandler handler, EThreadType type, void *object, int priority, size_t stack) {
+bool TThreadUtil::createObjectThread(pthread_t& thread, TThreadHandler handler, EThreadType type, void *object, const char* name, int priority, size_t stack) {
 	if (thread < 1) {
 		pthread_attr_t attr;
 
@@ -278,6 +278,25 @@ bool TThreadUtil::createObjectThread(pthread_t& thread, TThreadHandler handler, 
 
 		if (thread < 1)
 			throw util::app_error("TThreadUtil::createDetachedThread::pthread_create() failed with invalid thread id : " + std::to_string((size_u)thread));
+
+		if (util::assigned(name)) {
+			if (strnlen(name, 20) > 15) {
+				// Limit name size to 15 characters + NULL
+				util::TBuffer desc(18);
+				strncpy(desc(), name, 15);
+				desc[14] = '~';
+				desc[15] = '\0';
+				retVal = pthread_setname_np(thread, desc());
+			} else {
+				retVal = pthread_setname_np(thread, name);
+			}
+			if (util::checkFailed(retVal))
+				throw util::sys_error("TThreadUtil::createDetachedThread::pthread_setname_np() failed.", errno);
+		} else {
+			retVal = pthread_setname_np(thread, "Anonimous");
+			if (util::checkFailed(retVal))
+				throw util::sys_error("TThreadUtil::createDetachedThread::pthread_setname_np() failed.", errno);
+		}
 
 		return true;
 	}
@@ -321,15 +340,15 @@ TBaseThread::TBaseThread() {
 TBaseThread::~TBaseThread() {
 }
 
-bool TBaseThread::createPersistentObjectThread(void* object) {
-	bool r = createObjectThread(thread, threadMethodDispatcher, THD_CREATE_JOINABLE, object);
+bool TBaseThread::createPersistentObjectThread(void* object, const char* name) {
+	bool r = createObjectThread(thread, threadMethodDispatcher, THD_CREATE_JOINABLE, object, name);
 	setStarted(r);
 	return r;
 }
 
-bool TBaseThread::createIntermittentObjectThread(void* object) {
+bool TBaseThread::createIntermittentObjectThread(void* object, const char* name) {
 	pthread_t thd = 0;
-	bool r = createObjectThread(thd, threadSignalDispatcher, THD_CREATE_DETACHED, object);
+	bool r = createObjectThread(thd, threadSignalDispatcher, THD_CREATE_DETACHED, object, name);
 	setStarted(r);
 	return r;
 }
@@ -594,12 +613,14 @@ void TManagedThread::createBaseThread(PThreadCreator creator) {
 	retVal = checkProperties();
 	if (util::checkFailed(retVal))
 		throw util::app_error("TBaseThread::createBaseThread() Thread properties not set.");
-	if (!createPersistentThread(creator))
+	const char* desc = !name.empty() ? name.c_str() : nil;
+	if (!createPersistentThread(creator, desc))
 		throw util::app_error("TBaseThread::createBaseThread() Create thread failed.");
 }
 
 void TManagedThread::createSignalThread(PThreadMessage message) {
-	if (!createIntermittentThread(message))
+	const char* desc = !name.empty() ? name.c_str() : nil;
+	if (!createIntermittentThread(message, desc))
 		throw util::app_error("TBaseThread::createSignalThread() Create thread failed.");
 }
 
@@ -964,6 +985,7 @@ PWebDataReceiver TThreadData::findReceiverSlot() {
 		o->mtx = &threadMtx;
 		o->sender = this;
 		o->thread = new TWebDataThread(&app::TThreadData::threadExecuter, this);
+		o->thread->setName("WebDataThread");
 		threadList.push_back(o);
 	}
 

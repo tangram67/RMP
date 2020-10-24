@@ -161,24 +161,24 @@ public:
 class TThreadUtil {
 protected:
 	static bool createObjectThread(pthread_t& thread, TThreadHandler handler, EThreadType type, void *object,
-			int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK);
+			const char* name, int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK);
 
 public:
 	template<typename class_t>
 		static bool createThread(pthread_t& thread, TThreadHandler handler, EThreadType type, class_t &&owner,
-			int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
-			return createObjectThread(thread, handler, type, (void*)owner, priority, stack);
+				const char* name, int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
+			return createObjectThread(thread, handler, type, (void*)owner, name, priority, stack);
 		}
 	template<typename class_t>
 		static bool createJoinableThread(pthread_t& thread, TThreadHandler handler, class_t &&owner,
-			int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
-			return createObjectThread(thread, handler, THD_CREATE_JOINABLE, (void*)owner, priority, stack);
+				const char* name, int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
+			return createObjectThread(thread, handler, THD_CREATE_JOINABLE, (void*)owner, name, priority, stack);
 		}
 	template<typename class_t>
 		static bool createDetachedThread(TThreadHandler handler, class_t &&owner,
-			int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
+				const char* name, int priority = THREAD_DEFAULT_PRIO, size_t stack = THREAD_DEFAULT_STACK) {
 			pthread_t thread = 0;
-			return createObjectThread(thread, handler, THD_CREATE_DETACHED, (void*)owner, priority, stack);
+			return createObjectThread(thread, handler, THD_CREATE_DETACHED, (void*)owner, name, priority, stack);
 		}
 
 	static int terminateThread(pthread_t& thread);
@@ -192,8 +192,8 @@ public:
 class TBaseThread : public TObject, private TThreadUtil {
 friend class TThreadController;
 private:
-	bool createIntermittentObjectThread(void *object);
-	bool createPersistentObjectThread(void *object);
+	bool createIntermittentObjectThread(void *object, const char* name);
+	bool createPersistentObjectThread(void *object, const char* name);
 
 protected:
 	mutable std::mutex* globalMtx; // Protect thread message calls
@@ -211,12 +211,12 @@ protected:
 	bool debug;
 
 	template<typename class_t>
-		bool createPersistentThread(class_t &&owner) {
-			return createPersistentObjectThread((void*)owner);
+		bool createPersistentThread(class_t &&owner, const char* name) {
+			return createPersistentObjectThread((void*)owner, name);
 		}
 	template<typename class_t>
-		bool createIntermittentThread(class_t &&owner) {
-			return createIntermittentObjectThread((void*)owner);
+		bool createIntermittentThread(class_t &&owner, const char* name) {
+			return createIntermittentObjectThread((void*)owner, name);
 		}
 	int terminatePersistentThread();
 

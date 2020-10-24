@@ -220,7 +220,7 @@ int TUPnP::execute() {
 		bool goon = true;
 
 		// Create brodcast worker thread
-		thread = application.addThread<TMessageQueue>("UPnPBrodcastWorkerThread", messages,
+		thread = application.addThread<TMessageQueue>("UPnP-Brodcast", messages,
 													   &upnp::TUPnP::broadcastThreadHandler,
 													   this, app::THD_START_ON_DEMAND, app::nsizet);
 
@@ -277,6 +277,8 @@ void TUPnP::openConfig(const std::string& configPath) {
 void TUPnP::readConfig() {
 	config.setSection("UPnP");
 	uuid = config.readString("GUID", util::fastCreateUUID(true, true));
+	description = config.readString("Description", application.getDescription());
+	friendlyName = config.readString("FriendlyName", description + " on " + util::capitalize(application.getHostName()) + " [" + application.getSerialKey() + "]");
 	enabled = config.readBool("Enabled", enabled);
 	discovery = config.readBool("Discovery", discovery);
 	debug = config.readBool("Debug", debug);
@@ -285,6 +287,8 @@ void TUPnP::readConfig() {
 void TUPnP::writeConfig() {
 	config.setSection("UPnP");
 	config.writeString("GUID", uuid);
+	config.writeString("Description", description);
+	config.writeString("FriendlyName", friendlyName);
 	config.writeBool("Enabled", enabled, app::INI_BLYES);
 	config.writeBool("Discovery", discovery, app::INI_BLYES);
 	config.writeBool("Debug", debug, app::INI_BLYES);
@@ -987,11 +991,11 @@ void TUPnP::getDeviceDescription(app::TThreadData& sender, const void*& data, si
 	xml.add("  <URLBase>" + webroot + "rest/" + deviceURL + "</URLBase>");
 	xml.add("  <device>");
 	xml.add("    <deviceType>urn:schemas-upnp-org:device:" + device + ":1</deviceType>");
-	xml.add("    <friendlyName>" + application.getDescription() + " on " + util::capitalize(application.getHostName()) + " [" + application.getSerialKey() + "]</friendlyName>");
+	xml.add("    <friendlyName>" + friendlyName + "</friendlyName>");
 	xml.add("    <manufacturer>db Applications</manufacturer>");
 	xml.add("    <manufacturerURL>http://www.dbrinkmeier.com/</manufacturerURL>");
-	xml.add("    <modelDescription>" + application.getDescription() + " (" + sysdat.app.appVersion + ")</modelDescription>");
-	xml.add("    <modelName>" + application.getDescription() + "</modelName>");
+	xml.add("    <modelDescription>" + description + " (" + sysdat.app.appVersion + ")</modelDescription>");
+	xml.add("    <modelName>" + description + "</modelName>");
 	xml.add("    <modelNumber>" + sysdat.app.appVersion + "</modelNumber>");
 	xml.add("    <modelURL>" + webroot + "</modelURL>");
 	xml.add("    <serialNumber>" + application.getSerialKey() + "-" + util::cprintf("%05d", application.getLicenseNumber()) + "</serialNumber>");

@@ -52,6 +52,7 @@ struct CApplicationConfig {
 	std::string appBaseName;
 	std::string appDisplayName;
 	std::string appDescription;
+	std::string appJumbotron;
 	std::string appBanner;
 	std::string appLogo;
 	std::string hostName;
@@ -93,6 +94,7 @@ struct CApplicationConfig {
 		appBaseName.clear();
 		appDisplayName.clear();
 		appDescription.clear();
+		appJumbotron.clear();
 		appBanner.clear();
 		appLogo.clear();
 		hostName.clear();

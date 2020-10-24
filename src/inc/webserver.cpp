@@ -129,7 +129,7 @@ TWebServer::TWebServer(const std::string& name, const std::string& documentRoot,
 	socketTimer = nil;
 	web.rejectedDeleteAge = sessionTimer->getDelay() * 90 / 100;
 	executer.setExecHandler(&app::TWebServer::actionAsyncExecuter, this);
-	executer.setName("TWebServer::" + getName() + "::executer()");
+	executer.setName("Executer-" + getName());
 	defaultToken = new app::TWebToken("default");
 	tokenList.setFiles(content);
 	mode = ESM_CREATED;
@@ -717,10 +717,11 @@ void TWebServer::onHeartbeatTimer() {
 
 void TWebServer::addWebToken() {
 	// Add default web variables
-	addWebToken("APP_VER", sysdat.app.appVersion);
-	addWebToken("APP_NAME", sysdat.app.appDescription);
-	addWebToken("APP_HINT", sysdat.app.appBanner);
-	addWebToken("APP_LOGO", sysdat.app.appLogo);
+	addWebToken("APP_VER",  application.getVersion());
+	addWebToken("APP_DESC", application.getDescription());
+	addWebToken("APP_NAME", application.getJumbotron());
+	addWebToken("APP_HINT", application.getBanner());
+	addWebToken("APP_LOGO", application.getLogo());
 
 	// Add system tokens
 	addWebToken("SYS_LANGUAGE_NAME", syslocale.asISO639());
