@@ -69,6 +69,10 @@ public:
 	void add(const std::string& text, const std::string& glyphicon);
 	void clear();
 
+	TTagList& operator = (const app::TStringVector& vector);
+	TTagList& operator = (const TStringList& list);
+	TTagList& operator = (const std::string& csv);
+
 	TTagList();
 	TTagList(const std::string& tag);
 	virtual ~TTagList();

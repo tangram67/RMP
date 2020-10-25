@@ -88,6 +88,21 @@ void TTagList::clear() {
 	icons.clear();
 }
 
+TTagList& TTagList::operator = (const app::TStringVector& vector) {
+	assign(vector);
+	return *this;
+}
+
+TTagList& TTagList::operator = (const TStringList& list) {
+	assign(list);
+	return *this;
+}
+
+TTagList& TTagList::operator = (const std::string& csv) {
+	assign(csv);
+	return *this;
+}
+
 void TTagList::setTag(const std::string& tag) {
 	if (this->tag != tag) {
 		invalidate();
