@@ -1282,7 +1282,7 @@ void TWebServer::requestGarbageCollector(const bool cleanup) {
 				writeInfoLog("[Request garbage collector] " + std::to_string((size_s)count) + " zombies deleted.");
 			}
 
-			if (deleted > 0 && sysdat.app.heapDelay > 0) {
+			if (deleted > 0 && application.getHeapDelay() > 0) {
 				deallocateHeapMemory(deleted);
 			}
 
@@ -1319,7 +1319,7 @@ void TWebServer::bufferGarbageCollector() {
 			}
 			if (count) {
 				writeInfoLog("[Parser garbage collector] " + std::to_string((size_s)count) + " buffers deleted.", 3);
-				if (sysdat.app.heapDelay > 0)
+				if (application.getHeapDelay() > 0)
 					deallocateHeapMemory(count);
 			}
 		}
@@ -1413,7 +1413,7 @@ void TWebServer::readConfig() {
 	web.allowManifestFiles = config->readBool("AllowManifestFiles", web.allowManifestFiles);
 	web.documentRoot = config->readPath("DocumentRoot", web.documentRoot);
 	web.uploadFolder = config->readPath("UploadFolder", util::validPath(web.documentRoot + "upload"));
-	web.sessionStore = config->readPath("SessionStore", util::validPath(sysdat.app.dataFolder + "sessions"));
+	web.sessionStore = config->readPath("SessionStore", util::validPath(application.getDataRootFolder() + "sessions"));
 	web.restRoot = config->readPath("RestfulAPIRoot", web.restRoot);
 	web.disableVfsGZip = config->readBool("DisableVfsGZip", web.disableVfsGZip);
 	web.vfsDataDeleteDelay = config->readInteger("VfsDataDeleteDelay", web.vfsDataDeleteDelay);
@@ -3267,7 +3267,7 @@ MHD_Result TWebServer::sendErrorResponse(struct MHD_Connection *connection, PWeb
     std::string mhd(mhdVersion());
 	std::string ip(inet::inetAddrToStr(connection->addr));
 	bool responding = isResponding();
-    const char *v = sysdat.app.appVersion.c_str();
+    const char *v = application.getVersion().c_str();
     const char *m = mhd.c_str();
     const char *i = ip.c_str();
 	bool persist = false; // Source buffer is NOT persistent!

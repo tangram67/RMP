@@ -652,8 +652,8 @@ public:
 	app::TTimerController& getTimers() const;
 	app::TTaskController& getTasks() const;
 
-	app::TWebServer& getWebServer() const;
 	app::TSerial& getTerminal() const;
+	app::TWebServer& getWebServer() const;
 	app::TCredentials& getCredentials() const;
 
 #ifdef USE_GPIO_CONTROL
