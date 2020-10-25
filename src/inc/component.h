@@ -46,7 +46,8 @@ public:
 
 class TTagList : public THtmlList {
 private:
-	mutable	 util::hash_type hashTag;
+	mutable	util::hash_type hashTag;
+	mutable	app::TStringVector icons;
 	bool addEmptyDefault;
 	std::string tag;
 
@@ -59,7 +60,14 @@ public:
 	bool isEmptyDefaultAllowed() const { return addEmptyDefault; };
 
 	const std::string& html(const std::string caption = "") const;
+	const app::TStringVector& gylphicons() const { return icons; };
 	void invalidate();
+
+
+	void add(const std::string& text);
+	void add(const util::TStringList& items);
+	void add(const std::string& text, const std::string& glyphicon);
+	void clear();
 
 	TTagList();
 	TTagList(const std::string& tag);
@@ -119,7 +127,7 @@ protected:
 	inline const_iterator first() const { return begin(); };
 	inline const_iterator last() const { return util::pred(end()); };
 	inline size_t count() const { return items.size(); };
-	inline util::TStringList& elements() { return items; };
+	inline TTagList& elements() { return items; };
 
 public:
 	// HTML properties like id, name and text

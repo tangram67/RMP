@@ -466,7 +466,7 @@ std::string TUPnP::getUPnPVersion() {
 }
 
 std::string TUPnP::getApplicationVersion() {
-	return "TWebServer/" + sysdat.app.appVersion;
+	return "TWebServer/" + application.getVersion();
 }
 
 std::string TUPnP::getWebServerBuild() {
@@ -994,9 +994,9 @@ void TUPnP::getDeviceDescription(app::TThreadData& sender, const void*& data, si
 	xml.add("    <friendlyName>" + friendlyName + "</friendlyName>");
 	xml.add("    <manufacturer>db Applications</manufacturer>");
 	xml.add("    <manufacturerURL>http://www.dbrinkmeier.com/</manufacturerURL>");
-	xml.add("    <modelDescription>" + description + " (" + sysdat.app.appVersion + ")</modelDescription>");
+	xml.add("    <modelDescription>" + description + " (" + application.getVersion() + ")</modelDescription>");
 	xml.add("    <modelName>" + description + "</modelName>");
-	xml.add("    <modelNumber>" + sysdat.app.appVersion + "</modelNumber>");
+	xml.add("    <modelNumber>" + application.getVersion() + "</modelNumber>");
 	xml.add("    <modelURL>" + webroot + "</modelURL>");
 	xml.add("    <serialNumber>" + application.getSerialKey() + "-" + util::cprintf("%05d", application.getLicenseNumber()) + "</serialNumber>");
 	xml.add("    <UDN>uuid:" + uuid + "</UDN>");

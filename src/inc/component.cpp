@@ -66,6 +66,28 @@ void TTagList::invalidate() {
 	hashTag = 0;
 }
 
+void TTagList::add(const std::string& text) {
+	THtmlList::add(text);
+	icons.push_back("*");
+}
+
+void TTagList::add(const util::TStringList& items) {
+	THtmlList::add(items);
+	for (size_t i=0; i<items.size(); ++i) {
+		icons.push_back("*");
+	}
+}
+
+void TTagList::add(const std::string& text, const std::string& glyphicon) {
+	THtmlList::add(text);
+	icons.push_back(glyphicon.empty() ? "*" : glyphicon);
+}
+
+void TTagList::clear() {
+	THtmlList::clear();
+	icons.clear();
+}
+
 void TTagList::setTag(const std::string& tag) {
 	if (this->tag != tag) {
 		invalidate();
@@ -96,7 +118,7 @@ const std::string& TTagList::html(const std::string caption) const {
 		}
 
 		// Add list values
-		std::string item;
+		std::string item, glyph;
 		size_t idx = find(caption);
 		size_t count = 0;
 		bool ok;
@@ -104,10 +126,18 @@ const std::string& TTagList::html(const std::string caption) const {
 			// Exclude given default value from list if it is in list!
 			ok = idx == std::string::npos ? true : i != idx;
 			if (ok) {
+				glyph.clear();
 				item = encodeHtmlText(at(i));
+				if (util::validListIndex(icons, i)) {
+					glyph = icons[i];
+				}
 				if (count > 0) strHTML += "\n";
-				// e.g. <option value="hw:CARD=USBASIO,DEV=0">hw:CARD=USBASIO,DEV=0</option>
-				strHTML += "<" + tag + " value=\"" + item + "\">" + item + "</" + tag + ">";
+				if (glyph.size() < 2) {
+					// e.g. <option value="hw:CARD=USBASIO,DEV=0">hw:CARD=USBASIO,DEV=0</option>
+					strHTML += "<" + tag + " value=\"" + item + "\">" + item + "</" + tag + ">";
+				} else {
+					strHTML += "<" + tag + " value=\"" + item + "\"><span class=\"glyphicon " + glyph + " pull-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;" + item + "</" + tag + ">";
+				}
 				++count;
 			}
 		}
@@ -472,7 +502,8 @@ const std::string& TListBox::text(const std::string& caption) const {
 
 		// Check if given caption in list
 		if (!caption.empty()) {
-			if (std::string::npos == items.find(caption, getCompare())) {
+			size_t idx = items.find(caption, getCompare());
+			if (std::string::npos == idx) {
 				std::string text = encodeHtmlText(caption);
 				switch (focus) {
 					case ELF_NONE:
@@ -490,10 +521,24 @@ const std::string& TListBox::text(const std::string& caption) const {
 		}
 
 		// Add list values
-		std::string item;
+		const app::TStringVector& glyphs = items.gylphicons();
+		std::string item, glyph;
 		size_t count = 0;
 		for (size_t i=0; i<items.size(); ++i) {
 			item = items.at(i);
+			glyph.clear();
+			if (util::validListIndex(glyphs, i)) {
+				const std::string& name = glyphs[i];
+				if (!name.empty()) {
+					if ('/' == name[0]) {
+						// Add link to an image
+						glyph = "<span style=\"pointer-events:none;\" aria-hidden=\"true\"><img src=\"" + name + "\"></img></span>&nbsp;&nbsp;";
+					} else {
+						// Add glyphicon by name
+						glyph = "<span class=\"glyphicon " + name + "\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;";
+					}
+				}
+			}
 			if (count > 0) strText += "\n";
 			std::string text = encodeHtmlText(item);
 			switch (focus) {
@@ -502,15 +547,15 @@ const std::string& TListBox::text(const std::string& caption) const {
 					break;
 				case ELF_FULL:
 					if (item.size() == caption.size() && 0 == util::strcasecmp(item, caption))
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + text + "</a></" + tag + ">";
+						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					else
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + text + "</a></" + tag + ">";
+						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					break;
 				case ELF_PARTIAL:
 					if (compare(item, caption))
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + text + "</a></" + tag + ">";
+						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					else
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + text + "</a></" + tag + ">";
+						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					break;
 			}
 			++count;
