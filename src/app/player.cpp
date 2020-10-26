@@ -434,7 +434,7 @@ int TPlayer::execute() {
 	}
 
 	// Create serial remote communication thread
-	remoteCommandThread = application.addThread<TByteBuffer>("SerialRemoteCommand", remoteCommandData,
+	remoteCommandThread = application.addThread<TByteBuffer>("Serial-Remote", remoteCommandData,
 															 &app::TPlayer::remoteCommandThreadHandler,
 															 // Avoid overhead of installing signal handler...
 															 // &app::TPlayer::onRemoteCommandMessage
@@ -812,18 +812,18 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for ALSA device selection
 	cbxDevices.setID("cbxDevices");
 	cbxDevices.setName("PLAYER_DEVICE_LIST");
-	cbxDevices.setOwner(sysdat.obj.webServer);
+	cbxDevices.setOwner(application.webserver());
 	cbxDevices.setStyle(ECS_TEXT);
 
 	lbxDevices.setID("lbxDevices");
 	lbxDevices.setName("PLAYER_DEVICE_LIST_1");
-	lbxDevices.setOwner(sysdat.obj.webServer);
+	lbxDevices.setOwner(application.webserver());
 	lbxDevices.setFocus(ELF_PARTIAL);
 	lbxDevices.setStyle(ECS_HTML);
 
 	lbxRemote.setID("lbxRemote");
 	lbxRemote.setName("REMOTE_DEVICE_LIST");
-	lbxRemote.setOwner(sysdat.obj.webServer);
+	lbxRemote.setOwner(application.webserver());
 	lbxRemote.setFocus(ELF_PARTIAL);
 	lbxRemote.setStyle(ECS_HTML);
 
@@ -833,24 +833,24 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for local drive selection
 	cbxDrives.setID("cbxDrives");
 	cbxDrives.setName("LOCAL_DRIVE_LIST");
-	cbxDrives.setOwner(sysdat.obj.webServer);
+	cbxDrives.setOwner(application.webserver());
 	cbxDrives.setStyle(ECS_TEXT);
 
 	lbxDrives1.setID("lbxDrives1");
 	lbxDrives1.setName("LOCAL_DRIVE_LIST_1");
-	lbxDrives1.setOwner(sysdat.obj.webServer);
+	lbxDrives1.setOwner(application.webserver());
 	lbxDrives1.setFocus(ELF_PARTIAL);
 	lbxDrives1.setStyle(ECS_HTML);
 
 	lbxDrives2.setID("lbxDrives2");
 	lbxDrives2.setName("LOCAL_DRIVE_LIST_2");
-	lbxDrives2.setOwner(sysdat.obj.webServer);
+	lbxDrives2.setOwner(application.webserver());
 	lbxDrives2.setFocus(ELF_PARTIAL);
 	lbxDrives2.setStyle(ECS_HTML);
 
 	lbxDrives3.setID("lbxDrives3");
 	lbxDrives3.setName("LOCAL_DRIVE_LIST_3");
-	lbxDrives3.setOwner(sysdat.obj.webServer);
+	lbxDrives3.setOwner(application.webserver());
 	lbxDrives3.setFocus(ELF_PARTIAL);
 	lbxDrives3.setStyle(ECS_HTML);
 
@@ -860,7 +860,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for TTY device selection
 	lbxSerial.setID("lbxSerial");
 	lbxSerial.setName("LOCAL_PORT_LIST");
-	lbxSerial.setOwner(sysdat.obj.webServer);
+	lbxSerial.setOwner(application.webserver());
 	lbxSerial.setFocus(ELF_PARTIAL);
 	lbxSerial.setStyle(ECS_HTML);
 
@@ -870,7 +870,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for history count selection
 	lbxHistory.setID("lbxHistory");
 	lbxHistory.setName("HISTORY_COUNT_LIST");
-	lbxHistory.setOwner(sysdat.obj.webServer);
+	lbxHistory.setOwner(application.webserver());
 	lbxHistory.setFocus(ELF_PARTIAL);
 	lbxHistory.setStyle(ECS_HTML);
 
@@ -880,7 +880,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for table page row count selection
 	lbxPages.setID("lbxPages");
 	lbxPages.setName("TABLE_PAGE_ROWS");
-	lbxPages.setOwner(sysdat.obj.webServer);
+	lbxPages.setOwner(application.webserver());
 	lbxPages.setFocus(ELF_FULL);
 	lbxPages.setStyle(ECS_HTML);
 
@@ -890,7 +890,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for ALSA period time selection
 	lbxTimes.setID("lbxTimes");
 	lbxTimes.setName("ALSA_PERIOD_TIME");
-	lbxTimes.setOwner(sysdat.obj.webServer);
+	lbxTimes.setOwner(application.webserver());
 	lbxTimes.setFocus(ELF_FULL);
 	lbxTimes.setStyle(ECS_HTML);
 
@@ -900,7 +900,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for search genre filter selection
 	lbxGenres.setID("lbxGenres");
 	lbxGenres.setName("SEARCH_GENRE_LIST");
-	lbxGenres.setOwner(sysdat.obj.webServer);
+	lbxGenres.setOwner(application.webserver());
 	lbxGenres.setFocus(ELF_FULL);
 	lbxGenres.setStyle(ECS_HTML);
 	lbxGenres.elements().add(">> No genre tags found <<");
@@ -919,7 +919,7 @@ void TPlayer::setupListBoxes() {
 	lbxSearch.addComponent(button);
 	lbxSearch.setID("txtSearch"); // Replaces simple textual input component...
 	lbxSearch.setName("SEARCH_HISTORY_LIST");
-	lbxSearch.setOwner(sysdat.obj.webServer);
+	lbxSearch.setOwner(application.webserver());
 	lbxSearch.setFocus(ELF_FULL);
 	lbxSearch.setStyle(ECS_HTML);
 	lbxSearch.update();
@@ -927,7 +927,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for remote filesystem mounts
 	lbxMounts.setID("lbxFileSystems");
 	lbxMounts.setName("REMOTE_FILE_SYSTEMS");
-	lbxMounts.setOwner(sysdat.obj.webServer);
+	lbxMounts.setOwner(application.webserver());
 	lbxMounts.setFocus(ELF_PARTIAL);
 	lbxMounts.setStyle(ECS_HTML);
 	lbxMounts.elements().add("NFS (Network File System / Linux)");
@@ -936,7 +936,7 @@ void TPlayer::setupListBoxes() {
 	// Setup combo box for radio stream metadata order
 	lbxMetadata.setID("lbxMetadata");
 	lbxMetadata.setName("STREAM_META_ORDER");
-	lbxMetadata.setOwner(sysdat.obj.webServer);
+	lbxMetadata.setOwner(application.webserver());
 	lbxMetadata.setFocus(ELF_FULL);
 	lbxMetadata.setStyle(ECS_HTML);
 	lbxMetadata.elements().add("Artist - Track");
@@ -950,7 +950,7 @@ void TPlayer::setupContextMenus() {
 	mnPlayer.setTitle("Manage player...");
 	mnPlayer.setID("player-context-menu");
 	mnPlayer.setName("PLAYER_CONTEXT_MENU");
-	mnPlayer.setOwner(sysdat.obj.webServer);
+	mnPlayer.setOwner(application.webserver());
 	mnPlayer.setStyle(ECS_HTML);
 	mnPlayer.addItem("GOTOSUBITEM", "Show more...", 0, "glyphicon-link");
 	mnPlayer.addSubItem("GOTOARTIST",    "Search artist", 0, "glyphicon-th");
@@ -974,7 +974,7 @@ void TPlayer::setupContextMenus() {
 	mnRecent.setTitle("Manage recent songs...");
 	mnRecent.setID("songs-context-menu");
 	mnRecent.setName("RECENT_CONTEXT_MENU");
-	mnRecent.setOwner(sysdat.obj.webServer);
+	mnRecent.setOwner(application.webserver());
 	mnRecent.setStyle(ECS_HTML);
 	mnRecent.addItem("PLAYSONG",  "Play song", 0,  "glyphicon-play");
 	mnRecent.addItem("PLAYALBUM", "Play album", 0, "glyphicon-volume-up");
@@ -1000,7 +1000,7 @@ void TPlayer::setupContextMenus() {
 	mnPlaylist.setTitle("Manage playlist...");
 	mnPlaylist.setID("songs-context-menu");
 	mnPlaylist.setName("PLAYLIST_CONTEXT_MENU");
-	mnPlaylist.setOwner(sysdat.obj.webServer);
+	mnPlaylist.setOwner(application.webserver());
 	mnPlaylist.setStyle(ECS_HTML);
 	mnPlaylist.addItem("PLAYSONG",  "Play song", 0,  "glyphicon-play");
 	mnPlaylist.addItem("PLAYALBUM", "Play album", 0, "glyphicon-volume-up");
@@ -1026,7 +1026,7 @@ void TPlayer::setupContextMenus() {
 	mnTracks.setTitle("Manage tracks...");
 	mnTracks.setID("tracks-context-menu");
 	mnTracks.setName("TRACKS_CONTEXT_MENU");
-	mnTracks.setOwner(sysdat.obj.webServer);
+	mnTracks.setOwner(application.webserver());
 	mnTracks.setStyle(ECS_HTML);
 	mnTracks.addItem("GOTOSUBITEM", "Show more...", 0, "glyphicon-link");
 	mnTracks.addSubItem("GOTOARTIST",    "Search artist", 0, "glyphicon-th");
@@ -1058,7 +1058,7 @@ void TPlayer::setupContextMenus() {
 	mnStations.setTitle("Manage radio stations...");
 	mnStations.setID("stations-context-menu");
 	mnStations.setName("STATIONS_CONTEXT_MENU");
-	mnStations.setOwner(sysdat.obj.webServer);
+	mnStations.setOwner(application.webserver());
 	mnStations.setStyle(ECS_HTML);
 	mnStations.addItem("PLAYSTREAM", "Play stream", 0,  "glyphicon-play");
 	mnStations.addSeparator();
@@ -1076,7 +1076,7 @@ void TPlayer::setupContextMenus() {
 	mnImage.setTitle("Manage thumnail cache...");
 	mnImage.setID("image-context-menu");
 	mnImage.setName("IMAGE_CONTEXT_MENU");
-	mnImage.setOwner(sysdat.obj.webServer);
+	mnImage.setOwner(application.webserver());
 	mnImage.setStyle(ECS_HTML);
 	mnImage.addItem("CLEARIMAGE", "Clear cached image", 0, "glyphicon-trash");
 	mnImage.addSeparator();
@@ -1095,7 +1095,7 @@ void TPlayer::setupMainMenu() {
 	mnMain.setHint("Reference Media Player");
 	mnMain.setLogo("/images/logo36.png");
 	mnMain.setClick("onMainLogoClick();");
-	mnMain.setOwner(sysdat.obj.webServer);
+	mnMain.setOwner(application.webserver());
 	mnMain.setRoot(sound.getHTMLRoot());
 	mnMain.setStyle(ECS_HTML);
 	mnMain.setAlign(ECA_RIGHT);
@@ -1150,7 +1150,7 @@ void TPlayer::setupButtons() {
 	size_t width2 = 115;
 
 	// Add repeat/shuffle mode buttons
-	btnRandom.setOwner(sysdat.obj.webServer);
+	btnRandom.setOwner(application.webserver());
 	btnRandom.setHint("Randomize playlist or album");
 	btnRandom.setName("BTN_RANDOM_MODE");
 	btnRandom.setID("btnRandom");
@@ -1162,7 +1162,7 @@ void TPlayer::setupButtons() {
 	btnRandom.setGlyphicon("glyphicon-random");
 	btnRandom.update();
 
-	btnRepeat.setOwner(sysdat.obj.webServer);
+	btnRepeat.setOwner(application.webserver());
 	btnRepeat.setHint("Repeat playlist or album");
 	btnRepeat.setName("BTN_REPAT_MODE");
 	btnRepeat.setID("btnRepeat");
@@ -1174,7 +1174,7 @@ void TPlayer::setupButtons() {
 	btnRepeat.setGlyphicon("glyphicon-retweet");
 	btnRepeat.update();
 
-	btnHalt.setOwner(sysdat.obj.webServer);
+	btnHalt.setOwner(application.webserver());
 	btnHalt.setHint("Stop after current song");
 	btnHalt.setName("BTN_HALT_MODE");
 	btnHalt.setID("btnHalt");
@@ -1186,7 +1186,7 @@ void TPlayer::setupButtons() {
 	btnHalt.setGlyphicon("glyphicon-record");
 	btnHalt.update();
 
-	btnDirect.setOwner(sysdat.obj.webServer);
+	btnDirect.setOwner(application.webserver());
 	btnDirect.setHint("Play song on row click...");
 	btnDirect.setName("BTN_DIRECT_MODE");
 	btnDirect.setID("btnDirect");
@@ -1198,7 +1198,7 @@ void TPlayer::setupButtons() {
 	btnDirect.setGlyphicon("glyphicon-play-circle");
 	btnDirect.update();
 
-	btnSingle.setOwner(sysdat.obj.webServer);
+	btnSingle.setOwner(application.webserver());
 	btnSingle.setHint("Repeat current song");
 	btnSingle.setName("BTN_SINGLE_MODE");
 	btnSingle.setID("btnSingle");
@@ -1210,7 +1210,7 @@ void TPlayer::setupButtons() {
 	btnSingle.setGlyphicon("glyphicon-repeat");
 	btnSingle.update();
 
-	btnDisk.setOwner(sysdat.obj.webServer);
+	btnDisk.setOwner(application.webserver());
 	btnDisk.setHint("Normal mode: Stop playback after last song of album" + STR_FEED + "Repeat mode: Repeat songs of current album only");
 	btnDisk.setName("BTN_DISK_MODE");
 	btnDisk.setID("btnDisk");
@@ -1222,7 +1222,7 @@ void TPlayer::setupButtons() {
 	btnDisk.setGlyphicon("glyphicon-cd");
 	btnDisk.update();
 
-	btnShuffle.setOwner(sysdat.obj.webServer);
+	btnShuffle.setOwner(application.webserver());
 	btnShuffle.setHint("Play next random song");
 	btnShuffle.setName("BTN_SHUFFLE_SONG");
 	btnShuffle.setID("btnShuffle");
@@ -1235,7 +1235,7 @@ void TPlayer::setupButtons() {
 	btnShuffle.setGlyphicon("glyphicon-chevron-right");
 	btnShuffle.update();
 
-	btnSR44K.setOwner(sysdat.obj.webServer);
+	btnSR44K.setOwner(application.webserver());
 	btnSR44K.setHint("Set word clock base rate to 44.1 kHz");
 	btnSR44K.setCaption("44.1 kHz");
 	btnSR44K.setName("BTN_REMOTE_SR44K");
@@ -1248,7 +1248,7 @@ void TPlayer::setupButtons() {
 	btnSR44K.setWidth(width1);
 	btnSR44K.update();
 
-	btnSR48K.setOwner(sysdat.obj.webServer);
+	btnSR48K.setOwner(application.webserver());
 	btnSR48K.setHint("Set word clock base rate to 48.0 kHz");
 	btnSR48K.setCaption("48.0 kHz");
 	btnSR48K.setName("BTN_REMOTE_SR48K");
@@ -1261,7 +1261,7 @@ void TPlayer::setupButtons() {
 	btnSR48K.setWidth(width1);
 	btnSR48K.update();
 
-	btnInput0.setOwner(sysdat.obj.webServer);
+	btnInput0.setOwner(application.webserver());
 	btnInput0.setHint("Select USB input");
 	btnInput0.setCaption("USB");
 	btnInput0.setName("BTN_INPUT_0");
@@ -1274,7 +1274,7 @@ void TPlayer::setupButtons() {
 	btnInput0.setWidth(width1);
 	btnInput0.update();
 
-	btnInput1.setOwner(sysdat.obj.webServer);
+	btnInput1.setOwner(application.webserver());
 	btnInput1.setHint("Select AES1 input");
 	btnInput1.setCaption("AES1");
 	btnInput1.setName("BTN_INPUT_1");
@@ -1287,7 +1287,7 @@ void TPlayer::setupButtons() {
 	btnInput1.setWidth(width1);
 	btnInput1.update();
 
-	btnInput2.setOwner(sysdat.obj.webServer);
+	btnInput2.setOwner(application.webserver());
 	btnInput2.setHint("Select AES2 input");
 	btnInput2.setCaption("AES2");
 	btnInput2.setName("BTN_INPUT_2");
@@ -1300,7 +1300,7 @@ void TPlayer::setupButtons() {
 	btnInput2.setWidth(width1);
 	btnInput2.update();
 
-	btnInput3.setOwner(sysdat.obj.webServer);
+	btnInput3.setOwner(application.webserver());
 	btnInput3.setHint("Select SPDIF1 input");
 	btnInput3.setCaption("SPDIF1");
 	btnInput3.setName("BTN_INPUT_3");
@@ -1313,7 +1313,7 @@ void TPlayer::setupButtons() {
 	btnInput3.setWidth(width1);
 	btnInput3.update();
 
-	btnInput4.setOwner(sysdat.obj.webServer);
+	btnInput4.setOwner(application.webserver());
 	btnInput4.setHint("Select SPDIF2 input");
 	btnInput4.setCaption("SPDIF2");
 	btnInput4.setName("BTN_INPUT_4");
@@ -1326,7 +1326,7 @@ void TPlayer::setupButtons() {
 	btnInput4.setWidth(width1);
 	btnInput4.update();
 
-	btnFilter0.setOwner(sysdat.obj.webServer);
+	btnFilter0.setOwner(application.webserver());
 	btnFilter0.setHint("Filter 1");
 	btnFilter0.setCaption("Linear phase");
 	btnFilter0.setName("BTN_FILTER_0");
@@ -1339,7 +1339,7 @@ void TPlayer::setupButtons() {
 	btnFilter0.setWidth(width2);
 	btnFilter0.update();
 
-	btnFilter1.setOwner(sysdat.obj.webServer);
+	btnFilter1.setOwner(application.webserver());
 	btnFilter1.setHint("Filter 2");
 	btnFilter1.setCaption("Filter 2");
 	btnFilter1.setName("BTN_FILTER_1");
@@ -1352,7 +1352,7 @@ void TPlayer::setupButtons() {
 	btnFilter1.setWidth(width2);
 	btnFilter1.update();
 
-	btnFilter2.setOwner(sysdat.obj.webServer);
+	btnFilter2.setOwner(application.webserver());
 	btnFilter2.setHint("Filter 3");
 	btnFilter2.setCaption("Filter 3");
 	btnFilter2.setName("BTN_FILTER_2");
@@ -1365,7 +1365,7 @@ void TPlayer::setupButtons() {
 	btnFilter2.setWidth(width2);
 	btnFilter2.update();
 
-	btnFilter3.setOwner(sysdat.obj.webServer);
+	btnFilter3.setOwner(application.webserver());
 	btnFilter3.setHint("Filter 4");
 	btnFilter3.setCaption("Apodizing");
 	btnFilter3.setName("BTN_FILTER_3");
@@ -1378,7 +1378,7 @@ void TPlayer::setupButtons() {
 	btnFilter3.setWidth(width2);
 	btnFilter3.update();
 
-	btnFilter4.setOwner(sysdat.obj.webServer);
+	btnFilter4.setOwner(application.webserver());
 	btnFilter4.setHint("Filter 5");
 	btnFilter4.setCaption("Filter 5");
 	btnFilter4.setName("BTN_FILTER_4");
@@ -1391,7 +1391,7 @@ void TPlayer::setupButtons() {
 	btnFilter4.setWidth(width2);
 	btnFilter4.update();
 
-	btnFilter5.setOwner(sysdat.obj.webServer);
+	btnFilter5.setOwner(application.webserver());
 	btnFilter5.setHint("Filter 6");
 	btnFilter5.setCaption("Filter 6");
 	btnFilter5.setName("BTN_FILTER_5");
@@ -1404,7 +1404,7 @@ void TPlayer::setupButtons() {
 	btnFilter5.setWidth(width2);
 	btnFilter5.update();
 
-	btnPhase0.setOwner(sysdat.obj.webServer);
+	btnPhase0.setOwner(application.webserver());
 	btnPhase0.setHint("Phase 0" + STR_DEGREE);
 	btnPhase0.setCaption("Phase 0" + STR_DEGREE);
 	btnPhase0.setName("BTN_PHASE_0");
@@ -1417,7 +1417,7 @@ void TPlayer::setupButtons() {
 	btnPhase0.setWidth(width2);
 	btnPhase0.update();
 
-	btnPhase1.setOwner(sysdat.obj.webServer);
+	btnPhase1.setOwner(application.webserver());
 	btnPhase1.setHint("Phase 180" + STR_DEGREE);
 	btnPhase1.setCaption("Phase 180" + STR_DEGREE);
 	btnPhase1.setName("BTN_PHASE_1");
@@ -3180,7 +3180,7 @@ void TPlayer::updateSelectFilterButtonsWithNolock(const music::CAudioValues& val
 
 
 void TPlayer::setupSearchMediaRadios() {
-	rdSearchMedia.setOwner(sysdat.obj.webServer);
+	rdSearchMedia.setOwner(application.webserver());
 	rdSearchMedia.setName("SEARCH_RADIO_GROUP_MEDIA");
 	rdSearchMedia.setID("rdSearchMedia");
 	rdSearchMedia.setStyle(ECS_HTML);
@@ -3197,7 +3197,7 @@ void TPlayer::setupSearchMediaRadios() {
 }
 
 void TPlayer::setupSearchDomainRadios() {
-	rdSearchDomain.setOwner(sysdat.obj.webServer);
+	rdSearchDomain.setOwner(application.webserver());
 	rdSearchDomain.setName("SEARCH_RADIO_GROUP_DOMAIN");
 	rdSearchDomain.setID("rdSearchDomain");
 	rdSearchDomain.setStyle(ECS_HTML);
@@ -3951,7 +3951,7 @@ void TPlayer::setPlaylistHeader(const std::string& header, const std::string& pl
 			wtPlaylistExportName->setValue("noname.m3u", true);
 		} else {
 			// wtPlaylistExportUrl->setValue(std::string(EXPORT_REST_URL) + "?playlist=" + playlist, true);
-			wtPlaylistExportUrl->setValue("m3u/" + playlist + ".m3u?playlist=" + playlist, true);
+			wtPlaylistExportUrl->setValue("/rest/m3u/" + util::sanitizeFileName(playlist) + ".m3u?playlist=" + playlist, true);
 			wtPlaylistExportName->setValue("Playlist '" + playlist + "'" + ".m3u", true);
 		}
 	}
@@ -10609,7 +10609,7 @@ void TPlayer::createInetStreamer() {
 
 	// Create streaming thread
 	if (!radio.started) {
-		if (createJoinableThread(radio.thread, streamThreadDispatcher, this)) {
+		if (createJoinableThread(radio.thread, streamThreadDispatcher, this, "Inet-Radio")) {
 			radio.started = true;
 
 			// Set properties
