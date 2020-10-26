@@ -307,6 +307,7 @@ public:
 	int garbageCollector();
 
 	void sortByTime(util::ESortOrder order = util::SO_ASC);
+	void sortByLocation(util::ESortOrder order = util::SO_ASC);
 	void sortByAlbum(util::ESortOrder order = util::SO_ASC);
 	void sortByArtist(util::ESortOrder order = util::SO_ASC);
 	void sortByAlbumArtist(util::ESortOrder order = util::SO_ASC);

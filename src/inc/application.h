@@ -611,6 +611,7 @@ public:
 	int getVerbosity() const;
 	util::TTimePart getLogFlushDelay() const;
 
+	// Read only application properties
 	const std::string& getCurrentFolder() const;
 	const std::string& getLogFolder() const;
 	const std::string& getTempFolder() const;
@@ -630,6 +631,7 @@ public:
 	const std::string& getBanner() const;
 	const std::string& getLogo() const;
 
+	// Read/Write application properties
 	const std::string& getDescription() const;
 	void setDescription(const std::string& description);
 	const std::string& getJumbotron() const;
@@ -647,26 +649,26 @@ public:
 	app::TLogFile& getSocketLogger() const;
 	app::TLogFile& getWebLogger() const;
 
+	// System database and seession management
+    sql::TSession& getSystemSession() const;
+    sql::TContainer& getSystemDatabase() const;
+    sql::TContainer& getApplicationDatabase() const;
+	app::TCredentials& getCredentials() const;
+
 	// Get controller refernces
 	app::TTimeoutController& getTimeouts() const;
 	inet::TSocketController& getSockets() const;
 	app::TThreadController& getThreads() const;
 	app::TTimerController& getTimers() const;
 	app::TTaskController& getTasks() const;
-
-	app::TSerial& getTerminal() const;
 	app::TWebServer& getWebServer() const;
-	app::TCredentials& getCredentials() const;
-
+	app::TSerial& getTerminal() const;
 #ifdef USE_GPIO_CONTROL
 	app::TGPIOController& getGPIOController() const;
 #endif
 #ifdef USE_MQTT_CLIENT
     inet::TMQTT& getMQTTClient() const;
 #endif
-    sql::TSession& getSystemSession() const;
-    sql::TContainer& getSystemDatabase() const;
-    sql::TContainer& getApplicationDatabase() const;
 
 	// Get system objects
 	app::PTimeoutController timeouts() const;
@@ -676,7 +678,6 @@ public:
 	app::PTaskController tasks() const;
 	app::PWebServer webserver() const;
 	app::PSerial terminal() const;
-
 #ifdef USE_GPIO_CONTROL
 	app::PGPIOController gpio() const;
 #endif

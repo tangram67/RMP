@@ -37,6 +37,8 @@ namespace music {
 #define ALBUM_SEARCH_URL WIKIPEDIA_SEARCH_URL
 #define SONG_SEARCH_URL ALLMUSIC_SONG_URL
 
+#define DETECT_VARIOUS_ARTISTS_BY_FOLDER
+
 TLibrary::TLibrary() {
 	onProgressCallback = nil;
 	init();
@@ -876,6 +878,19 @@ bool albumArtistSorterDesc(const TSong* o, const TSong* p) {
 		return p->getAlbumArtistsSort() < o->getAlbumArtistsSort();
 }
 
+bool locationSorterAsc(const TSong* o, const TSong* p) {
+	if (o->getFolder() == p->getFolder())
+		return trackSorterAsc(o, p);
+	else
+		return o->getFolder() > p->getFolder();
+}
+
+bool locationSorterDesc(const TSong* o, const TSong* p) {
+	if (o->getFolder() == p->getFolder())
+		return trackSorterDesc(o, p);
+	else
+		return p->getFolder() < o->getFolder();
+}
 
 
 void TLibrary::sort(util::ESortOrder order, TSongSorter asc, TSongSorter desc) {
@@ -900,6 +915,14 @@ void TLibrary::sort(TSongSorter sorter) {
 
 void TLibrary::sortByTime(util::ESortOrder order) {
 	sort(order, timeSorterAsc, timeSorterDesc);
+}
+
+void TLibrary::sortByLocation(util::ESortOrder order) {
+	if (sortCaseInsensitive) {
+		sort(order, locationSorterAsc, locationSorterDesc);
+	} else {
+		sort(order, locationSorterAsc, locationSorterDesc);
+	}
 }
 
 void TLibrary::sortByAlbum(util::ESortOrder order) {
@@ -1357,14 +1380,19 @@ void TLibrary::updateVariousArtists() {
 	if (!library.tracks.songs.empty()) {
 		PSong song;
 		TSongList songs;
-		std::string c_album, c_mainartist, c_albumartist;
+		std::string c_album, c_mainartist, c_albumartist, c_folder;
 		bool mainartistchanged = false;
 		bool albumartistchanged = false;
 		std::string va(VARIOUS_ARTISTS_NAME);
 		std::string vn;
 
-		// Sort by album to detect album change
+#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
+		// From 10/26/2020 : Sort by album folder location to detect album change
+		sortByLocation();
+#else
+		// Until 10/26/2020 : Sort by album to detect album change
 		sortByAlbum();
+#endif
 		
 		// Scan all tracks for artist change in the same album
 		for (size_t i=0; i<library.tracks.songs.size(); ++i) {
@@ -1374,10 +1402,20 @@ void TLibrary::updateVariousArtists() {
 				// --> Use original artist name to setup compilation tag
 				const std::string& mainartist = song->getOriginalArtist();
 				const std::string& albumartist = song->getOriginalAlbumArtist();
+				const std::string& folder = song->getFolder();
 				const std::string& album = song->getAlbumSort();
+
+#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
+				// From 10/26/2020 : Compare by content folder
+				if (c_folder != folder) {
+#else
+				// Until 10/26/2020 : Compare by album title
 				if (c_album != album) {
+#endif
+
 					// New album with given artist detected
 					c_album = album;
+					c_folder = folder;
 					c_mainartist = mainartist;
 					c_albumartist = albumartist;
 
@@ -1397,6 +1435,7 @@ void TLibrary::updateVariousArtists() {
 					albumartistchanged = false;
 
 				} else {
+
 					// Scan for artist change in album
 					if (!mainartistchanged) {
 						if (c_mainartist != mainartist) {
@@ -1428,6 +1467,11 @@ void TLibrary::updateVariousArtists() {
 		}
 
 	}
+
+#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
+	// From 10/26/2020 : Leave update method with list sorted by album title (as it was before...)
+	sortByAlbum();
+#endif
 }
 
 void TLibrary::clearArtistMap(TArtistMap& artists) {
