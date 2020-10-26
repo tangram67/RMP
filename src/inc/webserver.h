@@ -74,6 +74,8 @@ private:
 	app::PIniFile config;
 	app::PLogFile infoLog;
 	app::PLogFile exceptionLog;
+	app::PThreadController threads;
+	app::PTimerController timers;
 	app::TWebSessionMap sessionMap;
 	util::TVariantValues cookies;
 	std::mutex actionMtx;
@@ -406,7 +408,7 @@ public:
 	void writeInfoLog(const std::string& s, int verbosity = 0) const;
 	void writeErrorLog(const std::string& s) const;
 
-	TWebServer(const std::string& name, const std::string& documentRoot, app::TIniFile& config, app::TTimerController& timers, TLogFile& infoLog, TLogFile& exceptionLog);
+	TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, PLogFile infoLog, PLogFile exceptionLog);
 	virtual ~TWebServer();
 };
 

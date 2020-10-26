@@ -102,11 +102,13 @@ static void webSocketConnectionDispatcher(void *cls, struct MHD_Connection *conn
 namespace app {
 
 
-TWebServer::TWebServer(const std::string& name, const std::string& documentRoot, app::TIniFile& config, app::TTimerController& timers, TLogFile& infoLog, TLogFile& exceptionLog) {
+TWebServer::TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, PLogFile infoLog, PLogFile exceptionLog) {
 	this->name = name;
-	this->config = &config;
-	this->infoLog = &infoLog;
-	this->exceptionLog = &exceptionLog;
+	this->config = config;
+	this->infoLog = infoLog;
+	this->exceptionLog = exceptionLog;
+	this->threads = threads;
+	this->timers = timers;
 	web.documentRoot = documentRoot;
 	credentialCallbackMethod = nil;
 	httpsParam = HTTPS_PARAMS;
@@ -116,17 +118,17 @@ TWebServer::TWebServer(const std::string& name, const std::string& documentRoot,
 	keyFile = nil;
 	dhFile = nil;
 	sockets = nil;
+	socketTimer = nil;
 	httpServer4 = nil;
 	httpServer6 = nil;
 	reWriteConfig();
 	rest.setRoot(web.restRoot);
 	maxUrlSize = util::maxPathSize();
 	numa = sysutil::getProcessorCount();
-	sessionTimer = timers.addTimer(name, "SessionDeleteTimer", web.sessionDeleteDelay, &app::TWebServer::onSessionTimer, this);
-	requestTimer = timers.addTimer(name, "RequestDeleteTimer", web.requestDeleteDelay, &app::TWebServer::onRequestTimer, this);
-	bufferTimer = timers.addTimer(name, "BufferDeleteTimer", BUFFER_TIMER_DELAY, &app::TWebServer::onBufferTimer, this);
-	statsTimer = timers.addTimer(name, "StatisticsTimer", STATISTICS_TIMER_DELAY, &app::TWebServer::onStatsTimer, this);
-	socketTimer = nil;
+	sessionTimer = timers->addTimer(name, "SessionDeleteTimer", web.sessionDeleteDelay, &app::TWebServer::onSessionTimer, this);
+	requestTimer = timers->addTimer(name, "RequestDeleteTimer", web.requestDeleteDelay, &app::TWebServer::onRequestTimer, this);
+	bufferTimer = timers->addTimer(name, "BufferDeleteTimer", BUFFER_TIMER_DELAY, &app::TWebServer::onBufferTimer, this);
+	statsTimer = timers->addTimer(name, "StatisticsTimer", STATISTICS_TIMER_DELAY, &app::TWebServer::onStatsTimer, this);
 	web.rejectedDeleteAge = sessionTimer->getDelay() * 90 / 100;
 	executer.setExecHandler(&app::TWebServer::actionAsyncExecuter, this);
 	executer.setName("Executer-" + getName());
@@ -561,13 +563,13 @@ bool TWebServer::start(const bool autostart) {
 
 			// Start websocket handling
 			if (running && web.allowWebSockets) {
-				sockets = new TWebSockets(name, sysdat.obj.threads, infoLog, config);
+				sockets = new TWebSockets(name, threads, infoLog, config);
 				sockets->setSecure(isSecure());
 				sockets->start();
 				sockets->bindSocketDataEvent(&app::TWebServer::onSocketData, this);
 				sockets->bindSocketVariantEvent(&app::TWebServer::onSocketVariant, this);
 				sockets->bindSocketConnectEvent(&app::TWebServer::onSockeConnect, this);
-				socketTimer = application.addTimer(name, "WebSocketPingTimer", web.refreshTimer, &app::TWebServer::onHeartbeatTimer, this);
+				socketTimer = timers->addTimer(name, "WebSocketPingTimer", web.refreshTimer, &app::TWebServer::onHeartbeatTimer, this);
 			}
 
 			sessionTimer->setEnabled(running);

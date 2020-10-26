@@ -827,6 +827,74 @@ sql::TContainer& TApplication::getApplicationDatabase() const {
 	throw util::app_error("TApplication::getSystemDatabase() Application database not available.");
 }
 
+
+inet::PSocketController TApplication::sockets() const {
+	if (util::assigned(sysdat.obj.sockets)) {
+		return sysdat.obj.sockets;
+	}
+	throw util::app_error("TApplication::sockets() Socket controller not available.");
+}
+
+app::PThreadController TApplication::threads() const {
+	if (util::assigned(sysdat.obj.threads)) {
+		return sysdat.obj.threads;
+	}
+	throw util::app_error("TApplication::threads() Thread controller not available.");
+}
+
+app::PTimerController TApplication::timers() const {
+	if (util::assigned(sysdat.obj.timers)) {
+		return sysdat.obj.timers;
+	}
+	throw util::app_error("TApplication::timers() System timer controller not available.");
+}
+
+app::PTaskController TApplication::tasks() const {
+	if (util::assigned(sysdat.obj.tasks)) {
+		return sysdat.obj.tasks;
+	}
+	throw util::app_error("TApplication::tasks() Task system not available.");
+}
+
+app::PTimeoutController TApplication::timeouts() const {
+	if (util::assigned(sysdat.obj.timeouts)) {
+		return sysdat.obj.timeouts;
+	}
+	throw util::app_error("TApplication::timeouts() Timeout controller not available.");
+}
+
+app::PWebServer TApplication::webserver() const {
+	if (util::assigned(sysdat.obj.webServer)) {
+		return sysdat.obj.webServer;
+	}
+	throw util::app_error("TApplication::webserver() Webserver not available.");
+}
+
+app::PSerial TApplication::terminal() const {
+	if (util::assigned(sysdat.obj.serial)) {
+		return sysdat.obj.serial;
+	}
+	throw util::app_error("TApplication::terminal() Serial terminal not available.");
+}
+
+#ifdef USE_GPIO_CONTROL
+app::PGPIOController TApplication::gpio() const {
+	if (util::assigned(sysdat.obj.gpio)) {
+		return sysdat.obj.gpio;
+	}
+	throw util::app_error("TApplication::gpio() GPIO subsystem not available.");
+}
+#endif
+#ifdef USE_MQTT_CLIENT
+inet::PMQTT TApplication::mqtt() const {
+	if (util::assigned(sysdat.obj.mqtt)) {
+		return sysdat.obj.mqtt;
+	}
+	throw util::app_error("TApplication::mqtt() MQTT client not available.");
+}
+#endif
+
+
 bool TApplication::hasMQTTClient() const {
 #ifdef USE_MQTT_CLIENT
 	return util::assigned(sysdat.obj.mqtt);
@@ -2128,7 +2196,7 @@ PWebServer TApplication::startWebServer(const std::string& name, const std::stri
 	}
 
 	// Create and start a new webserver instance
-	PWebServer web = new TWebServer(name, documentRoot, *sysdat.obj.webConfig, *sysdat.obj.timers, *sysdat.obj.webLog, *sysdat.obj.exceptionLog);
+	PWebServer web = new TWebServer(name, documentRoot, sysdat.obj.webConfig, sysdat.obj.threads, sysdat.obj.timers, sysdat.obj.webLog, sysdat.obj.exceptionLog);
 	if (util::assigned(web)) {
 		if (web->start(autostart)) {
 			logger(app::ELogBase::LOG_APP, "[Application] Webserver <%> started.", name);

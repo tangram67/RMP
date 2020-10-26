@@ -637,6 +637,7 @@ public:
 	const std::string& getHostName() const;
 	void setHostName(const std::string& hostName);
 
+	// Various log file failities
 	app::TLogFile& getExceptionLogger() const;
 	app::TLogFile& getApplicationLogger() const;
 	app::TLogFile& getDatabaseLogger() const;
@@ -646,6 +647,7 @@ public:
 	app::TLogFile& getSocketLogger() const;
 	app::TLogFile& getWebLogger() const;
 
+	// Get controller refernces
 	app::TTimeoutController& getTimeouts() const;
 	inet::TSocketController& getSockets() const;
 	app::TThreadController& getThreads() const;
@@ -665,6 +667,22 @@ public:
     sql::TSession& getSystemSession() const;
     sql::TContainer& getSystemDatabase() const;
     sql::TContainer& getApplicationDatabase() const;
+
+	// Get system objects
+	app::PTimeoutController timeouts() const;
+	inet::PSocketController sockets() const;
+	app::PThreadController threads() const;
+	app::PTimerController timers() const;
+	app::PTaskController tasks() const;
+	app::PWebServer webserver() const;
+	app::PSerial terminal() const;
+
+#ifdef USE_GPIO_CONTROL
+	app::PGPIOController gpio() const;
+#endif
+#ifdef USE_MQTT_CLIENT
+    inet::PMQTT mqtt() const;
+#endif
 
     bool hasMQTTClient() const;
     bool hasSystemSession() const;
