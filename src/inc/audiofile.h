@@ -97,6 +97,7 @@ private:
 	EMediaType media;
 	std::string icon;
 	TFileTag tags;
+	util::TInodeHandle node;
 	util::TDateTime modtime;
 	util::TStringList json;
 	util::TStringList m3u;
@@ -201,6 +202,9 @@ public:
 	void setModTime(const util::TDateTime& time) { modtime = time; };
 	void setModTime(const util::TTimePart& time) { modtime = time; };
 	void touch() { modtime.sync(); };
+
+	void setNode(const util::TInodeHandle value) { node = value; };
+	util::TInodeHandle getNode() const { return node; };
 
 	CMetaData& getTags() { return tags.meta; };
 	const TFileTag& getFileTags() const { return tags; };

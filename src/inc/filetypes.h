@@ -9,6 +9,7 @@
 #define INC_FILETYPES_H_
 
 #include <fcntl.h>
+#include "gcc.h"
 
 namespace util {
 
@@ -19,6 +20,12 @@ enum ELoadType    { LT_BINARY, LT_MINIMIZED };
 enum EMountType   { MT_ALL, MT_DISK };
 enum EFileType    { FT_FILE, FT_FOLDER, FT_UNDEFINED };
 enum ESearchDepth { SD_ROOT, SD_RECURSIVE };
+
+#ifdef GCC_MATCHES_DIRENT64
+using TInodeHandle = __ino64_t ;
+#else
+using TInodeHandle = __ino_t;
+#endif
 
 } /* namespace util */
 

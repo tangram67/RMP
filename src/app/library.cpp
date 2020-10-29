@@ -37,8 +37,6 @@ namespace music {
 #define ALBUM_SEARCH_URL WIKIPEDIA_SEARCH_URL
 #define SONG_SEARCH_URL ALLMUSIC_SONG_URL
 
-#define DETECT_VARIOUS_ARTISTS_BY_FOLDER
-
 TLibrary::TLibrary() {
 	onProgressCallback = nil;
 	init();
@@ -111,8 +109,8 @@ void TLibrary::configure(const CConfigValues& config) {
 	setSortMode(config.sortCaseSensitive ? music::TLibrary::ELS_CASE_SENSITIVE : music::TLibrary::ELS_CASE_INSENSITIVE);
 }
 
-void importSong(TLibrary& owner, const std::string& fileName, const bool rebuild) {
-	owner.importFile(fileName, rebuild);
+void importSong(TLibrary& owner, const std::string& fileName, const util::TInodeHandle node, const bool rebuild) {
+	owner.importFile(fileName, node, rebuild);
 }
 
 int TLibrary::import(const std::string& path, const app::TStringVector& patterns, const bool recursive) {
@@ -122,8 +120,8 @@ int TLibrary::import(const std::string& path, const app::TStringVector& patterns
 	return (int)library.tracks.songs.size();
 }
 
-void checkSong(TLibrary& owner, const std::string& fileName, const bool rebuild) {
-	owner.updateFile(fileName, rebuild);
+void checkSong(TLibrary& owner, const std::string& fileName, const util::TInodeHandle node,  const bool rebuild) {
+	owner.updateFile(fileName, node, rebuild);
 }
 
 int TLibrary::rescan(const std::string& path, const app::TStringVector& patterns, const bool rebuild, const bool recursive) {
@@ -161,6 +159,7 @@ int TLibrary::garbageCollector() {
 int TLibrary::readDirektory(const std::string& path, const app::TStringVector& patterns, TLibraryAddFunction addfn, const bool rebuild, const bool recursive) {
 	util::TDirectory dir;
 	struct dirent *file;
+	util::TInodeHandle inode = util::INVALID_INODE_HANDLE;
 	std::string pattern;
 	util::TStringList folders;
 	int r = 0;
@@ -174,6 +173,17 @@ int TLibrary::readDirektory(const std::string& path, const app::TStringVector& p
 	if (!recursive)
 		clear();
 
+	// Get current folder inode value
+	struct stat status;
+	if (util::folderStatus(path, &status)) {
+		inode = status.st_ino;
+		std::cout << "TLibrary::readDirektory() Path = \"" << path << "\" --> inode = " << inode << std::endl;
+	}
+	if (util::INVALID_INODE_HANDLE == inode) {
+		return 0;
+	}
+
+	// Iterate through folder content
 	dir.open(path);
 	if (dir.isOpen()) {
 		while(util::assigned((file = readdir(dir())))) {
@@ -187,7 +197,7 @@ int TLibrary::readDirektory(const std::string& path, const app::TStringVector& p
 					pattern = *it;
 					if (!pattern.empty()) {
 						if (match(file, pattern)) {
-							addfn(*this, path + file->d_name, rebuild);
+							addfn(*this, path + file->d_name, inode, rebuild);
 							++r;
 						}
 					}
@@ -459,7 +469,7 @@ void TLibrary::reindex() {
 }
 
 
-PSong TLibrary::updateFile(const std::string& fileName, const bool rebuild) {
+PSong TLibrary::updateFile(const std::string& fileName, const util::TInodeHandle node, const bool rebuild) {
 	TFileTag tag;
 	TAudioFile file(fileName, tag);
 	PSong p = findFile(tag.file.hash);
@@ -501,6 +511,11 @@ PSong TLibrary::updateFile(const std::string& fileName, const bool rebuild) {
 
 	}
 
+	// Set folder inode as location identifier
+	if (util::assigned(p)) {
+		p->setNode(node);
+	}
+
 	// Event callback for (re)scanned files
 	++rescanCount;
 	if (0 == rescanCount % 333) {
@@ -510,10 +525,11 @@ PSong TLibrary::updateFile(const std::string& fileName, const bool rebuild) {
 	return p;
 }
 
-PSong TLibrary::importFile(const std::string& fileName, const bool rebuild) {
+PSong TLibrary::importFile(const std::string& fileName, const util::TInodeHandle node, const bool rebuild) {
 	PSong p = addFile(fileName);
 	if (util::assigned(p)) {
 		p->setLoaded(true);
+		p->setNode(node);
 		p->setInsertedTime(p->getFileTime());
 	}
 	return p;
@@ -892,6 +908,20 @@ bool locationSorterDesc(const TSong* o, const TSong* p) {
 		return p->getFolder() < o->getFolder();
 }
 
+bool nodeSorterAsc(const TSong* o, const TSong* p) {
+	if (o->getNode() == p->getNode())
+		return trackSorterAsc(o, p);
+	else
+		return o->getNode() > p->getNode();
+}
+
+bool nodeSorterDesc(const TSong* o, const TSong* p) {
+	if (o->getNode() == p->getNode())
+		return trackSorterDesc(o, p);
+	else
+		return p->getNode() < o->getNode();
+}
+
 
 void TLibrary::sort(util::ESortOrder order, TSongSorter asc, TSongSorter desc) {
 	TSongSorter sorter;
@@ -918,11 +948,11 @@ void TLibrary::sortByTime(util::ESortOrder order) {
 }
 
 void TLibrary::sortByLocation(util::ESortOrder order) {
-	if (sortCaseInsensitive) {
-		sort(order, locationSorterAsc, locationSorterDesc);
-	} else {
-		sort(order, locationSorterAsc, locationSorterDesc);
-	}
+	sort(order, locationSorterAsc, locationSorterDesc);
+}
+
+void TLibrary::sortByNode(util::ESortOrder order) {
+	sort(order, nodeSorterAsc, nodeSorterDesc);
 }
 
 void TLibrary::sortByAlbum(util::ESortOrder order) {
@@ -1380,19 +1410,15 @@ void TLibrary::updateVariousArtists() {
 	if (!library.tracks.songs.empty()) {
 		PSong song;
 		TSongList songs;
-		std::string c_album, c_mainartist, c_albumartist, c_folder;
+		std::string c_mainartist, c_albumartist, c_folder;
 		bool mainartistchanged = false;
 		bool albumartistchanged = false;
 		std::string va(VARIOUS_ARTISTS_NAME);
 		std::string vn;
 
-#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
-		// From 10/26/2020 : Sort by album folder location to detect album change
+		// Using inodes instead of string compare is faster,
+		// but inodes may NOT be unique if library placed on different filesystems
 		sortByLocation();
-#else
-		// Until 10/26/2020 : Sort by album to detect album change
-		sortByAlbum();
-#endif
 		
 		// Scan all tracks for artist change in the same album
 		for (size_t i=0; i<library.tracks.songs.size(); ++i) {
@@ -1403,18 +1429,11 @@ void TLibrary::updateVariousArtists() {
 				const std::string& mainartist = song->getOriginalArtist();
 				const std::string& albumartist = song->getOriginalAlbumArtist();
 				const std::string& folder = song->getFolder();
-				const std::string& album = song->getAlbumSort();
 
-#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
-				// From 10/26/2020 : Compare by content folder
+				// Detect storage location change
 				if (c_folder != folder) {
-#else
-				// Until 10/26/2020 : Compare by album title
-				if (c_album != album) {
-#endif
 
 					// New album with given artist detected
-					c_album = album;
 					c_folder = folder;
 					c_mainartist = mainartist;
 					c_albumartist = albumartist;
@@ -1467,11 +1486,6 @@ void TLibrary::updateVariousArtists() {
 		}
 
 	}
-
-#ifdef DETECT_VARIOUS_ARTISTS_BY_FOLDER
-	// From 10/26/2020 : Leave update method with list sorted by album title (as it was before...)
-	sortByAlbum();
-#endif
 }
 
 void TLibrary::clearArtistMap(TArtistMap& artists) {
@@ -3384,7 +3398,7 @@ TPlaylist::TPlaylist() {
 	deleted = false;
 	permanent = true;
 	thread.setExecHandler(&music::TPlaylist::unlinkThreadMethod, this);
-	thread.setName("app::TLibrary::unlink()");
+	thread.setName("Library-Unlink");
 	prepare();
 }
 

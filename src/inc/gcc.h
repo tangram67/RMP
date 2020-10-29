@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <endian.h>
+#include <dirent.h>
 #include <features.h>
 #include <gnutls/gnutls.h>
 #include <openssl/opensslv.h>
@@ -127,6 +128,10 @@
 
 #ifdef __USE_FILE_OFFSET64
 #  define GCC_HAS_FILEOFFSET64
+#endif
+
+#ifdef _DIRENT_MATCHES_DIRENT64
+#  define GCC_MATCHES_DIRENT64
 #endif
 
 // Platform check

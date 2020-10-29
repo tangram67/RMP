@@ -60,7 +60,7 @@ STATIC_CONST char BLANK_PNG_IMAGE_200[] = "data:image/png;base64,iVBORw0KGgoAAAA
 
 using PLibrary = TLibrary*;
 using TLibraryScannerCallback = std::function<void(const TLibrary& sender, const size_t count, const std::string& current)>;
-using TLibraryAddFunction = std::function<void(TLibrary& owner, const std::string&, const bool)>;
+using TLibraryAddFunction = std::function<void(TLibrary& owner, const std::string&, const util::TInodeHandle, const bool)>;
 
 using PPlaylist = TPlaylist*;
 using TPlaylistList = std::vector<PPlaylist>;
@@ -70,9 +70,9 @@ using TPlaylistMap = std::map<std::string, PPlaylist>;
 
 typedef TLibrary* PLibrary;
 typedef std::function<void(const TLibrary& sender, const size_t count, const std::string& current)> TLibraryScannerCallback;
-typedef std::function<void(TLibrary& owner, const std::string&, const bool)> TLibraryAddFunction;
+typedef std::function<void(TLibrary& owner, const std::string&, const util::TInodeHandle, const bool)> TLibraryAddFunction;
 
-typedef TPlaylist_1* PPlaylist;
+typedef TPlaylist* PPlaylist;
 typedef td::vector<PPlaylist> TPlaylistList;
 typedef std::map<std::string, PPlaylist> TPlaylistMap;
 
@@ -202,8 +202,8 @@ public:
 
 	PSong addFile(const std::string& fileName);
 	PSong addFile(const std::string& fileName, const TFileTag tag);
-	PSong updateFile(const std::string& fileName, const bool rebuild);
-	PSong importFile(const std::string& fileName, const bool rebuild);
+	PSong updateFile(const std::string& fileName, const util::TInodeHandle node, const bool rebuild);
+	PSong importFile(const std::string& fileName, const util::TInodeHandle node, const bool rebuild);
 	void addError(const std::string& fileName, const int error, const std::string& hint);
 
 	size_t size() const { return library.tracks.songs.size(); }
@@ -307,6 +307,7 @@ public:
 	int garbageCollector();
 
 	void sortByTime(util::ESortOrder order = util::SO_ASC);
+	void sortByNode(util::ESortOrder order = util::SO_ASC);
 	void sortByLocation(util::ESortOrder order = util::SO_ASC);
 	void sortByAlbum(util::ESortOrder order = util::SO_ASC);
 	void sortByArtist(util::ESortOrder order = util::SO_ASC);
