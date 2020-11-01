@@ -66,6 +66,8 @@ using TDomainNames = std::map<std::string, music::EFilterDomain>;
 using TCommandBuffer = util::TDataBuffer<TCommandData>;
 using TClientList = std::map<app::THandle, inet::TServerSocket*>;
 using TDecoderBuffer = util::TDataBuffer<music::TSample>;
+using TLibraryThread = app::TWorkerThread<music::TLibrary>;
+using PLibraryThread = TLibraryThread*;
 
 #else
 
@@ -77,6 +79,8 @@ typedef std::map<std::string, music::EFilterDomain> TDomainNames;
 typedef util::TCommandBuffer<TCommandData> TBuffer;
 typedef std::map<app::THandle, inet::TServerSocket*> TClientList;
 typedef util::TDataBuffer<music::TSample> TDecoderBuffer;
+typedef app::TWorkerThread<music::TLibrary> TLibraryThread;
+typedef TLibraryThread* PLibraryThread;
 
 #endif
 
@@ -479,6 +483,7 @@ private:
 	util::TByteBuffer remoteCommandData;
 	bool remoteDeviceMessage;
 	size_t songDisplayChanged;
+	size_t libraryScannerUpdate;
 	bool streamingAllowed;
 	bool advancedSettingsAllowed;
 	TRadioStream radio;
@@ -513,6 +518,7 @@ private:
 	app::TMutex radioTextMtx;
 	app::TMutex radioStationMtx;
 	app::TMutex songDisplayMtx;
+	app::TMutex scannerDisplayMtx;
 	mutable app::TMutex modeMtx;
 	mutable app::TMutex commandMtx;
 	app::TReadWriteLock libraryLck;
@@ -645,6 +651,7 @@ private:
 	std::string jsonPlaying;
 	std::string jsonStations;
 	std::string jsonCurrent;
+	std::string jsonScanner;
 	std::string jsonModes;
 	std::string jsonMode;
 	std::string jsonConfig;
@@ -675,6 +682,13 @@ private:
 	app::TCommandQueue queue;
 	TFileCacheMap fileCache;
 	std::string coverCache;
+
+	PLibraryThread libraryThread;
+	app::TNotifyEvent libraryEvent;
+	bool libraryThreadRunning;
+	bool libraryThreadActive;
+	ECommandAction libraryAction;
+	app::TMutex libraryActionMtx;
 
 	html::TMainMenu mnMain;
 	html::TContextMenu mnRecent;
@@ -756,6 +770,16 @@ private:
 	std::string normalizePlaylistHeader(const std::string& header);
 	void setPlaylistHeader(const std::string& header, const std::string& playlist, const size_t count);
 	void setRecentHeader(const size_t count);
+
+	void startLibraryThread();
+	void terminateLibraryThread();
+	int libraryThreadHandler(TLibraryThread& sender, music::TLibrary& library);
+	void notifyLibraryAction(const ECommandAction action);
+	ECommandAction getLibraryAction();
+	void clearLibraryAction();
+	bool isLibraryUpdating();
+	void invalidateScannerDislpay();
+	size_t getScannerDisplayUpdate();
 
 	void updateLibraryStatus();
 	void updateLibraryMenuItems();
@@ -1052,6 +1076,7 @@ private:
 	void getPlaying(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
 	void getStations(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
 	void getPlayerState(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
+	void getScannerState(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
 	void getRepeatModes(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
 	void getPlayerMode(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);
 	void getPlayerConfig(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error);

@@ -80,10 +80,14 @@ TPlayer::TPlayer() {
 	toLircTimeout = nil;
 	lircAction = ECA_INVALID_ACTION;
 	songDisplayChanged = 0;
+	libraryScannerUpdate = 0;
 	streamingAllowed = false;
 	advancedSettingsAllowed = false;
 	mnames = fillMediaNamesMap();
 	fdnames = fillFilterDomainMap();
+	libraryThread = nil;
+	libraryThreadRunning = false;
+	libraryThreadActive = false;
 #ifdef USE_APPLICATION_AS_OUTPUT
 	app::ansi.disable();
 	app::red.disable();
@@ -462,6 +466,9 @@ int TPlayer::execute() {
 	toUndoAction = application.addTimeout("ActionHistoryUndoTimeout", 60000);
 	toUndoAction->bindEventHandler(&app::TPlayer::onUndoActionTimeout, this);
 
+	// Start library update worker thread
+	startLibraryThread();
+
 	// Execute player command and buffering tasks in main loop!
 	sysutil::beep();
 	if (!application.isDaemonized()) {
@@ -513,6 +520,9 @@ void TPlayer::cleanup() {
 
 	// Terminate streaming thread
 	destroyInetStreamer();
+
+	// Terminate library update worker thread
+	terminateLibraryThread();
 
 	// Save radio stations to file
 	if (stations.isChanged()) {
@@ -675,6 +685,7 @@ void TPlayer::setupWebserverObjects(const size_t songsPerAlbum) {
 		application.addWebLink("tracks.json",      &app::TPlayer::getAlbumTracks,       this, true);
 		application.addWebLink("erroneous.json",   &app::TPlayer::getErroneous,         this, true);
 		application.addWebLink("current.json",     &app::TPlayer::getPlayerState,       this, true);
+		application.addWebLink("scanner.json",     &app::TPlayer::getScannerState,      this, true);
 		application.addWebLink("modes.json",       &app::TPlayer::getRepeatModes,       this, true);
 		application.addWebLink("playlists.json",   &app::TPlayer::getCurrentPlaylist,   this, true);
 		application.addWebLink("radiotext.json",   &app::TPlayer::getRadioTextUpdate,   this, true);
@@ -1440,6 +1451,60 @@ void TPlayer::setupButtons() {
 		updateSelectPhaseButtonsWithNolock(values, ECA_INVALID_ACTION);
 		updateActiveRateButtonsWithNolock(values, music::SR0K);
 	}
+}
+
+void TPlayer::startLibraryThread() {
+	if (!terminate) {
+		if (!util::assigned(libraryThread)) {
+			libraryThreadRunning = false;
+			libraryThread = application.addThread<music::TLibrary>("Library-Update", library, &app::TPlayer::libraryThreadHandler, this);
+		}
+	}
+}
+
+void TPlayer::terminateLibraryThread() {
+	if (util::assigned(libraryThread)) {
+		libraryThreadRunning = false;
+		notifyLibraryAction(ECA_APP_EXIT);
+	}
+}
+
+void TPlayer::notifyLibraryAction(const ECommandAction action) {
+	app::TLockGuard<app::TMutex> lock(libraryActionMtx);
+	libraryAction = action;
+	libraryEvent.notify();
+}
+
+ECommandAction TPlayer::getLibraryAction() {
+	app::TLockGuard<app::TMutex> lock(libraryActionMtx);
+	return libraryAction;
+}
+
+void TPlayer::clearLibraryAction() {
+	app::TLockGuard<app::TMutex> lock(libraryActionMtx);
+	libraryAction = ECA_INVALID_ACTION;
+}
+
+bool TPlayer::isLibraryUpdating() {
+	app::TLockGuard<app::TMutex> lock(updateMtx, false);
+	if (!lock.tryLock()) {
+		// Scanninng is in progress...
+		return true;
+	}
+	// Lock aquired, no scanner in progress
+	return false;
+}
+
+void TPlayer::invalidateScannerDislpay() {
+	app::TLockGuard<app::TMutex> lock(scannerDisplayMtx);
+	libraryScannerUpdate++;
+	if (libraryScannerUpdate > 0xFFFF)
+		libraryScannerUpdate = 1;
+}
+
+size_t TPlayer::getScannerDisplayUpdate() {
+	app::TLockGuard<app::TMutex> lock(scannerDisplayMtx);
+	return libraryScannerUpdate;
 }
 
 
@@ -5308,6 +5373,43 @@ void TPlayer::getPlayerState(TThreadData& sender, const void*& data, size_t& siz
 }
 
 
+void TPlayer::getScannerState(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error) {
+	int mode = 0;
+	bool scanning = isLibraryUpdating();
+	if (scanning) {
+		ECommandAction action = getLibraryAction();
+		if (action == ECA_LIBRARY_RESCAN_LIBRARY)
+			mode = 1;
+		if (action == ECA_LIBRARY_REBUILD_LIBRARY)
+			mode = 2;
+	}
+
+	// Check also for radio text change on streamed playback
+	size_t currentUpdate = session["HTML_CURRENT_UPDATE"].asInteger(0);
+	size_t lastUpdate = session["HTML_LAST_UPDATE"].asInteger(0);
+	bool transition = (lastUpdate != currentUpdate);
+
+	// Return state as JSON
+	std::string agent = session["SESSION_USER_AGENT"].asString();
+	util::TVariantValues response;
+	response.add("Agent", agent);
+	response.add("Scanning", scanning);
+	response.add("Transition", transition);
+	response.add("Mode", mode);
+	response.add("Last", lastUpdate);
+	response.add("Current", currentUpdate);
+
+	// Build JSON response
+	jsonScanner = response.asJSON().text();
+	if (!jsonScanner.empty()) {
+		data = jsonScanner.c_str();
+		size = jsonScanner.size();
+	}
+
+	if (debug) aout << app::yellow << "TPlayer::getScannerState() JSON = " << jsonScanner << app::reset << endl;
+}
+
+
 void TPlayer::getRepeatModes(TThreadData& sender, const void*& data, size_t& size, const util::TVariantValues& params, const util::TVariantValues& session, util::TVariantValues& headers, bool& zipped, bool& cached, int& error) {
 
 	// Get current repeat modes
@@ -6551,6 +6653,20 @@ void TPlayer::prepareWebRequest(const std::string& uri, const util::TVariantValu
 			found = true;
 		}
 
+		// Prepare detection of transition of library update
+		if (!found && title == "scanner") {
+
+			// Get current library update count
+			size_t lastUpdate = session["HTML_CURRENT_UPDATE"].asInteger(0);
+			size_t currentUpdate = getScannerDisplayUpdate();
+
+			// Store values for library update in session
+			session.add("HTML_CURRENT_UPDATE", currentUpdate);
+			session.add("HTML_LAST_UPDATE", lastUpdate);
+
+			found = true;
+		}
+
 		// Prepare detection of transition between player modes
 		if (!found && title == "modes") {
 
@@ -7646,16 +7762,22 @@ bool TPlayer::executeSystemAction(const app::ECommandAction action) {
 			downloadApplicationLicenseWithDelay();
 			break;
 
+//		case ECA_LIBRARY_RESCAN_LIBRARY:
+//			rescanLibrary();
+//			break;
+//
+//		case ECA_LIBRARY_REBUILD_LIBRARY:
+//			rebuildLibrary();
+//			break;
+//
+//		case ECA_LIBRARY_CLEAR_LIBRARY:
+//			deleteLibrary();
+//			break;
+
 		case ECA_LIBRARY_RESCAN_LIBRARY:
-			rescanLibrary();
-			break;
-
 		case ECA_LIBRARY_REBUILD_LIBRARY:
-			rebuildLibrary();
-			break;
-
 		case ECA_LIBRARY_CLEAR_LIBRARY:
-			deleteLibrary();
+			notifyLibraryAction(action);
 			break;
 
 		case ECA_SYSTEM_RESCAN_AUDIO:
@@ -8571,6 +8693,9 @@ app::ECommandAction TPlayer::getCurrentPhase() const {
 void TPlayer::updateLibrary(const bool aggressive) {
 	bool ok = false;
 
+	// Signal library scanning action to web display
+	invalidateScannerDislpay();
+
 	// Get all needed parameters
 	util::TStringList folders;
 	sound.getMusicFolders(folders);
@@ -8683,6 +8808,7 @@ void TPlayer::updateLibrary(const bool aggressive) {
 		}
 		setScannerStatusLabel(false, songs, errors);
 		setErroneousHeader(errors);
+		invalidateScannerDislpay();
 	}
 }
 
@@ -8690,7 +8816,7 @@ void TPlayer::updateLibrary(const bool aggressive) {
 void TPlayer::rescanLibrary() {
 	app::TLockGuard<app::TMutex> lock(rescanMtx, false);
 	if (!lock.tryLock()) {
-		logger("[Action] [Rescan] Scanning in progress, return to caller.");
+		logger("[Action] [Rescan] Scanning in progress, action ignored.");
 		return;
 	}
 
@@ -8701,7 +8827,7 @@ void TPlayer::rescanLibrary() {
 void TPlayer::rebuildLibrary() {
 	app::TLockGuard<app::TMutex> lock(rescanMtx, false);
 	if (!lock.tryLock()) {
-		logger("[Action] [Rebuild] Scanning in progress, return to caller.");
+		logger("[Action] [Rebuild] Scanning in progress, action ignored.");
 		return;
 	}
 
@@ -8732,7 +8858,7 @@ void TPlayer::rebuildLibrary() {
 void TPlayer::deleteLibrary() {
 	app::TLockGuard<app::TMutex> lock(rescanMtx, false);
 	if (!lock.tryLock()) {
-		logger("[Action] [Delete] Scanning in progress, return to caller.");
+		logger("[Action] [Delete] Scanning in progress, action ignored.");
 		return;
 	}
 
@@ -8767,6 +8893,7 @@ void TPlayer::deleteLibrary() {
 		// Update display variables
 		setScannerStatusLabel(false, songs, errors);
 		setErroneousHeader(errors);
+		invalidateScannerDislpay();
 
 	} else {
 		logger("[Action] [Delete] Failed to stop ALSA device <" + util::strToStr(player.getCurrentDevice(), "none") + ">");
@@ -8774,6 +8901,42 @@ void TPlayer::deleteLibrary() {
 		logger("[Action] [Delete] Error   : " + player.syserr());
 	}
 }
+
+int TPlayer::libraryThreadHandler(TLibraryThread& sender, music::TLibrary& library) {
+	sender.writeLog("Thread started.");
+	libraryThreadActive = libraryThreadRunning = true;
+	util::TBooleanGuard<bool> guard(libraryThreadActive);
+
+	// Thread loop...
+	do {
+		libraryEvent.wait();
+		if (libraryThreadRunning) {
+			switch (getLibraryAction()) {
+				case ECA_LIBRARY_RESCAN_LIBRARY:
+					rescanLibrary();
+					break;
+				case ECA_LIBRARY_REBUILD_LIBRARY:
+					rebuildLibrary();
+					break;
+				case ECA_LIBRARY_CLEAR_LIBRARY:
+					deleteLibrary();
+					break;
+				case ECA_APP_EXIT:
+					libraryThreadRunning = false;
+					break;
+				default:
+					break;
+			}
+			clearLibraryAction();
+		}
+	} while (libraryThreadRunning && !terminate && !sender.isTerminating());
+
+	sender.writeLog("Thread terminated.");
+	return EXIT_SUCCESS;
+}
+
+
+
 
 void TPlayer::saveCurrentSong(const music::TSong* song, const std::string& playlist) const {
 	application.writeLocalStore(STORE_CURRENT_SONG_HASH, util::assigned(song) ? song->getFileHash() : "none");
@@ -10382,21 +10545,15 @@ bool TPlayer::updateScannerStatus() {
 	bool scanning = false;
 	size_t songs = 0;
 	size_t errors = 0;
-	{
+	if (isLibraryUpdating()) {
+		// Scanner is working
+		songs = 0;
+		errors = 0;
+		scanning = true;
+	} else {
 		app::TReadWriteGuard<app::TReadWriteLock> lock(libraryLck, RWL_READ);
 		songs = library.songs();
 		errors = library.erroneous();
-	}
-	{
-		app::TLockGuard<app::TMutex> lock(updateMtx, false);
-		if (lock.tryLock()) {
-			// Lock was free, no scanner in progress
-		} else {
-			// Scanner is working
-			songs = 0;
-			errors = 0;
-			scanning = true;
-		}
 	}
 	setScannerStatusLabel(scanning, songs, errors);
 	return scanning;

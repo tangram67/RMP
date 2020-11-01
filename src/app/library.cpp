@@ -177,7 +177,6 @@ int TLibrary::readDirektory(const std::string& path, const app::TStringVector& p
 	struct stat status;
 	if (util::folderStatus(path, &status)) {
 		inode = status.st_ino;
-		std::cout << "TLibrary::readDirektory() Path = \"" << path << "\" --> inode = " << inode << std::endl;
 	}
 	if (util::INVALID_INODE_HANDLE == inode) {
 		return 0;
