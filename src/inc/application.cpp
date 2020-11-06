@@ -1130,6 +1130,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		sysdat.app.userName = config->readString("RunAsUser", sysutil::getUserName(uid));
 		sysdat.app.groupName = config->readString("RunAsGroup", sysutil::getUserName(uid));
 		sysdat.app.groupList = config->readString("SupplementalGroups", SUPPLEMENTAL_GROUP_LIST);
+		sysdat.app.capsList = config->readString("Capabilities", DEFAULT_CAPABILITIES_LIST);
 
 		// Which folder to use as working directory (PWD)
 		sysdat.app.setTempDir = config->readBool("UseTempDirAsPwd", sysdat.app.setTempDir);
@@ -1212,10 +1213,11 @@ void TApplication::initialize(int argc, char *argv[]) {
 
 		// Run as daemon?
 		bool userChanged = false;
+		std::string groupNames, capabilityNames;
 		if (daemonize) {
 			// Detach application from console and change user
 			// --> Allow serial port, GPIO (et al.) access
-			daemonizer(sysdat.app.userName, sysdat.app.groupName, sysdat.app.groupList, userChanged);
+			daemonizer(sysdat.app.userName, sysdat.app.groupName, sysdat.app.groupList, sysdat.app.capsList, groupNames, capabilityNames, userChanged);
 
 			// Reopen configuration file as new user
 			if (userChanged) {
@@ -1335,6 +1337,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		config->writeString("RunAsUser", sysdat.app.userName);
 		config->writeString("RunAsGroup", sysdat.app.groupName);
 		config->writeString("SupplementalGroups", sysdat.app.groupList.csv());
+		config->writeString("Capabilities", sysdat.app.capsList.csv());
 		config->writeBool("DisableSwappiness", noswap, INI_BLYES);
 
 		// Create log files
@@ -1661,6 +1664,10 @@ void TApplication::initialize(int argc, char *argv[]) {
 			logger(app::ELogBase::LOG_APP, "[Application] Application is daemonized.");
 		if (userChanged)
 			logger(app::ELogBase::LOG_APP, "[Application] Application is running as user <%>", sysdat.app.userName);
+		if (!groupNames.empty())
+			logger(app::ELogBase::LOG_APP, "[Application] Application supplementary groups $ assigned.", groupNames);
+		if (!capabilityNames.empty())
+			logger(app::ELogBase::LOG_APP, "[Application] Application capabilities $ processed.", capabilityNames);
 		if (niceset)
 			logger(app::ELogBase::LOG_APP, "[Application] Application nice level changed to (%)", sysdat.app.nice);
 		if (locked)
@@ -3044,7 +3051,9 @@ void TApplication::writeDebugFile(const std::string& fileName, const std::string
 	}
 }
 
-void TApplication::daemonizer(const std::string& runAsUser, const std::string& runAsGroup, const app::TStringVector& supplementalGroups, bool& userChanged) {
+void TApplication::daemonizer(const std::string& runAsUser, const std::string& runAsGroup,
+		const app::TStringVector& supplementalGroups, const app::TStringVector& capabilityList,
+		std::string& groupNames, std::string& capabilityNames, bool& userChanged) {
 	// The daemon startup code was taken in parts from the Linux Daemon Writing HOWTO
 	// Written by Devin Watson <dmwatson@comcast.net>
 	// The HOWTO is Copyright by Devin Watson, under the terms of the BSD License.
@@ -3053,6 +3062,8 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	gid_t gid;
 	int errnum;
 	userChanged = false;
+	capabilityNames.clear();
+	groupNames.clear();
 
 	/* Our process ID and Session ID */
 	pid_t sid;
@@ -3115,22 +3126,40 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 
 				// Inherit capability flags when changing user
 				cap_t caps;
-				cap_value_t capabilities[] = { CAP_SETUID, CAP_SETGID, CAP_SYS_ADMIN, CAP_IPC_LOCK, CAP_NET_BIND_SERVICE, CAP_SYS_NICE };
-				size_t count = util::sizeOfArray(capabilities);
-				if (count > 0) {
-					caps = cap_get_proc();
-					errnum = cap_set_flag(caps, CAP_PERMITTED, count, capabilities, CAP_SET);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_set_flag(1) failed.", errnum);
-					errnum = cap_set_proc(caps);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_set_proc(1) failed.", errnum);
-					errnum = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
-					if (errnum < 0)
-						throw sys_error("TApplication::daemonizer::prctl(1) failed.", errnum);
-					errnum = cap_free(caps);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_free(1) failed.", errnum);
+				cap_value_t capabilities[util::succ(capabilityList.size())];
+				size_t count = 0;
+
+				if (!capabilityList.empty()) {
+					// Deprecated: Use fixed array of capabilities...
+					// cap_value_t capabilities[] = { CAP_SETUID, CAP_SETGID, CAP_SYS_ADMIN, CAP_IPC_LOCK, CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_SYS_NICE, CAP_SYS_RAWIO };
+					// size_t count = util::sizeOfArray(capabilities);
+
+					// Add named capabilities as capability values to array
+					for (size_t i=0; i<capabilityList.size(); ++i) {
+						const std::string& cname = capabilityList[i];
+						cap_value_t cap = getCapabilityByName(cname);
+						if (INVALID_CAP_VALUE != cap) {
+							capabilities[count] = cap;
+							++count;
+							capabilityNames += capabilityNames.empty() ? cname : "," + cname;
+						}
+					}
+
+					if (count > 0) {
+						caps = cap_get_proc();
+						errnum = cap_set_flag(caps, CAP_PERMITTED, count, capabilities, CAP_SET);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_set_flag(1) failed.", errnum);
+						errnum = cap_set_proc(caps);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_set_proc(1) failed.", errnum);
+						errnum = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+						if (errnum < 0)
+							throw sys_error("TApplication::daemonizer::prctl(1) failed.", errnum);
+						errnum = cap_free(caps);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_free(1) failed.", errnum);
+					}
 				}
 
 				// Set supplemental groups
@@ -3147,6 +3176,7 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 								if (sgid != gid) {
 									sgroups[scnt] = sgid;
 									scnt++;
+									groupNames += groupNames.empty() ? gname : "," + gname;
 								}
 							}
 						}

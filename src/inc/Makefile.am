@@ -34,6 +34,8 @@ libradweb_a_SOURCES = \
 	blob.cpp \
 	blob.h \
 	bmp.h \
+ 	capabilities.cpp \
+	capabilities.h \
 	charconsts.h \
 	chunktypes.h \
 	classes.h \

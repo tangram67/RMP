@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <termios.h>
 #include <sys/capability.h>
+#include "capabilities.h"
 #include "stringutils.h"
 #include "dataclasses.h"
 #include "exception.h"
@@ -52,7 +53,8 @@ STATIC_CONST char* EXCP_FILE   = "/tmp/exception.dmp";
 STATIC_CONST char* APP_CONFIG  = "Global";
 STATIC_CONST char* APP_LICENSE = "License";
 STATIC_CONST char* LICENCE_BASE_URL = "http://www.dbrinkmeier.de/licenses/";
-STATIC_CONST char* SUPPLEMENTAL_GROUP_LIST = "gpio;dialout;audio;spi;i2c";
+STATIC_CONST char* SUPPLEMENTAL_GROUP_LIST = "gpio;dialout;audio;spi;i2c;kmem";
+STATIC_CONST char* DEFAULT_CAPABILITIES_LIST = "cap_ipc_lock;cap_net_bind_service;cap_sys_admin;cap_sys_nice;cap_sys_rawio;cap_net_admin";
 
 STATIC_CONST int SOFT_LOCK_LIMIT = 0xFFFF;
 STATIC_CONST int MAX_DUMP_SIZE = 50;
@@ -99,7 +101,7 @@ typedef std::vector<app::TModule&> TAppModuleList;
 enum ELogBase { LOG_APP, LOG_EXCEPT, LOG_THREAD, LOG_SOCKET, LOG_TIMER, LOG_TASKS, LOG_WEB, LOG_DATABASE };
 enum ESystemState { SYS_READY, SYS_RELOAD, SYS_STOP };
 
-class TApplication : public TModule, public TThreadAffinity, private TThreadUtil {
+class TApplication : public TModule, public TThreadAffinity, private TThreadUtil, private TCapabilities {
 private:
 	uid_t uid;
 	pid_t tid;
@@ -196,7 +198,9 @@ private:
 	void setConsole();
 	void restoreConsole();
 
-	void daemonizer(const std::string& runAsUser, const std::string& runAsGroup, const app::TStringVector& supplementalGroups, bool& userChanged);
+	void daemonizer(const std::string& runAsUser, const std::string& runAsGroup,
+			const app::TStringVector& supplementalGroups, const app::TStringVector& capabilityList,
+			std::string& groupNames, std::string& capabilityNames, bool& userChanged);
 	void parseCommandLine(int argc, char *argv[]);
 	sql::EDatabaseType parseDefaultDatabaseType(const std::string& description) const;
 
