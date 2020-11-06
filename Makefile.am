@@ -26,7 +26,7 @@ build_rmp_LDADD = \
 
 # Set capabilities (execute "make install-strip" as root)
 install-exec-hook:
-	setcap cap_ipc_lock,cap_net_bind_service,cap_sys_admin,cap_sys_nice=+ep $(DESTDIR)$(bindir)/rmp
+	setcap cap_ipc_lock,cap_net_bind_service,cap_sys_admin,cap_sys_nice,cap_sys_rawio,cap_net_admin=+ep $(DESTDIR)$(bindir)/rmp
 	getcap $(DESTDIR)$(bindir)/rmp
 
 AM_CXXFLAGS = -std=c++0x

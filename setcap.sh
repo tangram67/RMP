@@ -16,7 +16,7 @@ if [ ! -f $1 ]; then
 fi
 
 # Set additional capabilities
-setcap cap_ipc_lock,cap_net_bind_service,cap_sys_admin,cap_sys_nice=+ep $1
+setcap cap_ipc_lock,cap_net_bind_service,cap_sys_admin,cap_sys_nice,cap_sys_rawio,cap_net_admin=+ep $1
 
 # Show capabilities
 getcap $1
