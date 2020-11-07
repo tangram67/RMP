@@ -228,7 +228,6 @@ private:
 	bool createApplicationFolder(const std::string folder);
 
 	void writeDebugFile(const std::string& fileName, const std::string& text);
-	void saveCapabilitiesToFile(const std::string& fileName);
 	void notifySystemState(const ESystemState state);
 	void flushApplicationSettings();
 	void flushSystemSettings();

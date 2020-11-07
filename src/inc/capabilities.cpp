@@ -7,6 +7,7 @@
 
 #include "capabilities.h"
 #include "stringutils.h"
+#include "fileutils.h"
 
 namespace app {
 
@@ -298,5 +299,28 @@ cap_value_t TCapabilities::getCapabilityByName(const std::string& name) {
 	}
 	return INVALID_CAP_VALUE;
 }
+
+bool TCapabilities::saveCapabilitiesToFile(const std::string& fileName) {
+	util::TStdioFile file;
+	file.open(fileName, "w");
+	bool r = false;
+	if (file.isOpen()) {
+		cap_t caps = cap_get_proc();
+		if (util::assigned(caps)) {
+			ssize_t size = 0;
+			char *p = cap_to_text(caps, &size);
+			if (util::assigned(p) && size > 0) {
+				file.write(util::fileBaseName(fileName) + " ");
+				file.write(p, size);
+				file.write("\n");
+				cap_free(p);
+				r = true;
+			}
+			cap_free(caps);
+		}
+	}
+	return r;
+}
+
 
 } /* namespace app */

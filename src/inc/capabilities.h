@@ -34,6 +34,7 @@ STATIC_CONST cap_value_t INVALID_CAP_VALUE = (cap_value_t)-1;
 class TCapabilities {
 public:
 	cap_value_t getCapabilityByName(const std::string& name);
+	bool saveCapabilitiesToFile(const std::string& fileName);
 
 	TCapabilities();
 	virtual ~TCapabilities();

@@ -3024,22 +3024,6 @@ bool TApplication::commThreadMethod() {
 	return !(terminated || exit);
 }
 
-void TApplication::saveCapabilitiesToFile(const std::string& fileName) {
-	util::TStdioFile file;
-	file.open(fileName, "w");
-	if (file.isOpen()) {
-		ssize_t size;
-		cap_t caps = cap_get_proc();
-		char *p = cap_to_text(caps, &size);
-		if (util::assigned(p) && size > 0) {
-			file.write(application.getFileBaseName() + " ");
-			file.write(p, size);
-			file.write("\n");
-		}
-		cap_free(caps);
-	}
-
-}
 
 void TApplication::writeDebugFile(const std::string& fileName, const std::string& text) {
 	if (!text.empty()) {
@@ -3065,9 +3049,6 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	capabilityNames.clear();
 	groupNames.clear();
 
-	/* Our process ID and Session ID */
-	pid_t sid;
-
 	/* Fork off the parent process */
 	pid = fork();
 	if (pid < 0)
@@ -3092,13 +3073,13 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	umask(022);
 
 	/* Create a new SID for the child process */
-	sid = setsid();
+	pid_t sid = setsid();
 	if (sid < 0)
 		throw app_error("TApplication::daemonizer::setsid() failed.");
 
 	/* Change the current working directory */
-	const char* pwd = (sysdat.app.setTempDir) ? sysdat.app.tmpFolder.c_str() : sysdat.app.currentFolder.c_str();
-	if ((chdir(pwd)) < 0)
+	const char* pwd = sysdat.app.setTempDir ? sysdat.app.tmpFolder.c_str() : sysdat.app.currentFolder.c_str();
+	if (chdir(pwd) < 0)
 		throw app_error("TApplication::daemonizer::chdir() Failed to set current directory <" + std::string(pwd) + ">");
 
 	/* Redirect C++ stdin, stdout, and stderr streams to /dev/null */
@@ -3130,9 +3111,6 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 				size_t count = 0;
 
 				if (!capabilityList.empty()) {
-					// Deprecated: Use fixed array of capabilities...
-					// cap_value_t capabilities[] = { CAP_SETUID, CAP_SETGID, CAP_SYS_ADMIN, CAP_IPC_LOCK, CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_SYS_NICE, CAP_SYS_RAWIO };
-					// size_t count = util::sizeOfArray(capabilities);
 
 					// Add named capabilities as capability values to array
 					for (size_t i=0; i<capabilityList.size(); ++i) {
@@ -3145,6 +3123,7 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 						}
 					}
 
+					// Set permitted capabilities for spawned process
 					if (count > 0) {
 						caps = cap_get_proc();
 						errnum = cap_set_flag(caps, CAP_PERMITTED, count, capabilities, CAP_SET);
@@ -3166,7 +3145,7 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 				if (!supplementalGroups.empty()) {
 					gid_t sgid;
 					gid_t sgroups[util::succ(supplementalGroups.size())];
-					size_t scnt = 0;
+					size_t scount = 0;
 
 					// Add named groups as supplemental groups to list
 					for (size_t i=0; i<supplementalGroups.size(); ++i) {
@@ -3174,8 +3153,8 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 						if (runAsGroup != gname) {
 							if (sysutil::getGroupID(gname, sgid)) {
 								if (sgid != gid) {
-									sgroups[scnt] = sgid;
-									scnt++;
+									sgroups[scount] = sgid;
+									scount++;
 									groupNames += groupNames.empty() ? gname : "," + gname;
 								}
 							}
@@ -3183,8 +3162,8 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 					}
 
 					// Attach supplemental group list to current process
-					if (scnt > 0) {
-						errnum = setgroups(scnt, sgroups);
+					if (scount > 0) {
+						errnum = setgroups(scount, sgroups);
 						if (errnum < EXIT_SUCCESS) {
 							throw sys_error("TApplication::daemonizer::setgroups() failed.");
 						}
