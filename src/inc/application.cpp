@@ -3126,18 +3126,22 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 					// Set permitted capabilities for spawned process
 					if (count > 0) {
 						caps = cap_get_proc();
-						errnum = cap_set_flag(caps, CAP_PERMITTED, count, capabilities, CAP_SET);
-						if (util::checkFailed(errnum))
-							throw sys_error("TApplication::daemonizer::cap_set_flag(1) failed.", errnum);
-						errnum = cap_set_proc(caps);
-						if (util::checkFailed(errnum))
-							throw sys_error("TApplication::daemonizer::cap_set_proc(1) failed.", errnum);
-						errnum = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
-						if (errnum < 0)
-							throw sys_error("TApplication::daemonizer::prctl(1) failed.", errnum);
-						errnum = cap_free(caps);
-						if (util::checkFailed(errnum))
-							throw sys_error("TApplication::daemonizer::cap_free(1) failed.", errnum);
+						if (util::assigned(caps)) {
+							errnum = cap_set_flag(caps, CAP_PERMITTED, count, capabilities, CAP_SET);
+							if (util::checkFailed(errnum))
+								throw sys_error("TApplication::daemonizer::cap_set_flag(1) failed.", errnum);
+							errnum = cap_set_proc(caps);
+							if (util::checkFailed(errnum))
+								throw sys_error("TApplication::daemonizer::cap_set_proc(1) failed.", errnum);
+							errnum = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+							if (errnum < 0)
+								throw sys_error("TApplication::daemonizer::prctl(1) failed.", errnum);
+							errnum = cap_free(caps);
+							if (util::checkFailed(errnum))
+								throw sys_error("TApplication::daemonizer::cap_free(1) failed.", errnum);
+						} else {
+							throw sys_error("TApplication::daemonizer::cap_get_proc(1) failed.");
+						}
 					}
 				}
 
@@ -3182,15 +3186,19 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 				// Reestablish needed effective capabilities
 				if (count > 0) {
 					caps = cap_get_proc();
-					errnum = cap_set_flag(caps, CAP_EFFECTIVE, count, capabilities, CAP_SET);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_set_flag(2) failed.", errnum);
-					errnum = cap_set_proc(caps);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_set_proc(2) failed.", errnum);
-					errnum = cap_free(caps);
-					if (util::checkFailed(errnum))
-						throw sys_error("TApplication::daemonizer::cap_free(2) failed.", errnum);
+					if (util::assigned(caps)) {
+						errnum = cap_set_flag(caps, CAP_EFFECTIVE, count, capabilities, CAP_SET);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_set_flag(2) failed.", errnum);
+						errnum = cap_set_proc(caps);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_set_proc(2) failed.", errnum);
+						errnum = cap_free(caps);
+						if (util::checkFailed(errnum))
+							throw sys_error("TApplication::daemonizer::cap_free(2) failed.", errnum);
+					} else {
+						throw sys_error("TApplication::daemonizer::cap_get_proc(2) failed.");
+					}
 				}
 			}
 		}

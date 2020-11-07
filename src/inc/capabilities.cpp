@@ -16,6 +16,10 @@ TCapabilityMap fillCapabilityMap()
 {
 	TCapabilityMap capabilities;
 
+	/**
+	 ** POSIX-draft defined capabilities.
+	 **/
+
 	/* In a system with the [_POSIX_CHOWN_RESTRICTED] option defined, this
 	   overrides the restriction of changing file ownership and group
 	   ownership. */
@@ -279,7 +283,7 @@ TCapabilityMap fillCapabilityMap()
 	return capabilities;
 }
 
-static TCapabilityMap localCapabilitiesMap = fillCapabilityMap();
+static const TCapabilityMap localCapabilitiesMap = fillCapabilityMap();
 
 
 TCapabilities::TCapabilities() {
@@ -290,7 +294,7 @@ TCapabilities::~TCapabilities() {
 
 cap_value_t TCapabilities::getCapabilityByName(const std::string& name) {
 	if (!name.empty()) {
-		std::string desc = util::toupper(name);
+		std::string desc = util::toupper(util::trim(name));
 		if (!desc.empty()) {
 			TCapabilityMap::const_iterator it = localCapabilitiesMap.find(desc);
 			if (it != localCapabilitiesMap.end())
