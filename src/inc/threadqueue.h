@@ -37,6 +37,14 @@ private:
 		return nil;
 	}
 
+	void push_back(const object_t& item) {
+		queue_p o = new queue_t;
+		o->object = new object_t;
+		*o->object = item;
+		o->refC = 1;
+		queue.push_back(o);
+	}
+
 	queue_p pull() {
 		queue_p item = top();
 		if (util::assigned(item)) {
@@ -75,11 +83,13 @@ public:
 
 	void add(const object_t& item) {
 		app::TLockGuard<app::TMutex> lock(mtx);
-		queue_p o = new queue_t;
-		o->object = new object_t;
-		*o->object = item;
-		o->refC = 1;
-		queue.push_back(o);
+		push_back(item);
+	}
+
+	void poke(const object_t& item) {
+		app::TLockGuard<app::TMutex> lock(mtx);
+		util::clearObjectList(queue);
+		push_back(item);
 	}
 
 	bool peek(object_t& item) {

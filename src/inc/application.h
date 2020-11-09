@@ -195,7 +195,7 @@ private:
 	bool commThreadStarted;
 	bool eventsEnabled;
 
-	void setConsole();
+	void aquireConsole();
 	void restoreConsole();
 
 	void daemonizer(const std::string& runAsUser, const std::string& runAsGroup,
@@ -236,7 +236,6 @@ private:
 	PWebServer startWebServer(const std::string& name, const std::string& documentRoot, const bool autostart);
 
 	void onAcceptSocket(const std::string& addr, bool& ok);
-	ssize_t onAplicationSocketData(const inet::TUnixServerSocket& socket, const app::THandle handle);
 
 	// Overwrite "TBaseApplication::execute() = 0"
 	int execute() { return EXIT_SUCCESS; };

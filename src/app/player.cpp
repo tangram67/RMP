@@ -7177,9 +7177,15 @@ void TPlayer::updateSerialDevices(const music::CRemoteValues& values) {
 
 void TPlayer::onProgressClick(const std::string& key, const std::string& value, const util::TVariantValues& params, const util::TVariantValues& session, int& error) {
 	double progress = params["progress"].asDouble(-1.0, app::cc_CC);
-	logger(util::csnprintf("[Event] Progress bar data for [" + key + "] = % %%", progress));
-	if (progress > (double)0.0 && progress < (double)100.0)
-		player.addSeekCommand(progress);
+	std::string action = params["action"].asString();
+	logger(util::csnprintf("[Event] Progress bar data for [" + key + "] $ = % %%", action, progress));
+	if (!action.empty() && progress > (double)0.0 && progress < (double)100.0) {
+		if (0 == util::strncasecmp(action, "slide", 5)) {
+			player.queueSeekCommand(progress);
+		} else if (0 == util::strncasecmp(action, "click", 5)) {
+			player.addSeekCommand(progress);
+		}
+	}
 }
 
 

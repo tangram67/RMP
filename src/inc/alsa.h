@@ -501,6 +501,7 @@ public:
 
 	void addStreamCommand(const EPlayerCommand command);
 	void addSeekCommand(const double position);
+	void queueSeekCommand(const double position);
 	void clearStreamCommands();
 
 	void setPeriodTime(snd_pcm_uint_t periodTime) { m_periodtime = periodTime * 1000; };

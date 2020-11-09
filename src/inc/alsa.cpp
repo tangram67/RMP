@@ -1234,6 +1234,15 @@ void TAlsaPlayer::addSeekCommand(const double position) {
 	}
 }
 
+void TAlsaPlayer::queueSeekCommand(const double position) {
+	if (m_state == EPS_PLAY) {
+		TPlayerCommand cmd;
+		cmd.value = position;
+		cmd.command = EPP_POSITION;
+		queue.poke(cmd);
+	}
+}
+
 void TAlsaPlayer::clearStreamCommands() {
 	queue.clear();
 }

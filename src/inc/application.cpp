@@ -1438,8 +1438,9 @@ void TApplication::initialize(int argc, char *argv[]) {
 		config->setSection(APP_CONFIG);
 		sysdat.app.useTerminalInput = config->readBool("UseTerminalInput", sysdat.app.useTerminalInput);
 		config->writeBool("UseTerminalInput", sysdat.app.useTerminalInput, INI_BLYES);
-		if ((sysdat.app.useTerminalInput) && !daemonized)
-			setConsole();
+		if ((sysdat.app.useTerminalInput) && !daemonized) {
+			aquireConsole();
+		}
 
 		// Read MIME types from file
 		config->setSection("MimeTypes");
@@ -2004,7 +2005,7 @@ void TApplication::writeStream(std::stringstream& sstrm) {
 	}
 }
 
-void TApplication::setConsole() {
+void TApplication::aquireConsole() {
 	int err;
 	struct termios settings;
 	memset(&console, 0, sizeof(console));
@@ -2933,27 +2934,33 @@ bool TApplication::udevThreadMethod() {
 		THotplugEvent event;
 		TEventResult ev = hotplug.wait(event, 0);
 		if (!terminated) {
-			if (EV_SIGNALED == ev && event.isAssigned()) {
-				if (event.getProduct().empty()) {
-					writeLog("[Hotplug] Event [" + event.getAction() + "][" + event.getPath() + "]");
-				} else {
-					writeLog("[Hotplug] Event [" + event.getAction() + "][" + event.getProduct() + "][" + event.getPath() + "]");
-				}
-				if (onHotplug != nil) {
-					try {
-						onHotplug(event, event.getEvent());
-					} catch (const std::exception& e) {
-						std::string sExcept = e.what();
-						std::string sText = "Exception in TApplication::udevThreadMethod::event() " + sExcept;
-						errorLog(sText);
-					} catch (...) {
-						std::string sText = "Unknown exception in TApplication::udevThreadMethod::event()";
-						errorLog(sText);
+			switch (ev) {
+				case EV_SIGNALED:
+					if (event.isAssigned()) {
+						if (event.getProduct().empty()) {
+							writeLog("[Hotplug] Event [" + event.getAction() + "][" + event.getPath() + "]");
+						} else {
+							writeLog("[Hotplug] Event [" + event.getAction() + "][" + event.getProduct() + "][" + event.getPath() + "]");
+						}
+						if (onHotplug != nil) {
+							try {
+								onHotplug(event, event.getEvent());
+							} catch (const std::exception& e) {
+								std::string sExcept = e.what();
+								std::string sText = "Exception in TApplication::udevThreadMethod::event() " + sExcept;
+								errorLog(sText);
+							} catch (...) {
+								std::string sText = "Unknown exception in TApplication::udevThreadMethod::event()";
+								errorLog(sText);
+							}
+						}
 					}
-				}
-			}
-			if (EV_TERMINATE == ev) {
-				exit = true;
+					break;
+				case EV_TERMINATE:
+					exit = true;
+					break;
+				default:
+					break;
 			}
 		}
 	} catch (const std::exception& e) {
@@ -2988,29 +2995,35 @@ bool TApplication::commThreadMethod() {
 		TByteBuffer data;
 		TEventResult ev = sysdat.obj.serial->wait(data, sysdat.serial.chunk, 0);
 		if (!terminated) {
-			if (EV_SIGNALED == ev && !data.empty()) {
-				writeLog(util::csnprintf("[Terminal] % of % Bytes received [%]", data.size(), sysdat.serial.chunk, util::TBinaryConvert::binToAsciiA(data(), data.size(), true)));
-				if (onTerminal != nil) {
-					try {
-						onTerminal(*sysdat.obj.serial, data);
-					} catch (const std::exception& e) {
-						std::string sExcept = e.what();
-						std::string sText = "Exception in TApplication::commThreadMethod::event() " + sExcept;
-						errorLog(sText);
-					} catch (...) {
-						std::string sText = "Unknown exception in TApplication::commThreadMethod::event()";
-						errorLog(sText);
+			switch (ev) {
+				case EV_SIGNALED:
+					if (!data.empty()) {
+						writeLog(util::csnprintf("[Terminal] % of % Bytes received [%]", data.size(), sysdat.serial.chunk, util::TBinaryConvert::binToAsciiA(data(), data.size(), true)));
+						if (onTerminal != nil) {
+							try {
+								onTerminal(*sysdat.obj.serial, data);
+							} catch (const std::exception& e) {
+								std::string sExcept = e.what();
+								std::string sText = "Exception in TApplication::commThreadMethod::event() " + sExcept;
+								errorLog(sText);
+							} catch (...) {
+								std::string sText = "Unknown exception in TApplication::commThreadMethod::event()";
+								errorLog(sText);
+							}
+						}
 					}
-				}
-			}
-			if (EV_TERMINATE == ev) {
-				exit = true;
-			}
-			if (EV_CLOSED == ev) {
-				util::wait(500);
-			}
-			if (EV_CHANGED == ev) {
-				util::wait(250);
+					break;
+				case EV_CLOSED:
+					util::wait(500);
+					break;
+				case EV_CHANGED:
+					util::wait(250);
+					break;
+				case EV_TERMINATE:
+					exit = true;
+					break;
+				default:
+					break;
 			}
 		}
 	} catch (const std::exception& e) {
@@ -3257,13 +3270,10 @@ bool TApplication::reboot() {
 	return rebooting;
 }
 
-ssize_t TApplication::onAplicationSocketData(const inet::TUnixServerSocket& socket, const app::THandle handle) {
-	// Discarded....
-	return (ssize_t)0;
-}
-
 void TApplication::onAcceptSocket(const std::string& addr, bool& accept) {
-	// Not needed....
+	if (rebooting || terminated || terminating) {
+		accept = false;
+	}
 }
 
 } /* namespace app */

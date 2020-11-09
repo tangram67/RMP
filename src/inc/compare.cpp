@@ -10,6 +10,8 @@
 #include "nullptr.h"
 #include "templates.h"
 
+#define USE_GLIB_STRCMP
+
 using namespace util;
 
 static unsigned char UNSIGNED_CHAR_LOOKUP_TABLE[256] = {
@@ -218,11 +220,11 @@ static int strcasecmp_s(const char *s1, const char *s2)
     for ( ; ; ++s1, ++s2) {
 		u1 = (unsigned char) *s1;
 		u2 = (unsigned char) *s2;
-		if ((u1 == '\0') || (charCompareLookupTable[u1] != charCompareLookupTable[u2])) {
+		if ((u1 == '\0') || (UNSIGNED_CHAR_LOOKUP_TABLE[u1] != UNSIGNED_CHAR_LOOKUP_TABLE[u2])) {
 			break;
 		}
     }
-    return charCompareLookupTable[u1] - charCompareLookupTable[u2];
+    return UNSIGNED_CHAR_LOOKUP_TABLE[u1] - UNSIGNED_CHAR_LOOKUP_TABLE[u2];
 #endif
 }
 
@@ -295,8 +297,8 @@ static int strncasecmp_s(const char *s1, const char *s2, size_t length)
     for (; length != 0; --length, ++s1, ++s2) {
 		u1 = (unsigned char) *s1;
 		u2 = (unsigned char) *s2;
-		if (charCompareLookupTable[u1] != charCompareLookupTable[u2]) {
-			return charCompareLookupTable[u1] - charCompareLookupTable[u2];
+		if (UNSIGNED_CHAR_LOOKUP_TABLE[u1] != UNSIGNED_CHAR_LOOKUP_TABLE[u2]) {
+			return UNSIGNED_CHAR_LOOKUP_TABLE[u1] - UNSIGNED_CHAR_LOOKUP_TABLE[u2];
 		}
 		if (u1 == '\0') {
 			return 0;
@@ -355,7 +357,7 @@ int util::strncasecmp(const char *s1, const std::string& s2, size_t length)
 }
 
 
-bool util::strstr(const char * haystack, const char *needle) {
+bool util::strstr(const char *haystack, const char *needle) {
 	if (!util::assigned(haystack) || !util::assigned(haystack))
 		return false;
 	return util::assigned(::strstr(haystack, needle));
@@ -380,7 +382,7 @@ bool util::strstr(const std::string& haystack, const char *needle)
 	return util::assigned(::strstr(p1, needle));
 }
 
-bool util::strstr(const char * haystack, const std::string& needle)
+bool util::strstr(const char *haystack, const std::string& needle)
 {
 	if (!util::assigned(haystack))
 		return false;
@@ -391,7 +393,7 @@ bool util::strstr(const char * haystack, const std::string& needle)
 }
 
 
-bool util::strcasestr(const char * haystack, const char *needle) {
+bool util::strcasestr(const char *haystack, const char *needle) {
 	if (!util::assigned(haystack) || !util::assigned(haystack))
 		return false;
 	return util::assigned(::strcasestr(haystack, needle));
@@ -416,7 +418,7 @@ bool util::strcasestr(const std::string& haystack, const char *needle)
 	return util::assigned(::strcasestr(p1, needle));
 }
 
-bool util::strcasestr(const char * haystack, const std::string& needle)
+bool util::strcasestr(const char *haystack, const std::string& needle)
 {
 	if (!util::assigned(haystack))
 		return false;
@@ -560,7 +562,7 @@ static int strnatcmp_s(const char *s1, const char *s2, bool casecmp = false)
 }
 
 
-int util::strnatcmp(const char* s1, const char* s2) {
+int util::strnatcmp(const char *s1, const char *s2) {
 	if (!util::assigned(s1) && !util::assigned(s2))
 		return 0;
 	if (!util::assigned(s1))
@@ -593,7 +595,7 @@ int util::strnatcmp(const std::string& s1, const char *s2) {
 	return strnatcmp_s(p1, s2, false);
 }
 
-int util::strnatcmp(const char * s1, const std::string& s2) {
+int util::strnatcmp(const char *s1, const std::string& s2) {
 	if (!util::assigned(s1) && s2.empty())
 		return 0;
 	if (!util::assigned(s1))
@@ -605,7 +607,7 @@ int util::strnatcmp(const char * s1, const std::string& s2) {
 }
 
 
-int util::strnatcasecmp(const char* s1, const char* s2) {
+int util::strnatcasecmp(const char *s1, const char *s2) {
 	if (!util::assigned(s1) && !util::assigned(s2))
 		return 0;
 	if (!util::assigned(s1))
@@ -638,7 +640,7 @@ int util::strnatcasecmp(const std::string& s1, const char *s2) {
 	return strnatcmp_s(p1, s2, true);
 }
 
-int util::strnatcasecmp(const char * s1, const std::string& s2) {
+int util::strnatcasecmp(const char *s1, const std::string& s2) {
 	if (!util::assigned(s1) && s2.empty())
 		return 0;
 	if (!util::assigned(s1))
@@ -650,11 +652,11 @@ int util::strnatcasecmp(const char * s1, const std::string& s2) {
 }
 
 
-static bool strnatsort_s(const char* s1, const char* s2, bool casecmp) {
+static bool strnatsort_s(const char *s1, const char *s2, bool casecmp) {
 	return strnatcmp_s(s1, s2, casecmp) < 0;
 }
 
-bool util::strnatsort(const char* s1, const char* s2) {
+bool util::strnatsort(const char *s1, const char *s2) {
 	if (!util::assigned(s1))
 		return true;
 	if (!util::assigned(s2))
@@ -681,7 +683,7 @@ bool util::strnatsort(const std::string& s1, const char *s2) {
 	return strnatsort_s(p1, s2, false);
 }
 
-bool util::strnatsort(const char * s1, const std::string& s2) {
+bool util::strnatsort(const char *s1, const std::string& s2) {
 	if (!util::assigned(s1))
 		return false;
 	if (s2.empty())
@@ -690,7 +692,7 @@ bool util::strnatsort(const char * s1, const std::string& s2) {
 	return strnatsort_s(s1, p2, false);
 }
 
-bool util::strnatcasesort(const char* s1, const char* s2) {
+bool util::strnatcasesort(const char *s1, const char *s2) {
 	if (!util::assigned(s1))
 		return true;
 	if (!util::assigned(s2))
@@ -717,7 +719,7 @@ bool util::strnatcasesort(const std::string& s1, const char *s2) {
 	return strnatsort_s(p1, s2, true);
 }
 
-bool util::strnatcasesort(const char * s1, const std::string& s2) {
+bool util::strnatcasesort(const char *s1, const std::string& s2) {
 	if (!util::assigned(s1))
 		return false;
 	if (s2.empty())
