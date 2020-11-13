@@ -369,6 +369,7 @@ public:
 	unsigned int getPort() const { return port; };
 	const std::string& getRestRoot() const { return web.restRoot; };
 	const std::string& getWebRoot() const { return web.documentRoot; };
+	const std::string& getUploadFolder() const { return web.uploadFolder; };
 	const std::string& getFullURL() const;
 
 	bool getDebug() const { return web.debug; };
