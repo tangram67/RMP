@@ -1553,15 +1553,15 @@ const std::string& TTileMenu::text() const {
 				// Generate new item list from given menu entries
 				if (ECA_RIGHT == o->align) {
 					if (ESZ_MEDIUM == o->size) {
-						items.add("    <div class=\"col-md-3 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+						items.add("    <div" + tagToStr("id", getName() + "_" + std::to_string(i)) + " class=\"col-tiles col-md-3 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
 					} else {
-						items.add("    <div class=\"col-md-6 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+						items.add("    <div" + tagToStr("id", getName() + "_" + std::to_string(i)) + " class=\"col-tiles col-md-6 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
 					}
 				} else {
 					if (ESZ_MEDIUM == o->size) {
-						items.add("    <div class=\"col-md-3\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+						items.add("    <div" + tagToStr("id", getName() + "_" + std::to_string(i)) + " class=\"col-tiles col-md-3\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
 					} else {
-						items.add("    <div class=\"col-md-6\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+						items.add("    <div" + tagToStr("id", getName() + "_" + std::to_string(i)) + " class=\"col-tiles col-md-6\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
 					}
 				}
 				items.add("      <div>");
@@ -1594,7 +1594,7 @@ const std::string& TTileMenu::text() const {
 const std::string& TTileMenu::html() const {
 	if (strHTML.empty()) {
 		strHTML = "<div class=\"container-fluid\">\n";
-		strHTML += "  <div class=\"row blog\">\n";
+		strHTML += "  <div" + tagToStr("id", getName()) + " class=\"row blog\">\n";
 		strHTML += text();
 		strHTML += "\n  </div>";
 		strHTML += "\n</div>\n";
