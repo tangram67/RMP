@@ -1398,4 +1398,173 @@ void TMainMenu::invalidate() {
 }
 
 
+
+TTileItem::TTileItem() {
+	level = 0;
+	size = ESZ_MEDIUM;
+	align = ECA_DEFAULT;
+}
+
+TTileItem::~TTileItem() {
+}
+
+const std::string TTileItem::getCaption() const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	return caption;
+};
+
+void TTileItem::setCaption(const std::string& value) {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	caption = value;
+};
+
+const std::string TTileItem::getText() const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	return text;
+};
+
+void TTileItem::setText(const std::string& value) {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	text = value;
+};
+
+const std::string TTileItem::getLink() const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	return link;
+};
+
+void TTileItem::setLink(const std::string& value) {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	link = value;
+};
+
+void TTileItem::getProperties(std::string& caption, std::string& text, std::string& link) const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	caption = this->caption;
+	text = this->text;
+	link = this->link;
+}
+
+
+TTileMenu::TTileMenu() : TComponent() {
+	prime();
+}
+
+TTileMenu::TTileMenu(const std::string& name) : TComponent() {
+	prime();
+	setName(name);
+}
+
+TTileMenu::~TTileMenu() {
+	util::clearObjectList(menu);
+}
+
+void TTileMenu::prime() {
+	root = "/";
+	defVal = "<invalid>";
+	items.setTag("li");
+	setID("tilesbar");
+}
+
+void TTileMenu::invalidate() {
+	TComponent::invalidate();
+}
+
+PTileItem TTileMenu::addItem(const std::string& id, const std::string& caption, const std::string& text, const std::string& link,
+		const EComponentSize size, const int level, const std::string& glyph, const EComponentAlign align) {
+	PTileItem o = new TTileItem;
+	o->level = level;
+	o->caption = caption;
+	o->text = text;
+	o->glyph = glyph;
+	o->link = link;
+	o->name = id;
+	o->id = id;
+	o->size = size;
+	o->align = align;
+	menu.push_back(o);
+	return o;
+}
+
+std::string TTileMenu::completeLink(const std::string& link) const {
+	if (link.empty())
+		return link;
+	if (std::string::npos != link.find('#'))
+		return link;
+	if (link[0] == '/')
+		return link;
+	return root + link;
+}
+
+const std::string& TTileMenu::text() const {
+	if (!menu.empty() && strText.empty()) {
+		items.clear();
+
+		for (size_t i=0; i<menu.size(); ++i) {
+			PTileItem o = menu[i];
+			if (util::assigned(o)) {
+				std::string caption, text, link;
+				o->getProperties(caption, text, link);
+
+				// Example entry:
+				//	<div class='col-md-6' onclick="onTileClick('/app/system/appconf.html');">
+				//		<div>
+				//			<h4><span class="glyphicon glyphicon-cog" style="pointer-events:none;" aria-hidden="true"></span>&nbsp;Einstellungen</h4>
+				//			<h5>Maschinenparameter editieren und Eingangsbelegung festlegen</h5>
+				//		</div>
+				//	</div>
+
+				// Generate new item list from given menu entries
+				if (ECA_RIGHT == o->align) {
+					if (ESZ_MEDIUM == o->size) {
+						items.add("    <div class=\"col-md-3 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+					} else {
+						items.add("    <div class=\"col-md-6 pull-md-right\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+					}
+				} else {
+					if (ESZ_MEDIUM == o->size) {
+						items.add("    <div class=\"col-md-3\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+					} else {
+						items.add("    <div class=\"col-md-6\"" + tagToStr("userlevel", std::to_string(o->level)) + " onclick=\"onTileClick('" + completeLink(link) + "');\">");
+					}
+				}
+				items.add("      <div>");
+				if (o->glyph.empty()) {
+					items.add("        <h4>" + caption + "</h4>");
+				} else {
+					items.add("        <h4><span class=\"glyphicon " + o->glyph + "\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;" + caption + "</h4>");
+				}
+				if (!o->text.empty()) {
+					items.add("        <h5>"  + text + "</h5>");
+				}
+				items.add("      </div>");
+				items.add("    </div>");
+			}
+		}
+
+		// Calculate estimated destination size:
+		size_t n = 0;
+		const_iterator it = begin();
+		for (; it != end(); ++it)
+			n += (*it).size() + 2;
+		strText.reserve(n);
+
+		// Concate strings...
+		strText = items.raw('\n');
+	}
+	return strText;
+}
+
+const std::string& TTileMenu::html() const {
+	if (strHTML.empty()) {
+		strHTML = "<div class=\"container-fluid\">\n";
+		strHTML += "  <div class=\"row blog\">\n";
+		strHTML += text();
+		strHTML += "\n  </div>";
+		strHTML += "\n</div>\n";
+	}
+	return strHTML;
+}
+
+
 } /* namespace util */

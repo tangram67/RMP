@@ -339,10 +339,12 @@ public:
 	void setActive(const bool value) { active = value; };
 	int getLevel() const { return level; };
 	void setLevel(const int value) { level = value; };
-	const std::string& getCaption() const { return caption; };
-	void setCaption(const std::string& value) { caption = value; };
-	const std::string& getLink() const { return link; };
-	void setLink(const std::string& value) { link = value; };
+
+	// TODO Protect by mutex
+	//	const std::string& getCaption() const { return caption; };
+	//	void setCaption(const std::string& value) { caption = value; };
+	//	const std::string& getLink() const { return link; };
+	//	void setLink(const std::string& value) { link = value; };
 
 	TMenuItem() {
 		active = false;
@@ -366,6 +368,39 @@ public:
 
 	TContextMenuItem();
 	virtual ~TContextMenuItem();
+};
+
+
+class TTileItem {
+	friend class TTileMenu;
+
+private:
+	mutable app::TMutex mtx;
+	std::string id;
+	std::string name;
+	std::string link;
+	std::string caption;
+	std::string text;
+	std::string glyph;
+	EComponentSize size;
+	EComponentAlign align;
+	int level;
+
+public:
+	int getLevel() const { return level; };
+	void setLevel(const int value) { level = value; };
+
+	const std::string getCaption() const;
+	void setCaption(const std::string& value);
+	const std::string getText() const;
+	void setText(const std::string& value);
+	const std::string getLink() const;
+	void setLink(const std::string& value);
+
+	void getProperties(std::string& caption, std::string& text, std::string& link) const;
+
+	TTileItem();
+	virtual ~TTileItem();
 };
 
 
@@ -466,6 +501,36 @@ public:
 	TMainMenu();
 	TMainMenu(const std::string& name);
 	virtual ~TMainMenu();
+};
+
+
+class TTileMenu : public TComponent {
+private:
+	std::string root;
+	std::string defVal;
+	TTileItemList menu;
+
+	void prime();
+	void invalidate();
+	std::string completeLink(const std::string& link) const;
+
+	// Hide methods of TComponent
+	const std::string& text(const std::string caption) const { return defVal; };
+	const std::string& html(const std::string caption) const { return defVal; };
+
+public:
+	void setRoot(const std::string& path) { root = path; };
+	std::string getRoot() const { return root; };
+
+	PTileItem addItem(const std::string& id, const std::string& caption, const std::string& text, const std::string& link,
+			const EComponentSize size, const int level = 0, const std::string& glyph = "", const EComponentAlign align = ECA_DEFAULT);
+
+	const std::string& html() const;
+	const std::string& text() const;
+
+	TTileMenu();
+	TTileMenu(const std::string& name);
+	virtual ~TTileMenu();
 };
 
 
