@@ -56,6 +56,7 @@ enum EListFocus {
 class TMenuItem;
 class TMainMenuItem;
 class TContextMenuItem;
+class TTileItem;
 
 #ifdef STL_HAS_TEMPLATE_ALIAS
 
@@ -65,6 +66,8 @@ using PMainMenuItem = TMainMenuItem*;
 using TMainMenuItemList = std::vector<PMainMenuItem>;
 using PContextMenuItem = TContextMenuItem*;
 using TContextMenuItemList = std::vector<PContextMenuItem>;
+using PTileItem = TTileItem*;
+using TTileItemList = std::vector<PTileItem>;
 
 #else
 
@@ -74,6 +77,8 @@ typedef TMainMenuItem* PMainMenuItem;
 typedef std::vector<PMainMenuItem> TMainMenuItemList;
 typedef TContextMenuItem* PContextMenuItem;
 typedef std::vector<PContextMenuItem> TContextMenuItemList;
+typedef TTileItem* PTileItem;
+typedef std::vector<PTileItem> TTileItemList;
 
 #endif
 
