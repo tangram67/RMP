@@ -843,6 +843,40 @@ const std::string& TRadioGroup::html(const std::string& caption) const {
 }
 
 
+TMenuItem::TMenuItem() {
+	active = false;
+	level = 0;
+}
+
+TMenuItem::~TMenuItem() {
+}
+
+const std::string TMenuItem::getCaption() const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	return caption;
+};
+
+void TMenuItem::setCaption(const std::string& value) {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	caption = value;
+};
+
+const std::string TMenuItem::getLink() const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	return link;
+};
+
+void TMenuItem::setLink(const std::string& value) {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	link = value;
+};
+
+void TMenuItem::getProperties(std::string& caption, std::string& link) const {
+	app::TLockGuard<app::TMutex> lock(mtx);
+	caption = this->caption;
+	link = this->link;
+}
+
 
 TContextMenuItem::TContextMenuItem() {
 }
@@ -1004,7 +1038,9 @@ const std::string& TContextMenu::text() const {
 						for (size_t j=0; j<o->submenu.size(); ++j) {
 							PMenuItem p = o->submenu[j];
 							if (util::assigned(p)) {
-								text = encodeHtmlText(p->caption);
+								std::string caption, link;
+								p->getProperties(caption, link);
+								text = encodeHtmlText(caption);
 								if (p->name == "-" || p->id == "-") {
 									items.add("      <" + items.getTag() + " class=\"divider\"></" + items.getTag() + ">");
 								} else {

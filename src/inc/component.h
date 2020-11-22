@@ -326,6 +326,7 @@ class TMenuItem {
 	friend class TContextMenuItem;
 
 private:
+	mutable app::TMutex mtx;
 	std::string id;
 	std::string name;
 	std::string link;
@@ -340,16 +341,15 @@ public:
 	int getLevel() const { return level; };
 	void setLevel(const int value) { level = value; };
 
-	// TODO Protect by mutex
-	//	const std::string& getCaption() const { return caption; };
-	//	void setCaption(const std::string& value) { caption = value; };
-	//	const std::string& getLink() const { return link; };
-	//	void setLink(const std::string& value) { link = value; };
+	const std::string getCaption() const;
+	void setCaption(const std::string& value);
+	const std::string getLink() const;
+	void setLink(const std::string& value);
 
-	TMenuItem() {
-		active = false;
-		level = 0;
-	};
+	void getProperties(std::string& caption, std::string& link) const;
+
+	TMenuItem();
+	virtual ~TMenuItem();
 };
 
 
