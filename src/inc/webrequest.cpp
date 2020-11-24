@@ -958,12 +958,10 @@ bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredent
 					error = MHD_HTTP_FORBIDDEN;
 
 				// Store login in session
-				if (util::assigned(session)) {
-					if (retVal) {
-						if (loginUserName(user.username, user.password, user.level, false)) {
-							if (debugger) std::cout << "TWebRequest::authenticate(1) Authenticated given user." << std::endl;
-							fallback = false;
-						}
+				if (retVal) {
+					if (loginUserName(user.username, user.password, user.level, false)) {
+						if (debugger) std::cout << "TWebRequest::authenticate(1) Authenticated given user." << std::endl;
+						fallback = false;
 					}
 				}
 			}
@@ -1006,7 +1004,7 @@ bool TWebRequest::authenticate(const int userlevel) {
 		return true;
 
 	// Set default values for given user level
-	authenticated = loginUserName("default", "*", userlevel, false);
+	authenticated = loginUserName("default", "*", userlevel, true);
 
 	return authenticated;
 }
@@ -1038,19 +1036,21 @@ bool TWebRequest::loginUserName(const std::string& username, const std::string& 
 
 void TWebRequest::logoffSessionUser() {
 	bool debugger = debug;
+	bool logoff = false;
 	//debugger = true;
 	if (util::assigned(session)) {
-		{
-			// Session expired
-			app::TLockGuard<app::TMutex> lock(session->userMtx);
-			session->userlevel = 0;
-			session->authenticated = false;
-			session->valuesRead = false;
+		// Session expired
+		app::TLockGuard<app::TMutex> lock(session->userMtx);
+		session->userlevel = 0;
+		session->authenticated = false;
+		session->valuesRead = false;
+		logoff = true;
 
-			// Do NOT (!) clear user name, still needed to compare against anonimous user name
-			// session->username.clear();
-			// session->password.clear();
-		}
+		// Do NOT (!) clear user name, still needed to compare against anonimous user name
+		// session->username.clear();
+		// session->password.clear();
+	}
+	if (logoff) {
 		session->clearUserValues();
 		if (debugger) std::cout << "TWebRequest::logoffSessionUser() Logged off session user <" << session->username << ">" << std::endl;
 	}

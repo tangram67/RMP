@@ -1929,6 +1929,9 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				} else {
 					// Authenticate request to default level 3 to allow administrative access
 					authenticated = request->authenticate(DEFAULT_USER_LEVEL);
+					if (!authenticated && error == MHD_HTTP_NOT_FOUND) {
+						error = MHD_HTTP_FORBIDDEN;
+					}
 				}
 			}
 
@@ -1951,18 +1954,6 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 					writeInfoLog(util::csnprintf("[Request handler] Allow unrestricted access to URL [%] from client [%]", URL, ip));
 				}
 			}
-
-			// Allow access to web application files via GET/HEAD/POST for default user level
-//			if (!authenticated && web.auth != HAT_DIGEST_NONE && web.defaultUserLevel > 0) {
-//				authenticated = true;
-//				if (logon) {
-//					result = error = MHD_HTTP_FORBIDDEN;
-//				}
-//				if (web.verbosity > 0) {
-//					std::string ip(inet::inetAddrToStr(connection->addr));
-//					writeInfoLog(util::csnprintf("[Request handler] Allow access to URL [%] from client [%] for default user level (%)", URL, ip, web.defaultUserLevel));
-//				}
-//			}
 
 			// Process authenticated request
 			if (authenticated) {
