@@ -969,7 +969,7 @@ bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredent
 			}
 		}
 
-		if (fallback && defaultlevel > 0 && util::assigned(session)) {
+		if (fallback && defaultlevel > 0) {
 			if (loginUserName("anonimous", "*", defaultlevel, true)) {
 				if (debugger) std::cout << "TWebRequest::authenticate(2) Fallback after authentication failure." << std::endl;
 				error = MHD_YES;
