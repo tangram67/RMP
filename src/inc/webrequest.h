@@ -256,8 +256,11 @@ public:
 
 	std::string getUserName(struct MHD_Connection *connection);
 	int authUserCheck(struct MHD_Connection *connection, const TCredential& user, long int timeout);
-	bool authenticate(struct MHD_Connection *connection, const TCredentialMap& users, long int timeout, int& error);
+	bool authenticate(struct MHD_Connection *connection, const TCredentialMap& users, long int timeout, int defaultlevel, int& error);
 	bool authenticate(const int userlevel);
+
+	bool loginUserName(const std::string& username, const std::string& password, const int userlevel, const bool overwrite);
+	void logoffSessionUser();
 
 	MHD_Result uriArgumentReader(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 	MHD_Result connectionValueReader(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);

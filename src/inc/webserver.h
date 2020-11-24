@@ -376,6 +376,7 @@ public:
 	const std::string& getRealm() const { return web.realm; };
 	const std::string& getCredentials() const { return web.credentials; };
 	EHttpAuthType getDigestType() const { return web.auth; };
+	bool useAuthentication() const { return web.auth != HAT_DIGEST_NONE; };
 
 	bool hasWebSockets() const { return util::assigned(sockets); };
 	ssize_t write(const app::THandle handle, const std::string& text) const;

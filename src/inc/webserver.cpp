@@ -1343,15 +1343,20 @@ bool TWebServer::logoffSessionUser(const std::string& sid) {
 		if (it != sessionMap.end()) {
 			PWebSession o = it->second;
 			if (util::assigned(o)) {
+				if (web.verbosity > 0) {
+					writeInfoLog(util::csnprintf("[Logoff] Logoff user [%] from session [%]", o->username, sid));
+				}
 				{
 					// Force user to log off...
 					app::TLockGuard<app::TMutex> lock(o->userMtx);
 					o->logoff = true;
-					o->authenticated = false;
-					o->username.clear();
-					o->password.clear();
 					o->userlevel = 0;
+					o->authenticated = false;
 					o->valuesRead = false;
+
+					// Do NOT (!) clear user name, still needed to compare against anonimous user name
+					// o->username.clear();
+					// o->password.clear();
 				}
 				o->clearUserValues();
 				return true;
@@ -1455,6 +1460,9 @@ void TWebServer::readConfig() {
 	auth = config->readString("DigestAlgorithm", auth);
 	web.auth = getWebAuthType(auth);
 
+	// Read default user level when no user logged in
+	web.defaultUserLevel = config->readInteger("DefaultUserLevel", web.defaultUserLevel);
+
 	// Read user:password
 	if (web.users.empty()) {
 		util::TStringList s(web.credentials, ':');
@@ -1513,6 +1521,7 @@ void TWebServer::writeConfig() {
 	config->writeInteger("JavaScriptRefreshTimer", web.refreshTimer);
 	config->writeInteger("VerbosityLevel", web.verbosity);
 	config->writeString("DigestAlgorithm", getWebAuthType(web.auth));
+	config->writeInteger("DefaultUserLevel", web.defaultUserLevel);
 	config->writeString("Credentials", web.credentials);
 	config->writeString("AuthRealm", web.realm);
 	config->writeInteger("SessionLogonExpired", web.sessionExpired);
@@ -1916,7 +1925,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				if (web.auth != HAT_DIGEST_NONE) {
 					// Execute digest authentication...
 					app::TLockGuard<app::TMutex> mtx(userMtx);
-					authenticated = request->authenticate(connection, web.users, web.sessionExpired, error);
+					authenticated = request->authenticate(connection, web.users, web.sessionExpired, web.defaultUserLevel, error);
 				} else {
 					// Authenticate request to default level 3 to allow administrative access
 					authenticated = request->authenticate(DEFAULT_USER_LEVEL);
@@ -1924,7 +1933,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 			}
 
 			// Allow access to web application files via GET/HEAD/POST without any authentication level
-			if (web.auth != HAT_DIGEST_NONE && !authenticated && !allowedPagesList.empty()) {
+			if (!authenticated && web.auth != HAT_DIGEST_NONE && !allowedPagesList.empty()) {
 				size_t len = strnlen(url, maxUrlSize);
 				for (size_t i=0; i<allowedPagesList.size(); ++i) {
 					const std::string& page = allowedPagesList[i];
@@ -1939,9 +1948,21 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				}
 				if (authenticated && web.verbosity > 0) {
 					std::string ip(inet::inetAddrToStr(connection->addr));
-					writeInfoLog(util::cprintf("[Request handler] Allow unrestricted access to URL [%s] from client [%s]", url, ip.c_str()));
+					writeInfoLog(util::csnprintf("[Request handler] Allow unrestricted access to URL [%] from client [%]", URL, ip));
 				}
 			}
+
+			// Allow access to web application files via GET/HEAD/POST for default user level
+//			if (!authenticated && web.auth != HAT_DIGEST_NONE && web.defaultUserLevel > 0) {
+//				authenticated = true;
+//				if (logon) {
+//					result = error = MHD_HTTP_FORBIDDEN;
+//				}
+//				if (web.verbosity > 0) {
+//					std::string ip(inet::inetAddrToStr(connection->addr));
+//					writeInfoLog(util::csnprintf("[Request handler] Allow access to URL [%] from client [%] for default user level (%)", URL, ip, web.defaultUserLevel));
+//				}
+//			}
 
 			// Process authenticated request
 			if (authenticated) {
@@ -1957,7 +1978,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 							found = true;
 							retVal = MHD_YES;
 							std::string ip(inet::inetAddrToStr(connection->addr));
-							writeLog(util::cprintf("[Request handler] Spawned web socket [%s] for client [%s]", url, ip.c_str()));
+							writeLog(util::csnprintf("[Request handler] Spawned web socket [%] for client [%]", URL, ip));
 						}
 					}
 

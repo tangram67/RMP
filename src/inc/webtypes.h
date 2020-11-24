@@ -432,6 +432,7 @@ struct CWebConfig {
 	bool caching;
 	bool minimize;
 	bool threaded;
+	int defaultUserLevel;
 	unsigned int port;
 	EHttpAuthType auth;
 	TCredentialMap users;
@@ -480,6 +481,7 @@ struct CWebConfig {
 		threaded = true;
 		allowFromAll = false;
 		allowManifestFiles = true;
+		defaultUserLevel = 0;
 		auth = HAT_DIGEST_NONE;
 		realm = AUTH_REALM;
 		credentials = "admin:12345";
@@ -834,7 +836,7 @@ struct CWebSession {
 		if (util::assigned(connection))
 			matrix.add(SESSION_REMOTE_HOST, util::toupper(inet::inetAddrToStr(connection->addr)));
 	}
-	void setUserValues(std::string& username, int userlevel , bool authenticated) {
+	void setUserValues(const std::string& username, int userlevel , bool authenticated) {
 		app::TReadWriteGuard<app::TReadWriteLock> lock(matrixLck, RWL_WRITE);
 		if (!username.empty())
 			matrix.add(SESSION_USER_NAME, username);

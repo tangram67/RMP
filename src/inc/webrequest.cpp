@@ -878,7 +878,9 @@ int TWebRequest::authUserCheck(struct MHD_Connection *connection, const TCredent
 	return MHD_NO;
 }
 
-bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredentialMap& users, long int timeout, int& error) {
+bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredentialMap& users, long int timeout, int defaultlevel, int& error) {
+	bool debugger = debug;
+	//debugger = true;
 
 	// Is current request already authenticated?
 	if (authenticated)
@@ -893,24 +895,20 @@ bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredent
 			if (toCheck) {
 				util::TTimePart now = util::now();
 				if ((now - session->timeout) > timeout) {
-					{
-						// Session expired
-						app::TLockGuard<app::TMutex> lock(session->userMtx);
-						session->userlevel = 0;
-						session->authenticated = false;
-						session->username.clear();
-						session->password.clear();
-						session->valuesRead = false;
-					}
-					session->clearUserValues();
+					// Session expired
+					if (debugger) std::cout << "TWebRequest::authenticate() Session no longer valid." << std::endl;
+					logoffSessionUser();
 				} else {
 					// Session still in use
 					session->timeout = now;
+					if (debugger) std::cout << "TWebRequest::authenticate(0) Session still authenticated." << std::endl;
 					return true;
 				}
-			} else
+			} else {
 				// Valid until doomsday
+				if (debugger) std::cout << "TWebRequest::authenticate(1) Session still authenticated." << std::endl;
 				return true;
+			}
 		}
 	}
 
@@ -925,18 +923,23 @@ bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredent
 	// Check for forced user log off
 	if (util::assigned(session)) {
 		if (session->logoff) {
+			if (debugger) std::cout << "TWebRequest::authenticate() Logoff current user." << std::endl;
 			session->logoff = false;
 			logoff = true;
 		}
 	}
 
+	// Get user name from client connection
+	if (debugger) {
+		const std::string username = getUserName(connection);
+		std::cout << "TWebRequest::authenticate() Connection username = " << username << std::endl;
+		std::cout << "TWebRequest::authenticate() Session Username    = " << (util::assigned(session) ? session->username : std::string("none")) << std::endl;
+	}
+
 	// Has user logged off?
 	if (!logoff) {
-
-		// Get user name from client
-		const std::string& username = getUserName(connection);
-
-		// Check for valid user
+		bool fallback = true;
+		const std::string username = getUserName(connection);
 		if (!username.empty()) {
 
 			TCredentialMap::const_iterator it = users.find(username);
@@ -955,30 +958,40 @@ bool TWebRequest::authenticate(struct MHD_Connection *connection, const TCredent
 					error = MHD_HTTP_FORBIDDEN;
 
 				// Store login in session
-				if (retVal && util::assigned(session)) {
-					if (!session->authenticated) {
-						std::string username;
-						bool authenticated = false;
-						int userlevel = 0;
-						{	// Use one mutex only at a time!
-							app::TLockGuard<app::TMutex> lock(session->userMtx);
-							session->authenticated = true;
-							session->username = user.username;
-							session->password = user.password;
-							session->userlevel = user.level;
-							session->valuesRead = false;
-							session->setTimeOut();
-
-							// Store authentication values
-							username = session->username;
-							authenticated = session->authenticated;
-							userlevel = session->userlevel;
+				if (util::assigned(session)) {
+					if (retVal) {
+						if (loginUserName(user.username, user.password, user.level, false)) {
+							if (debugger) std::cout << "TWebRequest::authenticate(1) Authenticated given user." << std::endl;
+							fallback = false;
 						}
-						session->setUserValues(username, userlevel, authenticated);
 					}
 				}
 			}
+		}
 
+		if (fallback && defaultlevel > 0 && util::assigned(session)) {
+			if (loginUserName("anonimous", "*", defaultlevel, true)) {
+				if (debugger) std::cout << "TWebRequest::authenticate(2) Fallback after authentication failure." << std::endl;
+				error = MHD_YES;
+				retVal = true;
+			}
+		}
+
+	} else {
+		if (util::assigned(session)) {
+
+			// Change to default anonimous user
+			if (defaultlevel > 0 && session->username != "anonimous") {
+				if (loginUserName("anonimous", "*", defaultlevel, true)) {
+					if (debugger) std::cout << "TWebRequest::authenticate(3) Log on anonimous user." << std::endl;
+					error = MHD_YES;
+					retVal = true;
+				}
+			} else {
+				// Session logged off
+				if (debugger) std::cout << "TWebRequest::authenticate(4) Clear user data." << std::endl;
+				logoffSessionUser();
+			}
 		}
 	}
 
@@ -993,28 +1006,54 @@ bool TWebRequest::authenticate(const int userlevel) {
 		return true;
 
 	// Set default values for given user level
-	if (util::assigned(session)) {
-		if (!session->authenticated) {
-			std::string username;
-			bool authenticated = false;
-			{	// Use one mutex only at a time!
-				app::TLockGuard<app::TMutex> lock(session->userMtx);
-				session->userlevel = userlevel;
-				session->username = "default";
-				session->password = "*";
-				session->authenticated = true;
-				session->valuesRead = false;
+	authenticated = loginUserName("default", "*", userlevel, false);
 
-				// Store authentication values
-				username = session->username;
-				authenticated = session->authenticated;
-			}
-			session->setUserValues(username, userlevel, authenticated);
+	return authenticated;
+}
+
+
+bool TWebRequest::loginUserName(const std::string& username, const std::string& password, const int userlevel, const bool overwrite) {
+	bool debugger = debug;
+	bool authenticated = false;
+	if (util::assigned(session)) {
+		if (!session->authenticated || overwrite) {
+			app::TLockGuard<app::TMutex> lock(session->userMtx);
+			session->authenticated = true;
+			session->username = username;
+			session->password = password;
+			session->userlevel = userlevel;
+			session->valuesRead = false;
+			session->setTimeOut();
+			authenticated = session->authenticated;
 		}
 	}
-
-	authenticated = true;
+	if (authenticated) {
+		// Store authentication values
+		session->setUserValues(username, userlevel, authenticated);
+		if (debugger) std::cout << "TWebRequest::loginUserName() Login user <" << username << ">" << std::endl;
+	}
 	return authenticated;
+}
+
+
+void TWebRequest::logoffSessionUser() {
+	bool debugger = debug;
+	//debugger = true;
+	if (util::assigned(session)) {
+		{
+			// Session expired
+			app::TLockGuard<app::TMutex> lock(session->userMtx);
+			session->userlevel = 0;
+			session->authenticated = false;
+			session->valuesRead = false;
+
+			// Do NOT (!) clear user name, still needed to compare against anonimous user name
+			// session->username.clear();
+			// session->password.clear();
+		}
+		session->clearUserValues();
+		if (debugger) std::cout << "TWebRequest::logoffSessionUser() Logged off session user <" << session->username << ">" << std::endl;
+	}
 }
 
 
