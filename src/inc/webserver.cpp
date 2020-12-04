@@ -580,11 +580,10 @@ bool TWebServer::start(const bool autostart) {
 			// Check if server response mode is paused
 			if (running) {
 				mode = autostart ? ESM_RUNNING : ESM_PAUSED;
-				if (mode == ESM_PAUSED) {
-					writeInfoLog("[Start web server] Server started in paused mode.");
-				}
 				if (mode == ESM_RUNNING) {
 					writeInfoLog("[Start web server] Server started nomally.");
+				} else if (mode == ESM_PAUSED) {
+					writeInfoLog("[Start web server] Server started in paused mode.");
 				} else {
 					writeErrorLog(util::csnprintf("[Start web server] Invalid server state (%)", mode));
 				}
@@ -672,14 +671,12 @@ bool TWebServer::resume() {
 
 void TWebServer::getWebServerInfo() {
 	const union MHD_DaemonInfo* info;
-
 	if (util::assigned(httpServer4)) {
 		info = MHD_get_daemon_info(httpServer4, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
 		if (util::assigned(info)) {
 			data.connectionsV4 = info->num_connections;
 		}
 	}
-
 	if (util::assigned(httpServer6)) {
 		info = MHD_get_daemon_info(httpServer6, MHD_DAEMON_INFO_CURRENT_CONNECTIONS);
 		if (util::assigned(info)) {
@@ -1556,7 +1553,6 @@ void TWebServer::readVirtualDirectoryConfig() {
 		std::string section;
 
 		for (TIniFile::const_iterator it = config->begin(); it != config->end(); ++it) {
-
 			// Skip general configuration section for this->name
 			if (it->first != name) {
 				// Set current section
@@ -1611,7 +1607,6 @@ void TWebServer::readVirtualDirectoryConfig() {
 
 		// Add virtual root filesystem
 		if (!rootfs) {
-
 			// Build standard virtual instance for root filesystem
 			CWebDirectory instance;
 			instance.directory = "/";
@@ -1626,7 +1621,6 @@ void TWebServer::readVirtualDirectoryConfig() {
 
 		// Add virtual root filesystem
 		if (!imagefs) {
-
 			// Build standard virtual instance for root filesystem
 			CWebDirectory instance;
 			instance.directory = "/";

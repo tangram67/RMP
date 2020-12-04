@@ -2270,15 +2270,15 @@ void TApplication::stop() {
 	if (util::assigned(sysdat.obj.timers))   sysdat.obj.timers->terminate();
 	if (util::assigned(sysdat.obj.tasks))    sysdat.obj.tasks->terminate();
 	if (util::assigned(sysdat.obj.timeouts)) sysdat.obj.timeouts->terminate();
-#ifdef USE_GPIO_CONTROL
-	if (util::assigned(sysdat.obj.gpio)) sysdat.obj.gpio->terminate();
-#endif
 }
 
 void TApplication::halt() {
 	// Release all MQTT subscriptions an stop sending messages
 #ifdef USE_MQTT_CLIENT
 	if (util::assigned(sysdat.obj.mqtt)) sysdat.obj.mqtt->halt();
+#endif
+#ifdef USE_GPIO_CONTROL
+	if (util::assigned(sysdat.obj.gpio)) sysdat.obj.gpio->terminate();
 #endif
 
 	// Terminate execution of asynchronous system objects

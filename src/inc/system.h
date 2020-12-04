@@ -198,7 +198,7 @@ struct CSystemObjects {
 	sql::PContainer dbsys;
 	sql::PContainer dbsql;
 #ifdef USE_GPIO_CONTROL
-	app::PGPIO gpio;
+	app::PGPIOController gpio;
 #endif
 #ifdef USE_MQTT_CLIENT
 	inet::PMQTT mqtt;
