@@ -1698,21 +1698,28 @@ MHD_Result TWebRequest::sendResponseFromBuffer(struct MHD_Connection *connection
 	// Create web server response from given data buffer
 	MHD_Result retVal = createResponseFromBuffer(connection, response, method, wtm, buffer, size, headers, persist, cache, zipped, mime, error);
 	if (retVal == MHD_YES) {
+		std::string method;
 		switch (error) {
 			case MHD_INVALID_NONCE:
 			case MHD_HTTP_FORBIDDEN:
 				if (authType == HAT_DIGEST_SHA256) {
+					if (debug) method = "MHD_queue_auth_fail_response2::SHA256";
 					retVal = MHD_queue_auth_fail_response2 (connection, realm.c_str() , OPAQUE_STRING.c_str(), response, stale, MHD_DIGEST_ALG_SHA256);
 				} else if (authType == HAT_DIGEST_MD5) {
+					if (debug) method = "MHD_queue_auth_fail_response2::MD5";
 					retVal = MHD_queue_auth_fail_response2 (connection, realm.c_str() , OPAQUE_STRING.c_str(), response, stale, MHD_DIGEST_ALG_MD5);
 				} else {
+					if (debug) method = "None";
 					retVal = MHD_NO;
 				}
 				break;
 			default:
+				if (debug) method = "MHD_queue_response";
 				retVal = MHD_queue_response(connection, error, response);
 				break;
 		}
+		if (debug)
+			std::cout << "sendResponseFromBuffer[Queue] Method \"" + method + "\", result = " << retVal << std::endl;
 	}
 
 	if (debug)
@@ -1812,7 +1819,7 @@ MHD_Result TWebRequest::createResponseFromBuffer(struct MHD_Connection *connecti
 	} else {
 		// HEAD request: Prepare header only response with expected content size
 		// Body must be empty, see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
-		if (method == HTTP_PUT || method == HTTP_OPTIONS) {
+		if (method == HTTP_HEAD || method == HTTP_OPTIONS) {
 			error = MHD_HTTP_NO_CONTENT;
 		}
 		callbackBuffer = nil;
@@ -2022,7 +2029,7 @@ MHD_Result TWebRequest::buildResponseHeader(struct MHD_Connection *connection, s
 
 	// Add header information and session cookie
 	// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-	if (util::assigned(response)) {
+	if (MHD_HTTP_OK == error && util::assigned(response)) {
 
 		// Do not add cookies on OPTIONS request
 		if (method != HTTP_OPTIONS) {
@@ -2513,11 +2520,13 @@ MHD_Result TWebRequest::postIteratorHandler (void *cls,
 									  const char *data, uint64_t off, size_t size) {
 	MHD_Result retVal = MHD_YES;
 	bool found = false;
-	size_t len = strnlen(key, HTTP_MAX_TOKEN_LENGTH);
-	if (len > 0 && size > 0) {
+	size_t len = 0;
+	if (util::assigned(key)) {
+		len = strnlen(key, HTTP_MAX_TOKEN_LENGTH);
+	}
+	if (util::assigned(data) && util::assigned(key) && len > 0 && size > 0) {
 
-		// Handle simple post data
-		if (!multipart && util::assigned(session)) {
+		if (util::assigned(session) && !multipart) {
 
 			// Add every key/value pair to session
 			session->setSessionValue(std::string(key, len), std::string(data, size));
@@ -2554,14 +2563,15 @@ MHD_Result TWebRequest::postIteratorHandler (void *cls,
 
 			} // if (off == 0 && !session->authenticated)
 
-		} // if (!multipart && util::assigned(session))
+		} // if (util::assigned(session) && !multipart)
 
-	} // if (len > 0 && size > 0)
+		// Forward iterator callback to calling webserver
+		if (util::assigned(postDataIterator) && !found) {
+			// std::cout << " ----> TWebRequest::postIteratorHandler() Key = " << util::charToStr(key, "NULL") << ", filename = " << util::charToStr(filename, "NULL") << ", content_type = " << util::charToStr(content_type, "NULL") << ", transfer_encoding = " << util::charToStr(transfer_encoding, "NULL") << std::endl;
+			retVal = postDataIterator(this, kind, key, len, filename, content_type, transfer_encoding, data, off, size);
+		}
 
-	// Forward iterator callback to calling webserver
-	if (util::assigned(postDataIterator) && !found) {
-		retVal = postDataIterator(this, kind, key, len, filename, content_type, transfer_encoding, data, off, size);
-	}
+	} // if (util::assigned(data) && util::assigned(key) && len > 0 && size > 0)
 
 	return retVal;
 }

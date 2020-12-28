@@ -92,6 +92,7 @@
 #define VARIANT_H_
 
 #include <string>
+#include <type_traits>
 #include "vartypes.h"
 #include "fileutils.h"
 #include "endianutils.h"
@@ -167,6 +168,7 @@ private:
 	bool locked;
 	bool svalue, uvalue;
 	mutable std::string cstr;
+	mutable std::wstring wstr;
 	mutable TDateTime time;
 	mutable util::TBlob blob;
 	mutable TJsonValue json;
@@ -207,7 +209,7 @@ public:
 
 	static bool isValidType(const EVariantType type) { return (type != util::EVT_INVALID && type != util::EVT_UNKNOWN); }
 	const bool isValid() const { return isValidType(varType); };
-	operator bool() const { return isValidType(varType); };
+	// operator bool() const { return isValidType(varType); };
 
 	void setBoolType(const EBooleanType type) { boolType = type; };
 	void setTimeFormat(const EDateTimeFormat type);
@@ -304,6 +306,9 @@ public:
 	void setDouble(const std::wstring& value);
 	void setBoolean(const std::wstring& value);
 
+	const char* c_str() const;
+	const wchar_t* w_str() const;
+
 	char* getChar(const char** data, size_t& size);
 	wchar_t* getWideChar(const wchar_t** data, size_t& size);
 
@@ -312,27 +317,180 @@ public:
 
 	TDateTime& getTime();
 
+	bool asBoolean(const bool defValue = false) const;
 	int32_t asInteger(int32_t defValue = TLimits::nan) const { return asInteger32(defValue); };
 	uint32_t asUnsigned(uint32_t defValue = TLimits::unan) const { return asUnsigned32(defValue); };
-
 	int8_t asInteger8(int8_t defValue = TLimits::nan8) const;
 	int16_t asInteger16(int16_t defValue = TLimits::nan16) const;
 	int32_t asInteger32(int32_t defValue = TLimits::nan32) const;
 	int64_t asInteger64(int64_t defValue = TLimits::nan64) const;
-
 	uint8_t asUnsigned8(uint8_t defValue = TLimits::unan8) const;
 	uint16_t asUnsigned16(uint16_t defValue = TLimits::unan16) const;
 	uint32_t asUnsigned32(uint32_t defValue = TLimits::unan32) const;
 	uint64_t asUnsigned64(uint64_t defValue = TLimits::unan64) const;
-
 	double asDouble(double defValue = 0.0, const app::TLocale& locale = syslocale) const;
 	std::string asString(const std::string& defValue = "") const;
 	std::wstring asWideString(const std::wstring& defValue = L"") const;
-	const TDateTime& asTime(const EDateTimeZone = ETZ_DEFAULT, TTimePart defValue = util::epoch()) const;
-	const util::TBlob& asBlob() const;
+	const util::TDateTime& asTime(const EDateTimeZone = ETZ_DEFAULT, TTimePart defValue = util::epoch()) const;
 	std::string asJSON(const std::string& preamble = "", const std::string& name = "Variant") const;
-	bool asBoolean(const bool defValue = false) const;
-	const char* c_str() const;
+	const util::TBlob& asBlob() const;
+
+
+	// Only POD types are allwed as non-type template parameters
+	// --> not used here, because operator () needs typed templates
+	//	template <bool> bool as() const { return asBoolean(); };
+	//	template <int8_t> int8_t as() const { return asInteger16(); };
+	//	template <int16_t> int16_t as() const { return asInteger16(); };
+	//	template <int32_t> int32_t as() const { return asInteger32(); };
+	//	template <int64_t> int64_t as() const { return asInteger64(); };
+	//	template <uint8_t> uint8_t as() const { return asUnsigned8(); };
+	//	template <uint16_t> uint16_t as() const { return asUnsigned16(); };
+	//	template <uint32_t> uint32_t as() const { return asUnsigned32(); };
+	//	template <uint64_t> uint64_t as() const { return asUnsigned64(); };
+	//	template <char*> const char* as() const { return c_str(); };
+	//	template <wchar_t*> const wchar_t* as() const { return w_str(); };
+	//	template <const char*> const char* as() const { return c_str(); };
+	//	template <const wchar_t*> const wchar_t* as() const { return w_str(); };
+
+	// Check types via enable_if and is_same
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, bool>::value, bool> = true>
+	const variant_t as() { return asBoolean(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int8_t>::value, bool> = true>
+	const variant_t as() { return asInteger8(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int16_t>::value, bool> = true>
+	const variant_t as() { return asInteger16(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int32_t>::value, bool> = true>
+	const variant_t as() { return asInteger32(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int64_t>::value, bool> = true>
+	const variant_t as() { return asInteger64(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint8_t>::value, bool> = true>
+	const variant_t as() { return asUnsigned8(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint16_t>::value, bool> = true>
+	const variant_t as() { return asUnsigned16(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint32_t>::value, bool> = true>
+	const variant_t as() { return asUnsigned32(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint64_t>::value, bool> = true>
+	const variant_t as() { return asUnsigned64(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, char*>::value, bool> = true>
+	const variant_t as() { return c_str(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, wchar_t*>::value, bool> = true>
+	const variant_t as() { return w_str(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const char*>::value, bool> = true>
+	const variant_t as() { return c_str(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const wchar_t*>::value, bool> = true>
+	const variant_t as() { return w_str(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, util::TDateTime>::value, bool> = true>
+	const variant_t& as() { return asTime(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::string>::value, bool> = true>
+	variant_t as() { return asString(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::wstring>::value, bool> = true>
+	variant_t as() { return asWideString(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, double>::value, bool> = true>
+	variant_t as() { return asDouble(); };
+
+
+	// Check operator type via enable_if and is_same
+	// --> e.g. assignments like double value = variant;
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, bool>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int8_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int16_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int32_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int64_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint8_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint16_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint32_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint64_t>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, char*>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, wchar_t*>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const char*>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const wchar_t*>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, util::TDateTime>::value, bool> = true>
+	operator const variant_t& () { return as<variant_t>(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::string>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::wstring>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, double>::value, bool> = true>
+	operator variant_t () { return as<variant_t>(); };
+
+
+	// Only POD types are allwed as non-type template parameters
+	// --> Not used here to maintain compatibility
+	//	template <bool> bool is() const { return varType == EVT_BOOLEAN; };
+	//	template <int8_t> bool is() const { return varType == EVT_INTEGER8; };
+	//	template <int16_t> bool is() const { return varType == EVT_INTEGER16; };
+	//	template <int32_t> bool is() const { return varType == EVT_INTEGER32; };
+	//	template <int64_t> bool is() const { return varType == EVT_INTEGER64; };
+	//	template <uint8_t> bool is() const { return varType == EVT_UNSIGNED8; };
+	//	template <uint16_t> bool is() const { return varType == EVT_UNSIGNED16; };
+	//	template <uint32_t> bool is() const { return varType == EVT_UNSIGNED32; };
+	//	template <uint64_t> bool is() const { return varType == EVT_UNSIGNED64; };
+	//	template <char*> bool is() const { return varType == EVT_STRING; };
+	//	template <wchar_t*> bool is() const { return varType == EVT_WIDE_STRING; };
+	//	template <const char*> bool is() const { return varType == EVT_STRING; };
+	//	template <const wchar_t*> bool is() const { return varType == EVT_WIDE_STRING; };
+
+	// Check types via enable_if and is_same
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, bool>::value, bool> = true>
+	bool is() const { return varType == EVT_BOOLEAN; };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int8_t>::value, bool> = true>
+	bool is() const { return varType == EVT_INTEGER8; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int16_t>::value, bool> = true>
+	bool is() const { return varType == EVT_INTEGER16; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int32_t>::value, bool> = true>
+	bool is() const { return varType == EVT_INTEGER32; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, int64_t>::value, bool> = true>
+	bool is() const { return varType == EVT_INTEGER64; };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint8_t>::value, bool> = true>
+	bool is() const { return varType == EVT_UNSIGNED8; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint16_t>::value, bool> = true>
+	bool is() const { return varType == EVT_UNSIGNED16; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint32_t>::value, bool> = true>
+	bool is() const { return varType == EVT_UNSIGNED32; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, uint64_t>::value, bool> = true>
+	bool is() const { return varType == EVT_UNSIGNED64; };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, char*>::value, bool> = true>
+	bool is() const { return varType == EVT_STRING; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, wchar_t*>::value, bool> = true>
+	bool is() const { return varType == EVT_WIDE_STRING; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const char*>::value, bool> = true>
+	bool is() const { return varType == EVT_STRING; };
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, const wchar_t*>::value, bool> = true>
+	bool is() const { return varType == EVT_WIDE_STRING; };
+
+	template <typename variant_t, util::enable_if_type<std::is_same<variant_t, util::TDateTime>::value, bool> = true>
+	bool is() const { return varType == EVT_TIME; };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::string>::value, bool> = true>
+	bool is() const { return varType == EVT_STRING; };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, std::wstring>::value, bool> = true>
+	bool is() const { return varType == EVT_WIDE_STRING; };
+	template<typename variant_t, util::enable_if_type<std::is_same<variant_t, double>::value, bool> = true>
+	bool is() const { return varType == EVT_DOUBLE; };
+
 
 	TVariant(const EVariantType type);
 	TVariant(const int8_t value);

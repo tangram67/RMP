@@ -266,6 +266,12 @@ template<typename value_t>
 	}
 
 
+// Template fallback for class type check
+// See: https://en.cppreference.com/w/cpp/types/enable_if
+template <bool value_t, class class_t = void>
+using enable_if_type = typename std::enable_if<value_t, class_t>::type;
+
+
 // Example for "Substitution failure is not an error" (SFINAE)
 template<typename iterator_t, typename = void>
 	struct is_iterator {

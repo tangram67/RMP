@@ -295,6 +295,8 @@ void TVariant::release() {
 void TVariant::clear() {
 	if (!cstr.empty())
 		cstr.clear();
+	if (!wstr.empty())
+		wstr.clear();
 	value.integer = INT64_C(0);
 	value.uinteger = UINT64_C(0);
 	value.boolean = false;
@@ -1481,7 +1483,19 @@ double TVariant::asDouble(double defValue, const app::TLocale& locale) const {
 const char* TVariant::c_str() const {
 	// Store permanent value in local string!
 	cstr = asString();
-	return cstr.c_str();
+	if (!cstr.empty()) {
+		return cstr.c_str();
+	}
+	return nil;
+}
+
+const wchar_t* TVariant::w_str() const {
+	// Store permanent value in local string!
+	wstr = asWideString();
+	if (!wstr.empty()) {
+		return wstr.c_str();
+	}
+	return nil;
 }
 
 

@@ -1713,7 +1713,7 @@ void TWebServer::logHandler( const char *uri,
 void TWebServer::customErrorLog(const char *fmt, va_list va) {
 	std::string s;
 	if (util::assigned(fmt)) {
-		std::string text = util::cprintf(fmt, va);
+		std::string text = util::trim(util::cprintf(fmt, va));
 		s = "[INTERNAL ERROR] " + util::TBinaryConvert::binToText(text.c_str(), text.size(), util::TBinaryConvert::EBT_TEXT);
 	} else {
 		s = "[INTERNAL ERROR] Undefined internal error raised.";
@@ -1794,7 +1794,6 @@ MHD_Result TWebServer::acceptHandler( const struct sockaddr *addr, socklen_t add
 }
 
 
-
 MHD_Result TWebServer::requestHandler(	struct MHD_Connection *connection,
 										const char *url,
 										const char *method,
@@ -1834,24 +1833,25 @@ MHD_Result TWebServer::requestHandler(	struct MHD_Connection *connection,
 	return MHD_NO;
 }
 
+
 MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
-								 	 	 const char *url,
-										 const char *method,
-										 const char *version,
-										 const char *upload_data,
-										 size_t *upload_data_size,
-										 void **con_cls ) {
+											const char *url,
+											const char *method,
+											const char *version,
+											const char *upload_data,
+											size_t *upload_data_size,
+											void **con_cls ) {
 	MHD_Result retVal = MHD_NO;
 	int error = MHD_HTTP_NOT_FOUND;
 	int result = MHD_HTTP_OK;
 	std::string URL(url);
 	EHttpMethod httpMethod = getHttpMethod(method);
 	bool post = util::isMemberOf(httpMethod, HTTP_POST,HTTP_PUT);
-	writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s], method [%s], version [%s]", url, method, version), 3);
 
 	// Check for first call to requestHandler
 	// --> Prepare response objects
 	if (!util::assigned(*con_cls)) {
+		retVal = MHD_YES;
 
 		// Log request callback
 		if (web.verbosity >= 3) {
@@ -1872,26 +1872,30 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 			sessionCountLimiter();
 		}
 
-		// Add POST iterator if needed
-		retVal = MHD_YES;
-		if (post && isResponding()) {
-			retVal = request->addPostIterator(connection, URL, httpMethod, *upload_data_size, &app::TWebServer::postIteratorHandler, this);
-			if (MHD_YES == retVal) {
-				if (web.verbosity >= 3) {
-					EWebPostMode mode = request->getPostMode();
-					if (WPM_HTML == mode)
-						writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s] as default HTML POST request. ", url));
-					else
-						writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s] as unspecific data upload POST request.", url));
-				}
-			} else {
-				writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s], method [%s] failed: Can't create any post processor handler.", url, method));
-			}
-		}
-
 		// Log browser connection values
 		if (web.verbosity >= 2 && !request->getSession()->valuesRead)
 			logConnectionValues(request, connection);
+
+		// Process digest authentication for POST requests in an early stage before 100-Continue reached
+		if (post && !request->isAuthenticated()) {
+			bool authenticated = true;
+
+			// Execute request authentications
+			if (web.auth != HAT_DIGEST_NONE) {
+				// Execute digest authentication...
+				app::TLockGuard<app::TMutex> mtx(userMtx);
+				authenticated = request->authenticate(connection, web.users, web.sessionExpired, 0, error);
+			} else {
+				// Authenticate request to default level 3 to allow administrative access
+				authenticated = request->authenticate(DEFAULT_USER_LEVEL);
+			}
+
+			// Send unauthorized response if not authenticated
+			if (!authenticated) {
+				error = MHD_HTTP_FORBIDDEN;
+				retVal = sendErrorResponse(connection, request, url, httpMethod, method, error);
+			}
+		}
 
 		// Return with object set to current request handler
 		*con_cls = request;
@@ -1913,7 +1917,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 			bool found = false;
 			bool failed = false;
 
-			// Digest authentication
+			// Process digest authentication
 			bool authenticated = true;
 			if (!request->isAuthenticated()) {
 				if (web.auth != HAT_DIGEST_NONE) {
@@ -1923,7 +1927,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				} else {
 					// Authenticate request to default level 3 to allow administrative access
 					authenticated = request->authenticate(DEFAULT_USER_LEVEL);
-					if (!authenticated && error == MHD_HTTP_NOT_FOUND) {
+					if (!authenticated) {
 						error = MHD_HTTP_FORBIDDEN;
 					}
 				}
@@ -1940,9 +1944,12 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 					if (authenticated)
 						break;
 				}
-				if (!authenticated && error == MHD_HTTP_NOT_FOUND) {
-					error = MHD_HTTP_FORBIDDEN;
+
+				// Set default error 404 or leave error value to unauthorized
+				if (MHD_HTTP_FORBIDDEN == error && authenticated) {
+					error = MHD_HTTP_NOT_FOUND;
 				}
+
 				if (authenticated && web.verbosity > 0) {
 					std::string ip(inet::inetAddrToStr(connection->addr));
 					writeInfoLog(util::csnprintf("[Request handler] Allow unrestricted access to URL [%] from client [%]", URL, ip));
@@ -1970,226 +1977,247 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 					// Process HTML request
 					if (goon) {
 
+						// Add POST iterator if needed
+						if (post) {
+							int r = request->addPostIterator(connection, URL, httpMethod, *upload_data_size, &app::TWebServer::postIteratorHandler, this);
+							if (MHD_YES == r) {
+								if (web.verbosity >= 3) {
+									EWebPostMode mode = request->getPostMode();
+									if (WPM_HTML == mode)
+										writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s] as default POST request. ", url));
+									else
+										writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s] as unspecific data upload POST request.", url));
+								}
+							} else {
+								writeInfoLog(util::cprintf("[Request handler] Prepare requested URL [%s], method [%s] failed: Can't create any post processor handler.", url, method));
+							}
+						}
+
 						// Call action for given method
 						switch (httpMethod) {
-							case HTTP_PUT:
-							case HTTP_POST:
-							case HTTP_PATCH:
-							case HTTP_DELETE:
-								if (*upload_data_size > 0) {
+						case HTTP_PUT:
+						case HTTP_POST:
+						case HTTP_PATCH:
+						case HTTP_DELETE:
+							if (*upload_data_size > 0) {
 
-									// Do some logging on post/upload data
-									if (web.verbosity >= 2) {
-										if (!request->isMultipartMessage()) {
-											if (request->isXMLHttpRequest())
-												writeInfoLog(util::cprintf("[Request handler] Execute POST for XML HTTP request [%s]," \
-														" posted data size [%u]", url, *upload_data_size), 2);
-											else
-												writeInfoLog(util::cprintf("[Request handler] Execute POST for URL [%s]," \
-														" posted data size [%u]", url, *upload_data_size), 2);
+								// Do some logging on post/upload data
+								if (web.verbosity >= 2) {
+									if (!request->isMultipartMessage()) {
+										if (request->isXMLHttpRequest())
+											writeInfoLog(util::cprintf("[Request handler] Execute POST for XML request [%s]," \
+													" posted data size [%u]", url, *upload_data_size), 2);
+										else
+											writeInfoLog(util::cprintf("[Request handler] Execute POST for URL [%s]," \
+													" posted data size [%u]", url, *upload_data_size), 2);
 
-										} else {
-											// Log browser header values
-											if (web.verbosity >= 4)
-												logConnectionValues(request, connection, true);
-										}
+									} else {
+										// Log browser header values
+										if (web.verbosity >= 4)
+											logConnectionValues(request, connection, true);
 									}
-
-									// Parse POSTed data
-									request->executePostProcess(upload_data, upload_data_size);
-
-									// All data processed
-									*upload_data_size = 0;
-									return MHD_YES;
-
-								} else {
-
-									// No more data delivered by callback
-									// --> Terminate current POST process
-									PWebSession session = request->getSession();
-									if (util::assigned(session)) {
-										EWebPostMode mode = request->getPostMode();
-
-										// File upload or post process finished?
-										if (WPM_HTML == mode) {
-											terminateFileUpload(request, session);
-											terminatePostProcess(request, session, result);
-											if (web.verbosity >= 2)
-												writeInfoLog(util::cprintf("[Request handler] Execute GET after POST for URL [%s]", url), 2);
-
-											// Execute GET after POST!
-											reply = true;
-										}
-
-										// Posted data upload finished
-										if (WPM_DATA == mode) {
-											util::TBuffer& data = request->getPostData();
-											error = execDataUpload(request, session, URL, data);
-											if (web.verbosity >= 2)
-												writeInfoLog(util::cprintf("[Request handler] Finished POST data upload for URL [%s]", url), 2);
-
-											// Do NOT execute GET after POST!
-											reply = false;
-										}
-									}
-
 								}
+
+								// Parse POSTed data
+								request->executePostProcess(upload_data, upload_data_size);
+
+								// All data processed
+								*upload_data_size = 0;
+								found = true;
+								reply = false;
+								retVal = MHD_YES;
+								error = MHD_HTTP_OK;
+
+							} else {
+
+								// No more data delivered by callback
+								// --> Terminate current POST process
+								PWebSession session = request->getSession();
+								if (util::assigned(session)) {
+									EWebPostMode mode = request->getPostMode();
+
+									// File upload or post process finished?
+									if (WPM_HTML == mode) {
+										terminateFileUpload(request, session);
+										terminatePostProcess(request, session, result);
+										if (web.verbosity >= 2)
+											writeInfoLog(util::cprintf("[Request handler] Execute GET after POST for URL [%s]", url), 2);
+
+										// Execute GET after POST!
+										reply = true;
+									}
+
+									// Posted data upload finished
+									if (WPM_DATA == mode) {
+										util::TBuffer& data = request->getPostData();
+										error = execDataUpload(request, session, URL, data);
+										if (web.verbosity >= 2)
+											writeInfoLog(util::cprintf("[Request handler] Finished POST data upload for URL [%s]", url), 2);
+
+										// Do NOT execute GET after POST!
+										reply = false;
+										retVal = MHD_YES;
+										error = MHD_HTTP_OK;
+									}
+								}
+
+							}
 
 							/* Intended to serve URL after POST processing */
 							/* no break : Text disables warning in Eclipse */
-							case HTTP_GET:
-							case HTTP_HEAD:
-							case HTTP_OPTIONS:
-							case HTTP_SUBSCRIBE:
-								if (reply) {
-									util::TFile inode;
-									util::PFile file = nil;
-									app::PWebLink link = nil;
-									app::PWebDirectory pwd = nil;
+						case HTTP_GET:
+						case HTTP_HEAD:
+						case HTTP_OPTIONS:
+						case HTTP_SUBSCRIBE:
+							if (reply) {
+								util::TFile inode;
+								util::PFile file = nil;
+								app::PWebLink link = nil;
+								app::PWebDirectory pwd = nil;
+
+								// Find file for requested URL
+								// For performance reasons check for buffered files first!
+								if (!found && !content.empty()) {
+									file = findFileForURL(URL);
+									if (util::assigned(file)) {
+										if (web.verbosity > 0) {
+											const char* pFile = file->getFile().empty() ? "none" : file->getFile().c_str();
+											writeInfoLog(util::cprintf("[Request handler] Prepare buffered file for URL [%s], file [%s], method [%s]", url, pFile, method));
+										}
+										found = true;
+									}
+								}
+
+								// Check for Restful API data URL
+								if (!found && !rest.empty()) {
+									link = rest.find(URL);
+									if (util::assigned(link)) {
+										if (web.verbosity > 0) {
+											writeInfoLog(util::cprintf("[Request handler] Prepare virtual file for URL [%s], method [%s]", url, method));
+										}
+										found = true;
+									}
+								}
+
+								// Check for virtual directory
+								if (!found && !vdl.empty()) {
+									// Example:
+									//  - Web request for http://music/Tangerine Dream/Tangram/folder.jpg
+									//  - Requested URL is "/music/Tangerine Dream/Tangram/folder.jpg"
+									//  - Folder on file system is "/mnt/data/music/files/"
+									//  - Folder "/mnt/data/music/files/" is mapped to virtual root directory "/music/"
+									//  - The real file name is "/mnt/data/music/files/Tangerine Dream/Tangram/folder.jpg"
+									pwd = findDirectoryForURL(inode, URL);
+									if (util::assigned(pwd)) {
+										if (web.verbosity > 0) {
+											const char* pFile = inode.getFile().empty() ? "none" : inode.getFile().c_str();
+											writeInfoLog(util::cprintf("[Request handler] Prepare virtual directory for URL [%s], file [%s], method [%s]", url, pFile, method));
+										}
+										found = true;
+									}
+								}
+
+								// Ressource was found
+								if (found) {
+
+									// Get mutex from requested ressource
+									// --> Lock requested ressource only if requested by prepared method!
+									// --> Fallback to global mutex
+									app::TMutex& lock = util::assigned(file) ? file->getMutex() :
+											(util::assigned(link) ? link->getMutex() :
+													(util::assigned(pwd) ? pwd->getMutex() : prepareMtx));
+
+									// Process given request
+									app::TLockGuard<app::TMutex> mtx(lock, false);
+									bool prepared = false;
+									bool processed = false;
+									found = false;
+
+									// Grab result from POST processing
+									error = result;
+
+									// Prepare web request
+									PWebSession session = request->getSession();
+									request->readUriArguments(connection);
+									if (!post && request->hasURIArguments() && util::assigned(session)) {
+										mtx.lock();
+										prepareRequest(request, session, URL, prepared);
+										if (!prepared) {
+											// Nothing prepared --> unlock mutex
+											mtx.unlock();
+										}
+									}
+
+									// Update application cookies
+									updateApplicationValues(session);
+
+									// Authenticate user via HTTP form or serve requested URL
+									// Allow all other files like css, js, ...
+									// if (web.useAuth && !o->getSession()->authenticated)
+									//     authenticate(file, URL, url);
 
 									// Find file for requested URL
 									// For performance reasons check for buffered files first!
-									if (!found && !content.empty()) {
-										file = findFileForURL(URL);
-										if (util::assigned(file)) {
-											if (web.verbosity > 0) {
-												const char* pFile = file->getFile().empty() ? "none" : file->getFile().c_str();
-												writeInfoLog(util::cprintf("[Request handler] Prepare buffered file for URL [%s], file [%s], method [%s]", url, pFile, method));
-											}
-											found = true;
+									if (!processed && !found && !failed && util::assigned(file)) {
+										if (web.verbosity > 0) {
+											const char* pf = file->getFile().empty() ? "none" : file->getFile().c_str();
+											writeSessionLog(session, util::cprintf("[Request handler] Serve buffered file for URL [%s], file [%s], method [%s]", url, pf, method));
 										}
+										retVal = request->sendResponseFromFile(connection, httpMethod, WTM_ASYNC, web.caching, file, data.bytesServed, error);
+										retVal == MHD_YES ? found = true : failed = true;
+										processed = true;
 									}
 
 									// Check for Restful API data URL
-									if (!found && !rest.empty()) {
-										link = rest.find(URL);
-										if (util::assigned(link)) {
-											if (web.verbosity > 0) {
-												writeInfoLog(util::cprintf("[Request handler] Prepare virtual file for URL [%s], method [%s]", url, method));
-											}
-											found = true;
+									if (!processed && !found && !failed && util::assigned(link)) {
+										// Send data for link
+										if (web.verbosity > 0) {
+											writeSessionLog(session, util::cprintf("[Request handler] Serve virtual file for URL [%s], method [%s]", url, method));
 										}
+										retVal = request->sendResponseFromVirtualFile(connection, httpMethod, WTM_ASYNC, false, link, url, data.bytesServed, error);
+										retVal == MHD_YES ? found = true : failed = true;
+										processed = true;
 									}
 
 									// Check for virtual directory
-									if (!found && !vdl.empty()) {
+									if (!processed && !found && !failed && util::assigned(pwd) && inode.valid()) {
 										// Example:
 										//  - Web request for http://music/Tangerine Dream/Tangram/folder.jpg
 										//  - Requested URL is "/music/Tangerine Dream/Tangram/folder.jpg"
 										//  - Folder on file system is "/mnt/data/music/files/"
 										//  - Folder "/mnt/data/music/files/" is mapped to virtual root directory "/music/"
 										//  - The real file name is "/mnt/data/music/files/Tangerine Dream/Tangram/folder.jpg"
-										pwd = findDirectoryForURL(inode, URL);
-										if (util::assigned(pwd)) {
-											if (web.verbosity > 0) {
-												const char* pFile = inode.getFile().empty() ? "none" : inode.getFile().c_str();
-												writeInfoLog(util::cprintf("[Request handler] Prepare virtual directory for URL [%s], file [%s], method [%s]", url, pFile, method));
-											}
-											found = true;
-										}
-									}
-
-									// Ressource was found
-									if (found) {
-
-										// Get mutex from requested ressource
-										// --> Lock requested ressource only if requested by prepared method!
-										// --> Fallback to global mutex
-										app::TMutex& lock = util::assigned(file) ? file->getMutex() :
-																(util::assigned(link) ? link->getMutex() :
-																		(util::assigned(pwd) ? pwd->getMutex() : prepareMtx));
-
-										// Process given request
-										app::TLockGuard<app::TMutex> mtx(lock, false);
-										bool prepared = false;
-										bool processed = false;
-										found = false;
-
-										// Grab result from POST processing
-										error = result;
-
-										// Prepare web request
-										PWebSession session = request->getSession();
-										request->readUriArguments(connection);
-										if (!post && request->hasURIArguments() && util::assigned(session)) {
-											mtx.lock();
-											prepareRequest(request, session, URL, prepared);
-											if (!prepared) {
-												// Nothing prepared --> unlock mutex
-												mtx.unlock();
-											}
-										}
-
-										// Update application cookies
-										updateApplicationValues(session);
-
-										// Authenticate user via HTTP form or serve requested URL
-										// Allow all other files like css, js, ...
-										// if (web.useAuth && !o->getSession()->authenticated)
-										//     authenticate(file, URL, url);
-
-										// Find file for requested URL
-										// For performance reasons check for buffered files first!
-										if (!processed && !found && !failed && util::assigned(file)) {
-											if (web.verbosity > 0) {
-												const char* pFile = file->getFile().empty() ? "none" : file->getFile().c_str();
-												writeSessionLog(session, util::cprintf("[Request handler] Serve buffered file for URL [%s], file [%s], method [%s]", url, pFile, method));
-											}
-											retVal = request->sendResponseFromFile(connection, httpMethod, WTM_ASYNC, web.caching, file, data.bytesServed, error);
-											retVal == MHD_YES ? found = true : failed = true;
-											processed = true;
-										}
-
-										// Check for Restful API data URL
-										if (!processed && !found && !failed && util::assigned(link)) {
-											// Send data for link
-											if (web.verbosity > 0) {
-												writeSessionLog(session, util::cprintf("[Request handler] Serve virtual file for URL [%s], method [%s]", url, method));
-											}
-											retVal = request->sendResponseFromVirtualFile(connection, httpMethod, WTM_ASYNC, false, link, url, data.bytesServed, error);
-											retVal == MHD_YES ? found = true : failed = true;
-											processed = true;
-										}
-
-										// Check for virtual directory
-										if (!processed && !found && !failed && util::assigned(pwd) && inode.valid()) {
-											// Example:
-											//  - Web request for http://music/Tangerine Dream/Tangram/folder.jpg
-											//  - Requested URL is "/music/Tangerine Dream/Tangram/folder.jpg"
-											//  - Folder on file system is "/mnt/data/music/files/"
-											//  - Folder "/mnt/data/music/files/" is mapped to virtual root directory "/music/"
-											//  - The real file name is "/mnt/data/music/files/Tangerine Dream/Tangram/folder.jpg"
-											if (web.verbosity > 0) {
-												const char* pFile = inode.getFile().empty() ? "none" : inode.getFile().c_str();
-												writeSessionLog(session, util::cprintf("[Request handler] Serve virtual directory for URL [%s], file [%s], method [%s]", url, pFile, method));
-											}
-											// Send native file response...
-											retVal = request->sendResponseFromDirectory(connection, httpMethod, web.caching, *pwd, inode, data.bytesServed, error);
-											retVal == MHD_YES ? found = true : failed = true;
-											processed = true;
-										}
-
-									} else { // if (found)
 										if (web.verbosity > 0) {
-											writeInfoLog(util::cprintf("[Request handler] File not found for URL [%s], method [%s]", url, method));
+											const char* pFile = inode.getFile().empty() ? "none" : inode.getFile().c_str();
+											writeSessionLog(session, util::cprintf("[Request handler] Serve virtual directory for URL [%s], file [%s], method [%s]", url, pFile, method));
 										}
-										error = MHD_HTTP_NOT_FOUND;
-										failed = true;
+										// Send native file response...
+										retVal = request->sendResponseFromDirectory(connection, httpMethod, web.caching, *pwd, inode, data.bytesServed, error);
+										retVal == MHD_YES ? found = true : failed = true;
+										processed = true;
 									}
 
-								} // if (reply)
-								break;
+								} else { // if (found)
+									if (web.verbosity > 0) {
+										writeInfoLog(util::cprintf("[Request handler] File not found for URL [%s], method [%s]", url, method));
+									}
+									error = MHD_HTTP_NOT_FOUND;
+									failed = true;
+								}
 
-							default:
-								error = MHD_HTTP_NOT_IMPLEMENTED;
-								break;
+							} // if (reply)
+							break;
+
+						default:
+							error = MHD_HTTP_NOT_IMPLEMENTED;
+							break;
 
 						} // switch (httpMethod)
 
 					}
 
 				} else { // if (isResponding())
-					error = MHD_HTTP_SERVICE_UNAVAILABLE; // MHD_HTTP_NOT_ACCEPTABLE
+					error = MHD_HTTP_SERVICE_UNAVAILABLE;
 					failed = true;
 				}
 
@@ -2198,11 +2226,15 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				failed = true;
 			}
 
+			if (web.verbosity > 0) {
+				std::string value = retVal == MHD_YES ? "MHD_YES" : "MHD_NO";
+				writeInfoLog(util::csnprintf("[Request handler] Request processing finished: found = %, failed = %, replied = %, result = %, error = %", found, failed, reply, retVal, error));
+			}
+
 			// Error handling
 			if (!found /* TODO: Check needed? && MHD_HTTP_OK != error*/) {
-				if (reply) {
-					if (!failed)
-						error = MHD_HTTP_NOT_FOUND;
+				if (reply && !failed) {
+					error = MHD_HTTP_NOT_FOUND;
 				}
 				retVal = sendErrorResponse(connection, request, url, httpMethod, method, error);
 			}
@@ -2219,6 +2251,10 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 
 	} // else if (!util::assigned(*con_cls))
 
+	if (web.verbosity > 0) {
+		std::string value = retVal == MHD_YES ? "MHD_YES" : "MHD_NO";
+		writeInfoLog(util::csnprintf("[Request handler] Return $ (%) for URL [%], method [%] ", value, retVal, url, method));
+	}
 	return retVal;
 }
 
@@ -3352,7 +3388,7 @@ MHD_Result TWebServer::sendErrorResponse(struct MHD_Connection *connection, PWeb
     // Send error page synchronous and force MHD to copy the content buffer (persist = false, mode = WTM_SYNC)
 	// --> Avoid overwriting error buffers on concurrent requests for error pages
 	if (web.verbosity > 0) {
-		writeInfoLog(util::csnprintf("[HTTP Response] Send response $ (%)", app::getWebStatusMessage(static_cast<EWebStatusCode>(error)), error));
+		writeInfoLog(util::csnprintf("[HTTP Response] Send error response $ (%)", app::getWebStatusMessage(static_cast<EWebStatusCode>(error)), error));
 	}
 	util::TVariantValues headers;
 	return request->sendResponseFromBuffer(connection, methodType, WTM_SYNC, payload, size, headers, persist, caching, zipped, mime, error);
