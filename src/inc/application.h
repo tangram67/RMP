@@ -52,7 +52,7 @@ STATIC_CONST char* SGNL_FILE   = "/tmp/termination.dmp";
 STATIC_CONST char* EXCP_FILE   = "/tmp/exception.dmp";
 STATIC_CONST char* APP_CONFIG  = "Global";
 STATIC_CONST char* APP_LICENSE = "License";
-STATIC_CONST char* LICENCE_BASE_URL = "http://www.dbrinkmeier.de/licenses/";
+STATIC_CONST char* LICENCE_BASE_URL = "https://www.dbrinkmeier.de/licenses/";
 STATIC_CONST char* SUPPLEMENTAL_GROUP_LIST = "gpio;dialout;audio;spi;i2c;kmem";
 STATIC_CONST char* DEFAULT_CAPABILITIES_LIST = "cap_ipc_lock;cap_net_bind_service;cap_sys_admin;cap_sys_nice;cap_sys_rawio;cap_net_admin";
 

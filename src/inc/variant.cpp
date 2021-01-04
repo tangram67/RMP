@@ -1626,17 +1626,10 @@ std::string TVariant::asJSON(const std::string& preamble, const std::string& nam
 
 
 const util::TBlob& TVariant::asBlob() const {
+	CBinaryValue var;
 	TTimePart t;
-	int8_t c;
-	uint8_t uc;
-	int16_t s;
-	uint16_t us;
-	int32_t i;
-	uint32_t ui;
-	int64_t li;
-	uint64_t lui;
-	bool b;
 	double d;
+	bool b;
 
 	// Clear local blob before loading with variant data
 	if (varType != EVT_BLOB) {
@@ -1648,36 +1641,36 @@ const util::TBlob& TVariant::asBlob() const {
 			// Return variant blob object!
 			return value.blob;
 		case EVT_INTEGER8:
-			c = (int8_t)value.integer;
-			blob.assign(&c, sizeof(int8_t));
+			var.int8 = (int8_t)value.integer;
+			blob.assign(&var.int8, sizeof(int8_t));
 			return blob;
 		case EVT_INTEGER16:
-			s = (int16_t)value.integer;
-			blob.assign(&s, sizeof(int16_t));
+			var.int16 = (int16_t)value.integer;
+			blob.assign(&var.int16, sizeof(int16_t));
 			return blob;
 		case EVT_INTEGER32:
-			i = (int32_t)value.integer;
-			blob.assign(&i, sizeof(int32_t));
+			var.int32 = (int32_t)value.integer;
+			blob.assign(&var.int32, sizeof(int32_t));
 			return blob;
 		case EVT_INTEGER64:
-			li = value.integer;
-			blob.assign(&li, sizeof(int64_t));
+			var.int64 = value.integer;
+			blob.assign(&var.int64, sizeof(int64_t));
 			return blob;
 		case EVT_UNSIGNED8:
-			uc = (uint8_t)value.uinteger;
-			blob.assign(&uc, sizeof(uint8_t));
+			var.uint8 = (uint8_t)value.uinteger;
+			blob.assign(&var.uint8, sizeof(uint8_t));
 			return blob;
 		case EVT_UNSIGNED16:
-			us = (uint16_t)value.uinteger;
-			blob.assign(&us, sizeof(uint16_t));
+			var.uint16 = (uint16_t)value.uinteger;
+			blob.assign(&var.uint16, sizeof(uint16_t));
 			return blob;
 		case EVT_UNSIGNED32:
-			ui = (uint32_t)value.uinteger;
-			blob.assign(&ui, sizeof(uint32_t));
+			var.uint32 = (uint32_t)value.uinteger;
+			blob.assign(&var.uint32, sizeof(uint32_t));
 			return blob;
 		case EVT_UNSIGNED64:
-			lui = value.uinteger;
-			blob.assign(&lui, sizeof(uint64_t));
+			var.uint64 = value.uinteger;
+			blob.assign(&var.uint64, sizeof(uint64_t));
 			return blob;
 		case EVT_BOOLEAN:
 			b = value.boolean;

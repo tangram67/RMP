@@ -607,6 +607,26 @@ void TSerial::write(std::stringstream& sstrm) {
 }
 
 
+bool TSerial::readControlSignal(const int signal) {
+	if (isOpen()) {
+		int r;
+		ioctl(handle(), TIOCMGET, &r);
+		return (r & signal) != 0;
+	}
+	return false;
+}
+
+bool TSerial::getCTS() {
+	return readControlSignal(TIOCM_CTS);
+}
+bool TSerial::getDSR() {
+	return readControlSignal(TIOCM_DSR);
+}
+bool TSerial::getDCD() {
+	return readControlSignal(TIOCM_CAR);
+}
+
+
 void TSerial::resetios() {
 	line.copyfmt(std::ios(NULL));
 }

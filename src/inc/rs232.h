@@ -80,6 +80,7 @@ private:
 	int sigSaveTimedSelect(int ndfs, fd_set *rfds, util::TTimePart ms);
 
     void resetios();
+	bool readControlSignal(const int signal);
 	speed_t getBaudRate(TBaudRate value);
 	void finalize();
 	void shutdown();
@@ -97,6 +98,10 @@ public:
 	void inhibit();
 	void mode(int chars, int delay = 0);
 	
+	bool getCTS();
+	bool getDSR();
+	bool getDCD();
+
 	size_t write(void const *const data, size_t const size) const;
 	void write(const std::string& s) const;
 	void write(const char c) const;
