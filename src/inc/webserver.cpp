@@ -535,8 +535,11 @@ bool TWebServer::start(const bool autostart) {
 				} else
 					writeInfoLog("[Start web server] Use internal Diffie-Hellman prime.");
 
-				// Set HTTPS flag
-				flags |= MHD_USE_SSL;
+				// Set TLS/HTTPS flag
+				flags |= MHD_USE_TLS;
+
+				// Enable post-handshake client authentication
+				// flags |= MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT;
 			}
 
 			// Check for IPv6 supported by target system

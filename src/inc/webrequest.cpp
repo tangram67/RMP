@@ -2029,7 +2029,7 @@ MHD_Result TWebRequest::buildResponseHeader(struct MHD_Connection *connection, s
 
 	// Add header information and session cookie
 	// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-	if (MHD_HTTP_OK == error && util::assigned(response)) {
+	if (util::assigned(response)) {
 
 		// Do not add cookies on OPTIONS request
 		if (method != HTTP_OPTIONS) {
