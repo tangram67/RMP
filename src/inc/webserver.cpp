@@ -1914,12 +1914,12 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 				if (util::assigned(info)) {
 					gnutls_session_t tls = (gnutls_session_t)info->tls_session;
 					if (util::assigned(tls)) {
-						gnutls_protocol_t protocol = gnutls_protocol_get_version(tls);
 						gnutls_cipher_algorithm_t algo = gnutls_cipher_get(tls);
 						const char* cipher = gnutls_cipher_get_name(algo);
 						if (!util::assigned(cipher)) {
 							cipher = "unknown";
 						}
+						gnutls_protocol_t protocol = gnutls_protocol_get_version(tls);
 						const char* version = gnutls_protocol_get_name(protocol);
 						if (!util::assigned(version)) {
 							version = "unknown";
@@ -1930,10 +1930,11 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 			}
 
 			// Log request properties
-			if (post || *upload_data_size > 0)
+			if (post || *upload_data_size > 0) {
 				writeInfoLog(util::cprintf("[Request handler] Execute request for URL [%s], method [%s], version [%s], size [%d]", url, method, version, *upload_data_size));
-			else
+			} else {
 				writeInfoLog(util::cprintf("[Request handler] Execute request for URL [%s], method [%s], version [%s]", url, method, version));
+			}
 		}
 
 		// Serve requested file
@@ -2090,7 +2091,7 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 							}
 
 							/* Intended to serve URL after POST processing */
-							/* no break : Text disables warning in Eclipse */
+							/* NO BREAK : Text disables warning in Eclipse */
 						case HTTP_GET:
 						case HTTP_HEAD:
 						case HTTP_OPTIONS:
