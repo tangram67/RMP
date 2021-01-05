@@ -54,5 +54,6 @@ libmircohttpd_a_SOURCES = \
 	tsearch.c \
 	tsearch.h
 
+#AM_CFLAGS = -std=c99 -DUSE_SSL -DUSE_CYASSL -D_GNU_SOURCE -O3 -Wall -c -fmessage-length=0 -MMD -MP
 AM_CFLAGS = -std=c99 -DUSE_SSL -DUSE_CYASSL -D_GNU_SOURCE
 
