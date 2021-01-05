@@ -1907,10 +1907,33 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 
 		// Log request callback
 		if (web.verbosity >= 4) {
+
+			// Get TLS session information
+			if (web.useHttps) {
+				const union MHD_ConnectionInfo * info = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
+				if (util::assigned(info)) {
+					gnutls_session_t tls = (gnutls_session_t)info->tls_session;
+					if (util::assigned(tls)) {
+						gnutls_protocol_t protocol = gnutls_protocol_get_version(tls);
+						gnutls_cipher_algorithm_t algo = gnutls_cipher_get(tls);
+						const char* cipher = gnutls_cipher_get_name(algo);
+						if (!util::assigned(cipher)) {
+							cipher = "unknown";
+						}
+						const char* version = gnutls_protocol_get_name(protocol);
+						if (!util::assigned(version)) {
+							version = "unknown";
+						}
+						writeInfoLog(util::cprintf("[Request handler] TLS request for URL [%s], protocol [%d], version [%s], algorithm [%d], cipher [%s]", url, protocol, version, algo, cipher));
+					}
+				}
+			}
+
+			// Log request properties
 			if (post || *upload_data_size > 0)
-				writeInfoLog(util::cprintf("[Request handler] Execute prepared URL [%s], method [%s], version [%s], size [%d]", url, method, version, *upload_data_size));
+				writeInfoLog(util::cprintf("[Request handler] Execute request for URL [%s], method [%s], version [%s], size [%d]", url, method, version, *upload_data_size));
 			else
-				writeInfoLog(util::cprintf("[Request handler] Execute prepared URL [%s], method [%s], version [%s]", url, method, version));
+				writeInfoLog(util::cprintf("[Request handler] Execute request for URL [%s], method [%s], version [%s]", url, method, version));
 		}
 
 		// Serve requested file
