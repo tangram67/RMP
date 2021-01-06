@@ -1915,15 +1915,9 @@ MHD_Result TWebServer::requestDispatcher( struct MHD_Connection *connection,
 					gnutls_session_t tls = (gnutls_session_t)info->tls_session;
 					if (util::assigned(tls)) {
 						gnutls_cipher_algorithm_t algo = gnutls_cipher_get(tls);
-						const char* cipher = gnutls_cipher_get_name(algo);
-						if (!util::assigned(cipher)) {
-							cipher = "unknown";
-						}
+						const char* cipher = util::charToChar(gnutls_cipher_get_name(algo), "unknown");
 						gnutls_protocol_t protocol = gnutls_protocol_get_version(tls);
-						const char* version = gnutls_protocol_get_name(protocol);
-						if (!util::assigned(version)) {
-							version = "unknown";
-						}
+						const char* version = util::charToChar(gnutls_protocol_get_name(protocol), "unknown");
 						writeInfoLog(util::cprintf("[Request handler] TLS request for URL [%s], protocol [%d], version [%s], algorithm [%d], cipher [%s]", url, protocol, version, algo, cipher));
 					}
 				}

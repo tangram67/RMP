@@ -575,7 +575,6 @@ const std::wstring& util::strToStr(const std::wstring& str, const std::wstring& 
 }
 
 
-
 std::string util::charToStr(const char *str, const char *defValue) {
 	std::string retVal;
 	if (util::assigned(str))
@@ -610,6 +609,29 @@ std::wstring util::charToStr(const wchar_t *str, const std::wstring& defValue) {
 	if (!retVal.empty())
 		return retVal;
 	return defValue;
+}
+
+
+const char * util::charToChar(const char *str, const char *defValue) {
+	const char *retVal = defValue;
+	if (util::assigned(str)) {
+		retVal = str;
+		if ('\0' == retVal[0]) {
+			retVal = defValue;
+		}
+	}
+	return retVal;
+}
+
+const wchar_t * util::charToChar(const wchar_t *str, const wchar_t *defValue) {
+	const wchar_t *retVal = defValue;
+	if (util::assigned(str)) {
+		retVal = str;
+		if (L'\0' == retVal[0]) {
+			retVal = defValue;
+		}
+	}
+	return retVal;
 }
 
 
@@ -787,7 +809,6 @@ std::wstring util::shorten(const std::wstring& str, const size_t size) {
 }
 
 
-
 std::string& util::trimLeft(std::string& str, TIsWhiteSpaceA isSpace) {
 	str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::not1(std::function<int(char)>(isSpace))));
 	return str;
@@ -922,7 +943,6 @@ std::wstring util::replace(const std::wstring& str, const std::wstring& oldStr, 
 }
 
 
-
 std::string util::cprintf(const char* fmt, ...) {
     if (util::assigned(fmt)) {
 		int n;
@@ -1026,7 +1046,6 @@ std::wstring util::cprintf(const std::wstring &fmt, ...) {
 	}
 	return fmt;
 }
-
 
 
 std::string util::cprintf(const app::TLocale& locale, const char* fmt, ...) {

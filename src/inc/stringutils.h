@@ -48,6 +48,9 @@ std::wstring charToStr(const wchar_t *str, const wchar_t *defValue = L"");
 std::string  charToStr(const char *str, const std::string& defValue);
 std::wstring charToStr(const wchar_t *str, const std::wstring& defValue);
 
+const char * charToChar(const char *str, const char *defValue);
+const wchar_t * charToChar(const wchar_t *str, const wchar_t *defValue);
+
 void fill(std::string& str, const char fillchar, const size_t size);
 void fill(std::wstring& str, const wchar_t fillchar, const size_t size);
 
