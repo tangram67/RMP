@@ -207,17 +207,19 @@ enum EWebLogVerbosity {
 };
 
 enum EWebUserAgent {
-	WUA_UNKNOWN  = 0,
-	WUA_MSIE     = 1,
-	WUA_MSEDGE   = 2,
-	WUA_MSCHROME = 3,
-	WUA_FIREFOX  = 4,
-	WUA_CHROMIUM = 5,
-	WUA_SAFARI   = 6,
-	WUA_NETSCAPE = 7,
-	WUA_OPERA    = 8,
-	WUA_CURL     = 9,
-	WUA_APPLICATION = 10
+	WUA_UNDEFINED   = 0,
+	WUA_UNKNOWN     = 1,
+	WUA_MSIE        = 2,
+	WUA_MSEDGE      = 3,
+	WUA_MSCHROME    = 4,
+	WUA_FIREFOX     = 5,
+	WUA_CHROMIUM    = 6,
+	WUA_SAFARI      = 7,
+	WUA_NETSCAPE    = 8,
+	WUA_OPERA       = 9,
+	WUA_CURL        = 10,
+	WUA_IOT_CLIENT  = 11,
+	WUA_APPLICATION = 12
 };
 
 enum EWebStatusCode
@@ -811,6 +813,9 @@ struct CWebSession {
 	// Calling user agent
 	EWebUserAgent userAgent;
 
+	// Client address
+	std::string client;
+
 	// Map of browser connection values
 	// NOT thread save, only to be modified during request handling!!!
 	TValueMap values;
@@ -833,8 +838,10 @@ struct CWebSession {
 		size_t idx = matrix.find(SESSION_ID);
 		if (app::nsizet == idx)
 			matrix.add(SESSION_ID, sid);
-		if (util::assigned(connection))
-			matrix.add(SESSION_REMOTE_HOST, util::toupper(inet::inetAddrToStr(connection->addr)));
+		if (util::assigned(connection)) {
+			client = inet::inetAddrToStr(connection->addr);
+			matrix.add(SESSION_REMOTE_HOST, util::toupper(client));
+		}
 	}
 	void setUserValues(const std::string& username, int userlevel , bool authenticated) {
 		app::TReadWriteGuard<app::TReadWriteLock> lock(matrixLck, RWL_WRITE);
@@ -960,7 +967,7 @@ struct CWebSession {
 
 	void prime() {
 		valuesRead = false;
-		userAgent = WUA_UNKNOWN;
+		userAgent = WUA_UNDEFINED;
 		authenticated = false;
 		deleted = false;
 		logoff = false;
@@ -980,6 +987,7 @@ struct CWebSession {
 		post.clear();
 	}
 	void release() {
+		client.clear();
 		values.clear();
 		clearSessionValues();
 		clearCookieValues();

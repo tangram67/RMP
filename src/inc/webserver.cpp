@@ -928,7 +928,7 @@ int TWebServer::saveWebSessionsToFile(const std::string path) {
 					if (!sid.empty()) {
 
 						// Do not save anonimous and default web sessions
-						if (WUA_UNKNOWN != session->userAgent && session->useC > 1 && session->matrix.size() > 3) {
+						if (WUA_UNDEFINED != session->userAgent && session->useC > 1 && session->matrix.size() > 3) {
 
 							// Create session folder
 							std::string dir = util::validPath(root + sid);
@@ -945,6 +945,7 @@ int TWebServer::saveWebSessionsToFile(const std::string path) {
 							values.add("TIMEOUT", (int64_t)session->timeout);
 							values.add("COUNT", session->refC);
 							values.add("REQUESTED", session->useC);
+							values.add("ADDRESS", session->client);
 							values.asJSON().saveToFile(dir + "session.json");
 
 							// Save matrix values as JSON file
@@ -995,8 +996,8 @@ int TWebServer::loadWebSessionsFromFile(const std::string path) {
 
 						// Get default values
 						EWebUserAgent value = (EWebUserAgent)table[0]["AGENT"].asInteger();
-						EWebUserAgent agent = WUA_UNKNOWN;
-						if (util::isMemberOf(value, WUA_MSIE,WUA_MSEDGE,WUA_MSCHROME,WUA_FIREFOX,WUA_CHROMIUM,WUA_SAFARI,WUA_NETSCAPE,WUA_OPERA,WUA_CURL,WUA_APPLICATION))
+						EWebUserAgent agent = WUA_UNDEFINED;
+						if (util::isMemberOf(value, WUA_UNKNOWN,WUA_MSIE,WUA_MSEDGE,WUA_MSCHROME,WUA_FIREFOX,WUA_CHROMIUM,WUA_SAFARI,WUA_NETSCAPE,WUA_OPERA,WUA_CURL,WUA_IOT_CLIENT,WUA_APPLICATION))
 							agent = value;
 
 						// Set default value for session
@@ -1009,6 +1010,7 @@ int TWebServer::loadWebSessionsFromFile(const std::string path) {
 						session->timestamp = (util::TTimePart)row["TIMESTAMP"].asInteger64(0);
 						session->timeout = (util::TTimePart)row["TIMEOUT"].asInteger64(0);
 						session->useC = row["REQUESTED"].asInteger(1);
+						session->client = row["ADDRESS"].asString();
 						session->refC = 0;
 
 						// Read matrix values from file
@@ -1102,7 +1104,7 @@ void TWebServer::sessionGarbageCollector(const bool cleanup) {
 						} else {
 							// Delete rejected sessions
 							bool rejected = !o->authenticated /*&& (o->refC <= 0)*/;
-							bool unused = WUA_UNKNOWN == o->userAgent || o->matrix.size() < 4;
+							bool unused = WUA_UNDEFINED == o->userAgent || o->matrix.size() < 4;
 							if (unused && (age > unusedDeleteAge)) {
 								if (web.verbosity >= verbosity)
 									writeInfoLog("[Session garbage collector] Unused session <" + o->sid + "> deleted.");

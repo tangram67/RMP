@@ -414,6 +414,14 @@ PWebSession TWebRequest::findSession(struct MHD_Connection *connection) {
 	//  - older than x seconds
 	if (!util::assigned(session)) {
 
+		// Get client address
+		std::string addr;
+		if (util::assigned(connection)) {
+			if (util::assigned(connection->addr)) {
+				addr = inet::inetAddrToStr(connection->addr);
+			}
+		}
+
 		// Use minimal session age of 2 seconds
 		util::TTimePart dt = std::max((util::TTimePart)sessionDelta, (util::TTimePart)2);
 		util::TTimePart ts = util::now() - dt;
@@ -422,7 +430,9 @@ PWebSession TWebRequest::findSession(struct MHD_Connection *connection) {
 		while (it != sessions->end()) {
 			PWebSession o = it->second;
 			if (util::assigned(o)) {
-				if (!o->busy() && o->refC <= 0 && o->useC < 2 && o->timestamp < ts) {
+				// Check if session idle and not used since given time
+				// --> Also check for same client IP to prevent idle sessions assigned to a different client
+				if (!o->busy() && o->refC <= 0 /*&& o->useC < 2*/ && addr == o->client && o->timestamp < ts) {
 					o->reset();
 					session = o;
 					break;
@@ -443,22 +453,16 @@ PWebSession TWebRequest::findSession(struct MHD_Connection *connection) {
 		sessions->insert(TWebSessionItem(session->sid, session));
 		if (debug) {
 			std::cout << app::red << "TWebRequest::findSession() Create new session cookie = " << session->sid << app::reset << std::endl;
-
-			// Signal scanner finished
-			sysutil::TBeeperParams beeper;
-			beeper.repeats = 1;
-			beeper.length = DEFAULT_BEEPER_LENGTH / 2;
-			//sysutil::beep(beeper);
 		}
 	}
+
+	// Set default session values
+	session->setConnectionValues(connection);
 
 	// Set timestamp and reference counter
 	session->setTimeStamp();
 	session->refC++;
 	session->useC++;
-
-	// Set default session values
-	session->setConnectionValues(connection);
 
 	return session;
 }
