@@ -314,12 +314,16 @@ inline std::string systemDateTimeToStrA(const TTimePart time, const app::TLocale
 	return systemDateTimeToStr(time, locale);
 };
 
+bool convertDateTimeString(const std::string& time, TTimeStamp& ts);
 TTimePart dateTimeFromTimeParts(const TTimeStamp time, const EDateTimeZone tz);
 TTimePart dateTimeFromTimeParts(const TTimeStamp time, bool isUTC = false);
 TTimePart dayOfYear(TTimePart year, TTimePart month, TTimePart day);
 
 std::string timeToHuman(TTimePart time, int limit = 2, const app::ELocale locale = app::ELocale::sysloc);
 std::wstring timeToHumanW(TTimePart time, int limit = 2, const app::ELocale locale = app::ELocale::sysloc);
+
+bool setSystemTime(const std::string& time);
+bool setSystemTime(const TTimePart time, const TTimePart millis = 0);
 
 
 typedef struct CTimeValue {
@@ -374,6 +378,7 @@ private:
 		hour = 0;
 		minute = 0;
 		second = 0;
+		millis = 0;
 		offset = 0;
 		isDST = false;
 	}
@@ -388,6 +393,7 @@ public:
 	TTimePart hour;
 	TTimePart minute;
 	TTimePart second;
+	TTimePart millis;
 	TTimePart offset;
 	bool isDST;
 	
@@ -407,6 +413,7 @@ public:
 		minute = value.minute;
 		second = value.second;
 		offset = value.offset;
+		millis = value.millis;
 		isDST = value.isDST;
 	}
 
@@ -535,6 +542,7 @@ public:
 	void imbue(const app::TLocale& locale);
 	const app::TLocale& getLocale() const { return *locale; };
 
+	TTimePart asUTC() const { return utc(); };
 	TTimePart asTime() const { return time(); };
 	TTimeNumeric asNumeric() const;
 	TTimeNumeric asJulian() const;

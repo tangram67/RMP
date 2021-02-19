@@ -115,7 +115,7 @@ TTimePart now() {
 TTimePart localTimeToUTC(const TTimePart time) {
 	struct tm ctm;
 	if (assigned(gmtime_r(&time, &ctm)))
-		return mktime(&ctm);
+		return timegm(&ctm);
 	return (TTimePart)0;
 }
 
@@ -389,24 +389,13 @@ std::wstring dateTimeToStrW(const TTimePart time) {
 // SELECT convert(datetime, '2016-10-23 20:44:11.500', 121) -- yyyy-mm-dd hh:mm:ss.mmm
 // See: http://www.sqlusa.com/bestpractices/datetimeconversion/
 //
-TTimePart strToDateTime(const std::string& time) {
-	TTimePart t, m;
-	if (strToDateTime(time, t, m))
-		return t;
-	return epoch();
-}
-
-bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milliseconds) {
-	milliseconds = 0;
-	seconds = 0;
-
+bool convertDateTimeString(const std::string& time, TTimeStamp& ts) {
 	if (time.empty())
 		return false;
 
 	const char* p;
 	const char* s;
 	char* q;
-	TTimeStamp ts;
 	std::string t = time;
 	util::trimLeft(t);
 
@@ -460,20 +449,74 @@ bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milli
 			return false;
 	}
 
-	// Try to read 3 digits milliseconds, ignore on error
+	// Try to read 3 digits milliseconds, ignore errors
 	if (t.size() >= 23) {
 		p = s + 20;
 		TTimePart t = strtol(p, &q, 10);
 		if (EXIT_SUCCESS == errno || p != q) {
 			if (t >= epoch() && t < (TTimePart)1000) {
-				milliseconds = t;
+				ts.millis = t;
 			}
 		}
 	}
 
-	seconds = dateTimeFromTimeParts(ts, false);
 	return true;
 }
+
+TTimePart strToDateTime(const std::string& time) {
+	TTimePart t, m;
+	if (strToDateTime(time, t, m))
+		return t;
+	return epoch();
+}
+
+bool strToDateTime(const std::string& time, TTimePart& seconds, TTimePart& milliseconds) {
+	milliseconds = 0;
+	seconds = 0;
+	TTimeStamp ts;
+
+	// Convert given time to timestamp
+	if (convertDateTimeString(time, ts)) {
+		seconds = dateTimeFromTimeParts(ts, false);
+		milliseconds = ts.millis;
+		return true;
+	}
+
+	return false;
+}
+
+
+bool setSystemTime(const std::string& time) {
+	// Time is given for UTC time zone
+	// Setting system time requires superuser priviledges
+	// or CAP_SYS_TIME capabilities
+	struct timespec utc;
+	TTimeStamp ts;
+
+	// Get seconds from epoch for UTC time zone
+	if (convertDateTimeString(time, ts)) {
+		utc.tv_sec = dateTimeFromTimeParts(ts, true);
+		utc.tv_nsec = ts.millis * MICRO_JIFFIES;
+
+		// Set clock for given timestamp
+		return EXIT_SUCCESS == clock_settime(CLOCK_REALTIME, &utc);
+	}
+
+	return false;
+}
+
+bool setSystemTime(const TTimePart seconds, const TTimePart millis) {
+	// Time is given for UTC time zone
+	// Setting system time requires superuser priviledges
+	// or CAP_SYS_TIME capabilities
+	struct timespec ts;
+	ts.tv_sec = seconds;
+	ts.tv_nsec = millis * MICRO_JIFFIES;
+
+	// Set clock for given timestamp
+	return EXIT_SUCCESS == clock_settime(CLOCK_REALTIME, &ts);
+}
+
 
 bool isInternationalTime(const std::string& time) {
 	// Check timstamps like "2016-10-23 20:44:11", "2016-10-23T20:44:11" or "2016-10-23" (date only!)
