@@ -191,6 +191,7 @@ public:
 	ssize_t read(void *const data, size_t const size) const;
 	ssize_t write(void const *const data, size_t const size) const;
 	ssize_t write(const std::string& data) const;
+	int printf(const char* fmt, ...);
 	bool flush() const;
 
 	FILE * operator () () { return fh; };

@@ -750,6 +750,7 @@ private:
 	bool parseRemoteStatusData(util::TByteBuffer& data);
 	void testRemoteParserData();
 	void removeDevelFiles();
+	void freeLocalFileCache();
 	void checkApplicationLicenses();
 	void checkApplicationLicensesWithNolock();
 	bool applyApplicationLicense(const std::string& name, const std::string& value);

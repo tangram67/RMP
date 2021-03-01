@@ -102,19 +102,7 @@ TPlayer::TPlayer() {
 }
 
 TPlayer::~TPlayer() {
-	if (!fileCache.empty()) {
-		PFile o;
-		TFileCacheMap::iterator it = fileCache.begin();
-		while (it != fileCache.end()) {
-			o = it->second;
-			if (util::assigned(o)) {
-				o = it->second;
-				o->release();
-				util::freeAndNil(o);
-			}
-			++it;
-		}
-	}
+	freeLocalFileCache();
 }
 
 
@@ -531,6 +519,22 @@ void TPlayer::cleanup() {
 
 	// Application is terminated now
 	logger("[Loop] Executed last minute cleanups.");
+}
+
+void TPlayer::freeLocalFileCache() {
+	if (!fileCache.empty()) {
+		PFile o;
+		TFileCacheMap::iterator it = fileCache.begin();
+		while (it != fileCache.end()) {
+			o = it->second;
+			if (util::assigned(o)) {
+				o = it->second;
+				o->release();
+				util::freeAndNil(o);
+			}
+			++it;
+		}
+	}
 }
 
 void TPlayer::removeDevelFiles() {
