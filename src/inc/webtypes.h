@@ -458,6 +458,7 @@ struct CWebConfig {
 	int maxSessionCount;
 	util::TStringList indexPages;
 	util::TStringList allowedList;
+	util::TStringList parserList;
 	bool allowFromAll;
 	bool allowManifestFiles;
 	std::string tokenDelimiter;
@@ -505,6 +506,7 @@ struct CWebConfig {
 #endif
 		indexPages.clear();
 		allowedList.clear();
+		parserList.clear();
 		tokenHeader = "[[";
 		tokenFooter = "]]";
 		tokenDelimiter = tokenHeader + "X" + tokenFooter;

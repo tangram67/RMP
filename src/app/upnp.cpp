@@ -10,6 +10,7 @@
 #include "../inc/variant.h"
 #include "../inc/compare.h"
 #include "../inc/stringutils.h"
+#include "../inc/sysutils.h"
 #include "../inc/ansi.h"
 #include "upnpconsts.h"
 #include "upnp.h"

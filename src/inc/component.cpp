@@ -66,26 +66,30 @@ void TTagList::invalidate() {
 	hashTag = 0;
 }
 
-void TTagList::add(const std::string& text) {
+void TTagList::add(const std::string& text, size_t tag) {
 	THtmlList::add(text);
 	icons.push_back("*");
+	tags.push_back(tag);
 }
 
 void TTagList::add(const util::TStringList& items) {
 	THtmlList::add(items);
 	for (size_t i=0; i<items.size(); ++i) {
 		icons.push_back("*");
+		tags.push_back(i);
 	}
 }
 
-void TTagList::add(const std::string& text, const std::string& glyphicon) {
+void TTagList::add(const std::string& text, const std::string& glyphicon, size_t tag) {
 	THtmlList::add(text);
 	icons.push_back(glyphicon.empty() ? "*" : glyphicon);
+	tags.push_back(tag);
 }
 
 void TTagList::clear() {
 	THtmlList::clear();
 	icons.clear();
+	tags.clear();
 }
 
 TTagList& TTagList::operator = (const app::TStringVector& vector) {
@@ -136,22 +140,27 @@ const std::string& TTagList::html(const std::string caption) const {
 		std::string item, glyph;
 		size_t idx = find(caption);
 		size_t count = 0;
+		size_t index;
 		bool ok;
 		for (size_t i=0; i<size(); ++i) {
 			// Exclude given default value from list if it is in list!
 			ok = idx == std::string::npos ? true : i != idx;
 			if (ok) {
+				index = 0;
 				glyph.clear();
 				item = encodeHtmlText(at(i));
 				if (util::validListIndex(icons, i)) {
 					glyph = icons[i];
 				}
+				if (util::validListIndex(tags, i)) {
+					index = tags[i];
+				}
 				if (count > 0) strHTML += "\n";
 				if (glyph.size() < 2) {
 					// e.g. <option value="hw:CARD=USBASIO,DEV=0">hw:CARD=USBASIO,DEV=0</option>
-					strHTML += "<" + tag + " value=\"" + item + "\">" + item + "</" + tag + ">";
+					strHTML += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\">" + item + "</" + tag + ">";
 				} else {
-					strHTML += "<" + tag + " value=\"" + item + "\"><span class=\"glyphicon " + glyph + " pull-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;" + item + "</" + tag + ">";
+					strHTML += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\"><span class=\"glyphicon " + glyph + " pull-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;" + item + "</" + tag + ">";
 				}
 				++count;
 			}
@@ -216,6 +225,7 @@ TComponent::TComponent() : app::TObject(), TPersistent() {
 	invalidated = false;
 	enabled = true;
 	token = nil;
+	nls = nil;
 	width = 0;
 	style = ECS_DEFAULT;
 	align = ECA_NONE;
@@ -440,6 +450,21 @@ std::string TComponent::padTextLeft(const std::string &str, const size_t length,
 	return s;
 }
 
+void TComponent::setTranslator(app::TTranslator& nls) {
+	this->nls = &nls;
+}
+
+std::string TComponent::translate(const size_t id, const std::string& defValue) const {
+	// Translate only text for valid IDs
+	// --> e.g. setText() or setCaption() set ID = 0 to force text
+	// --> forced text must be set already translated !!!
+	if (util::assigned(nls) && id > 0) {
+		return nls->text(id, defValue);
+	}
+	return defValue;
+}
+
+
 
 TComboBox::TComboBox() : TComponent() {
 	prime();
@@ -536,10 +561,13 @@ const std::string& TListBox::text(const std::string& caption) const {
 		}
 
 		// Add list values
-		const app::TStringVector& glyphs = items.gylphicons();
+		const app::TStringVector& glyphs = items.getIcons();
+		const TItemTagList& tags = items.getTags();
 		std::string item, glyph;
 		size_t count = 0;
+		size_t index;
 		for (size_t i=0; i<items.size(); ++i) {
+			index = 0;
 			item = items.at(i);
 			glyph.clear();
 			if (util::validListIndex(glyphs, i)) {
@@ -547,7 +575,7 @@ const std::string& TListBox::text(const std::string& caption) const {
 				if (!name.empty()) {
 					if ('/' == name[0]) {
 						// Add link to an image
-						glyph = "<span style=\"pointer-events:none;\" aria-hidden=\"true\"><img src=\"" + name + "\"></img></span>&nbsp;&nbsp;";
+						glyph = "<span style=\"pointer-events:none;\" aria-hidden=\"true\"><img src=\"" + name + "\"></span>&nbsp;&nbsp;";
 					} else {
 						// Add glyphicon by name
 						glyph = "<span class=\"glyphicon " + name + "\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;";
@@ -556,21 +584,24 @@ const std::string& TListBox::text(const std::string& caption) const {
 			}
 			if (count > 0) strText += "\n";
 			std::string text = encodeHtmlText(item);
+			if (util::validListIndex(tags, i)) {
+				index = tags[i];
+			}
 			switch (focus) {
 				case ELF_NONE:
 					strText += "<" + tag + " value=\"" + item + "\"><a>" + item + "</a></" + tag + ">";
 					break;
 				case ELF_FULL:
 					if (item.size() == caption.size() && 0 == util::strcasecmp(item, caption))
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
+						strText += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					else
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
+						strText += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					break;
 				case ELF_PARTIAL:
 					if (compare(item, caption))
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
+						strText += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-triangle-right\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					else
-						strText += "<" + tag + " value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
+						strText += "<" + tag + " data-id=\"" + std::to_string(index) + "\" value=\"" + item + "\"><a><span class=\"glyphicon glyphicon-none\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;" + glyph + text + "</a></" + tag + ">";
 					break;
 			}
 			++count;
@@ -581,6 +612,15 @@ const std::string& TListBox::text(const std::string& caption) const {
 
 const std::string& TListBox::html(const std::string& caption) const {
 	if (strHTML.empty()) {
+		// Create dynamic HTML content for list box
+		size_t index = 0;
+		if (!caption.empty()) {
+			size_t idx = items.find(caption, getCompare());
+			const TItemTagList& tags = items.getTags();
+			if (util::validListIndex(tags, idx)) {
+				index = tags[idx];
+			}
+		}
 		strHTML  = "<div class=\"input-group\">\n";
 		strHTML += "  <span class=\"input-group-btn list-box-elements\">\n";
 		strHTML += "    <a class=\"btn btn-default dropdown-toggle\" data-toggle=\"dropdown\" href=\"#\">\n";
@@ -592,7 +632,7 @@ const std::string& TListBox::html(const std::string& caption) const {
 		strHTML += "    </ul>\n";
 
 		strHTML += "  </span>\n";
-		strHTML += "  <input type=\"text\" class=\"form-control list-box-input\"" + tagToStr("id", getID()) + tagToStr("name", getID()) + " autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\" spellcheck=\"false\" value=\"" + caption + "\"/>\n";
+		strHTML += "  <input type=\"text\" class=\"form-control list-box-input\"" + tagToStr("id", getID()) + tagToStr("name", getID()) + tagToStr("data-id", index) + " autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"off\" spellcheck=\"false\" value=\"" + caption + "\"/>\n";
 		if (!component.empty()) {
 			for (size_t i=0; i<component.size(); ++i) {
 				strHTML += "  " + component[i] + "\n";
@@ -844,6 +884,7 @@ const std::string& TRadioGroup::html(const std::string& caption) const {
 
 
 TMenuItem::TMenuItem() {
+	captionID = 0;
 	active = false;
 	level = 0;
 }
@@ -858,6 +899,9 @@ const std::string TMenuItem::getCaption() const {
 
 void TMenuItem::setCaption(const std::string& value) {
 	app::TLockGuard<app::TMutex> lock(mtx);
+	// Forced overwrite of caption text
+	// --> do not firther translate by setting ID to 0 !!!
+	captionID = 0;
 	caption = value;
 };
 
@@ -871,8 +915,9 @@ void TMenuItem::setLink(const std::string& value) {
 	link = value;
 };
 
-void TMenuItem::getProperties(std::string& caption, std::string& link) const {
+void TMenuItem::getProperties(size_t& captionID, std::string& caption, std::string& link) const {
 	app::TLockGuard<app::TMutex> lock(mtx);
+	captionID = this->captionID;
 	caption = this->caption;
 	link = this->link;
 }
@@ -923,26 +968,41 @@ TContextMenu::TContextMenu(const std::string& name) : TComponent() {
 }
 
 void TContextMenu::prime() {
+	titleID = 0;
 	defVal = "<invalid>";
 	items.setTag("li");
 	multi = 0;
 }
 
+void TContextMenu::setTitle(const std::string& title) {
+	this->titleID = 0;
+	this->title = title;
+};
+
+void TContextMenu::setTitle(const size_t titleID, const std::string& title) {
+	this->titleID = titleID;
+	this->title = title;
+};
 
 void TContextMenu::setAnchor(PContextMenuItem item) {
 	anchor = item;
 }
 
 void TContextMenu::addSeparator() {
-	addItem("-", "-");
+	addItem("-", 0, "-");
 }
 
 PContextMenuItem TContextMenu::addItem(const std::string& id, const std::string& caption, const int level, const std::string& glyph) {
+	return addItem(id, 0, caption, level, glyph);
+}
+
+PContextMenuItem TContextMenu::addItem(const std::string& id, const size_t captionID, const std::string& caption, const int level, const std::string& glyph) {
 	if (!id.empty() && !caption.empty()) {
 		PContextMenuItem o = new TContextMenuItem;
 		o->value.id = id;
 		o->value.name = id;
 		o->value.level = level;
+		o->value.captionID = captionID;
 		o->value.caption = caption;
 		o->value.glyph = glyph;
 		menu.push_back(o);
@@ -957,6 +1017,10 @@ PContextMenuItem TContextMenu::addItem(const std::string& id, const std::string&
 }
 
 PMenuItem TContextMenu::addSubItem(const std::string& id, const std::string& caption, const int level, const std::string& glyph) {
+	return addSubItem(id, 0, caption, level, glyph);
+}
+
+PMenuItem TContextMenu::addSubItem(const std::string& id, const size_t captionID, const std::string& caption, const int level, const std::string& glyph) {
 	if (util::assigned(anchor) && !caption.empty() && !id.empty()) {
 		++multi;
 		TMenuItem item;
@@ -964,6 +1028,7 @@ PMenuItem TContextMenu::addSubItem(const std::string& id, const std::string& cap
 		item.name = id;
 		item.level = level;
 		item.caption = caption;
+		item.captionID = captionID;
 		item.glyph = glyph;
 		return anchor->addItem(item);
 	}
@@ -1023,7 +1088,12 @@ const std::string& TContextMenu::text() const {
 					//	  <li><a href="#">Second level</a></li>
 					//	</ul>
 					//  </li>
-					std::string text = encodeHtmlText(o->value.caption);
+					std::string caption = o->value.caption;
+					size_t captionID = o->value.captionID;
+					if (hasTranslator()) {
+						caption = translate(captionID, caption);
+					}
+					std::string text = encodeHtmlText(caption);
 					if (o->hasMenu()) {
 
 						//items.add("<a tabindex=\"-1\" href=\"#\"" + tagToStr("data-item", o->value.name) + tagToStr("userlevel", std::to_string(o->value.level)) + ">" + o->value.caption + "</a>");
@@ -1038,8 +1108,12 @@ const std::string& TContextMenu::text() const {
 						for (size_t j=0; j<o->submenu.size(); ++j) {
 							PMenuItem p = o->submenu[j];
 							if (util::assigned(p)) {
+								size_t captionID;
 								std::string caption, link;
-								p->getProperties(caption, link);
+								p->getProperties(captionID, caption, link);
+								if (hasTranslator()) {
+									caption = translate(captionID, caption);
+								}
 								text = encodeHtmlText(caption);
 								if (p->name == "-" || p->id == "-") {
 									items.add("      <" + items.getTag() + " class=\"divider\"></" + items.getTag() + ">");
@@ -1092,7 +1166,12 @@ const std::string& TContextMenu::html() const {
 			strHTML += "<ul" + tagToStr("id", getID()) + tagToStr("name", getName()) + " class=\"dropdown-menu\" role=\"menu\">\n";
 		}
 		if (!title.empty()) {
-			strHTML += "  <li class=\"dropdown-header\">" + encodeHtmlText(getTitle()) + "</li>\n";
+			std::string title = getTitle();
+			if (hasTranslator()) {
+				title = translate(titleID, title);
+			}
+			std::string text = encodeHtmlText(title);
+			strHTML += "  <li class=\"dropdown-header\">" + text + "</li>\n";
 			strHTML += "  <li class=\"divider\"></li>\n";
 		}
 		strHTML += text();
@@ -1119,6 +1198,7 @@ PMenuItem TMainMenuItem::addItem(const TMenuItem& item) {
 	PMenuItem o = new TMenuItem;
 	o->level = item.level;
 	o->active = item.active;
+	o->captionID = item.captionID;
 	o->caption = item.caption;
 	o->glyph = item.glyph;
 	o->link = item.link;
@@ -1211,10 +1291,16 @@ std::string TMainMenu::getCSSBody() const {
 
 
 PMainMenuItem TMainMenu::addItem(const std::string& id, const std::string& caption, const std::string& link, const int level, const std::string& glyph, const bool active) {
+	// Add entry without translation support
+	return addItem(id, 0, caption, link, level, glyph, active);
+}
+
+PMainMenuItem TMainMenu::addItem(const std::string& id, const size_t captionID, const std::string& caption, const std::string& link, const int level, const std::string& glyph, const bool active) {
 	if (!caption.empty() && !link.empty()) {
 		PMainMenuItem o = new TMainMenuItem;
 		o->value.id = id;
 		o->value.level = level;
+		o->value.captionID = captionID;
 		o->value.caption = caption;
 		o->value.glyph = glyph;
 		o->value.link = link;
@@ -1234,11 +1320,17 @@ PMainMenuItem TMainMenu::addItem(const std::string& id, const std::string& capti
 }
 
 PMenuItem TMainMenu::addSubItem(const std::string& id, const std::string& caption, const std::string& link, const int level, const std::string& glyph) {
+	// Add entry without translation support
+	return addSubItem(id, 0, caption, link, level, glyph);
+}
+
+PMenuItem TMainMenu::addSubItem(const std::string& id, const size_t captionID, const std::string& caption, const std::string& link, const int level, const std::string& glyph) {
 	if (util::assigned(anchor) && !caption.empty() && !link.empty()) {
 		TMenuItem item;
 		item.id = id;
 		item.level = level;
 		item.active = true;
+		item.captionID = captionID;
 		item.caption = caption;
 		item.glyph = glyph;
 		item.link = link;
@@ -1327,7 +1419,12 @@ const std::string& TMainMenu::text() const {
 			PMainMenuItem o = menu[i];
 			if (util::assigned(o)) {
 				bool pull = (i == util::pred(menu.size()) && (ECA_RIGHT == getAlign()));
-				std::string text = encodeHtmlText(o->value.caption);
+				std::string caption = o->value.caption;
+				size_t captionID = o->value.captionID;
+				if (hasTranslator()) {
+					caption = translate(captionID, caption);
+				}
+				std::string text = encodeHtmlText(caption);
 				if (o->hasMenu()) {
 					if (pull) {
 						items.add("  </ul>");
@@ -1349,10 +1446,14 @@ const std::string& TMainMenu::text() const {
 							PMenuItem p = o->submenu[j];
 							if (util::assigned(p)) {
 								//std::string caption = padTextRight(p->caption, length);
-								const std::string& caption = p->caption;
+								size_t captionID = p->captionID;
+								std::string caption = p->caption;
 								const std::string& glyph = p->glyph;
 								const std::string& link = p->link;
 								const std::string& id = p->id;
+								if (hasTranslator()) {
+									caption = translate(captionID, caption);
+								}
 								text = encodeHtmlText(caption);
 								int level = p->level;
 								if (caption == "-") {
@@ -1381,7 +1482,12 @@ const std::string& TMainMenu::text() const {
 					items.add("      </ul>");
 					items.add("    </li>");
 				} else {
-					std::string text = encodeHtmlText(o->value.caption);
+					std::string caption = o->value.caption;
+					size_t captionID = o->value.captionID;
+					if (hasTranslator()) {
+						caption = translate(captionID, caption);
+					}
+					std::string text = encodeHtmlText(caption);
 					std::string li = "    <li" + tagToStr("id", o->value.id) + tagToStr("userlevel", std::to_string(o->value.level));
 					if (o->value.active)
 						li += " class=\"active\">";
@@ -1439,6 +1545,8 @@ TTileItem::TTileItem() {
 	level = 0;
 	size = ESZ_MEDIUM;
 	align = ECA_DEFAULT;
+	captionID = 0;
+	textID = 0;
 }
 
 TTileItem::~TTileItem() {
@@ -1451,6 +1559,7 @@ const std::string TTileItem::getCaption() const {
 
 void TTileItem::setCaption(const std::string& value) {
 	app::TLockGuard<app::TMutex> lock(mtx);
+	captionID = 0;
 	caption = value;
 };
 
@@ -1461,6 +1570,7 @@ const std::string TTileItem::getText() const {
 
 void TTileItem::setText(const std::string& value) {
 	app::TLockGuard<app::TMutex> lock(mtx);
+	textID = 0;
 	text = value;
 };
 
@@ -1474,9 +1584,11 @@ void TTileItem::setLink(const std::string& value) {
 	link = value;
 };
 
-void TTileItem::getProperties(std::string& caption, std::string& text, std::string& link) const {
+void TTileItem::getProperties(size_t& captionID, std::string& caption, size_t& textID, std::string& text, std::string& link) const {
 	app::TLockGuard<app::TMutex> lock(mtx);
+	captionID = this->captionID;
 	caption = this->caption;
+	textID = this->textID;
 	text = this->text;
 	link = this->link;
 }
@@ -1508,9 +1620,16 @@ void TTileMenu::invalidate() {
 
 PTileItem TTileMenu::addItem(const std::string& id, const std::string& caption, const std::string& text, const std::string& link,
 		const EComponentSize size, const int level, const std::string& glyph, const EComponentAlign align) {
+	return addItem(id, 0, caption, 0, text, link, size, level, glyph, align);
+}
+
+PTileItem TTileMenu::addItem(const std::string& id, const size_t captionID, const std::string& caption, const size_t textID, const std::string& text, const std::string& link,
+		const EComponentSize size, const int level, const std::string& glyph, const EComponentAlign align) {
 	PTileItem o = new TTileItem;
 	o->level = level;
+	o->captionID = captionID;
 	o->caption = caption;
+	o->textID = textID;
 	o->text = text;
 	o->glyph = glyph;
 	o->link = link;
@@ -1539,8 +1658,13 @@ const std::string& TTileMenu::text() const {
 		for (size_t i=0; i<menu.size(); ++i) {
 			PTileItem o = menu[i];
 			if (util::assigned(o)) {
+				size_t captionID, textID;
 				std::string caption, text, link;
-				o->getProperties(caption, text, link);
+				o->getProperties(captionID, caption, textID, text, link);
+				if (hasTranslator()) {
+					caption = translate(captionID, caption);
+					text = translate(textID, text);
+				}
 
 				// Example entry:
 				//	<div class='col-md-6' onclick="onTileClick('/app/system/appconf.html');">

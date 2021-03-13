@@ -10,14 +10,12 @@
 #include <sys/stat.h>	/* For mode constants */
 #include <sys/mman.h>
 #include <semaphore.h>
-#include "timeconsts.h"
 #include "semaphores.h"
+#include "timeconsts.h"
 #include "templates.h"
-#include "datetime.h"
 #include "nullptr.h"
 #include "functors.h"
 #include "exception.h"
-#include "memory.h"
 
 #define CHECK_SEMA(location) if (sema == nil) throw util::app_error(location" Semaphore not initialized.");
 #define CHECK_MUTEX(location) if (mutex == nil) throw util::app_error(location" Mutex not initialized.");
@@ -800,7 +798,10 @@ void TReadWriteLock::rdLock() {
 #ifdef USE_MUTEX_AS_RWLOCK
 	mutex.lock();
 #else
-	int retVal = pthread_rwlock_rdlock(rwlock);
+	int retVal;
+	do
+		retVal = pthread_rwlock_rdlock(rwlock);
+	while (retVal == EAGAIN);
 	if (util::checkFailed(retVal))
 		throw util::sys_error("TReadWriteLock::rdLock()::pthread_rwlock_rdlock() failed.", retVal);
 #endif

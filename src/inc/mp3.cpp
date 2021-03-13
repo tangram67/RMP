@@ -10,6 +10,7 @@
 #include "audioconsts.h"
 #include "audiotypes.h"
 #include "audiofile.h"
+#include "sysutils.h"
 #include "mp3.h"
 
 #define MP3_CBR_FRAME_THRESHOLD 128

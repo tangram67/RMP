@@ -12,6 +12,7 @@
  */
 #include "inc/application.h"
 #include "inc/localization.h"
+#include "inc/translation.h"
 #include "inc/system.h"
 #include "config.h"
 
@@ -32,9 +33,10 @@ using namespace upnp;
 /*
  * Instantiate application class and system data
  */
-TLocale syslocale;
 TSystemData sysdat;
 TApplication application;
+TLocale syslocale(ELT_SYSTEM);
+TTranslator nls;
 
 /*
  * Reference Music Player main application
@@ -50,7 +52,7 @@ int main(int argc, char *argv[]) {
 	TPlayer player;
 
 	// Initialize framework
-	application.initialize(argc, argv);
+	application.initialize(argc, argv, nls);
 
 	// Execute optional modules
 

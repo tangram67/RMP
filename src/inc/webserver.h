@@ -15,6 +15,7 @@
 #include "classes.h"
 #include "inifile.h"
 #include "fileutils.h"
+#include "translation.h"
 #include "webtoken.h"
 #include "weblink.h"
 #include "webdirectory.h"
@@ -76,6 +77,7 @@ private:
 	app::PLogFile exceptionLog;
 	app::PThreadController threads;
 	app::PTimerController timers;
+	app::PTranslator nls;
 	app::TWebSessionMap sessionMap;
 	util::TVariantValues cookies;
 	std::mutex actionMtx;
@@ -343,6 +345,8 @@ public:
 		}
 
 	PWebToken addWebToken(const std::string& key, const std::string& value);
+	PWebToken getWebToken(const std::string& key);
+	bool hasWebToken(const std::string& key);
 
 	void setApplicationValue(const std::string& key, const std::string& value);
 	void setApplicationValue(const char * key, const std::string& value);
@@ -364,6 +368,9 @@ public:
 	bool terminate();
 	void waitFor();
 	void update();
+
+	bool hasTranslator() const;
+	void setTranslator(app::TTranslator& nls);
 
 	bool isSecure() const { return web.useHttps; };
 	unsigned int getPort() const { return port; };
@@ -410,7 +417,7 @@ public:
 	void writeInfoLog(const std::string& s, int verbosity = 0) const;
 	void writeErrorLog(const std::string& s) const;
 
-	TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, PLogFile infoLog, PLogFile exceptionLog);
+	TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, app::PTranslator nls, PLogFile infoLog, PLogFile exceptionLog);
 	virtual ~TWebServer();
 };
 

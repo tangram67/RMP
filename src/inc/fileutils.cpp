@@ -301,6 +301,17 @@ int TStdioFile::printf(const char* fmt, ...) {
     return r;
 }
 
+int TStdioFile::scanf(const char* fmt, ...) {
+	int r = EINVAL;
+    if (util::assigned(fmt)) {
+		va_list ap;
+		va_start(ap, fmt);
+		r = fscanf(fh, fmt, ap);
+		va_end(ap);
+    }
+    return r;
+}
+
 
 
 TFileHandle::TFileHandle() {

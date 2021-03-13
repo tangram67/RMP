@@ -129,7 +129,8 @@ public:
 	void setTokenValues(const TWebTokenValueMap& values);
 
 	PWebToken addToken(std::string key);
-	PWebToken getToken(std::string key);
+	PWebToken getToken(std::string key) const;
+	bool hasToken(std::string key) const;
 	void setFiles(util::TFileList& fileList);
 
 	bool empty() const { return tokenMap.empty(); }

@@ -16,6 +16,8 @@
 
 namespace sysutil {
 
+enum EErrorLocale { EEL_SYSTEM, EEL_POSIX };
+
 bool isLinux();
 bool uname(TSysInfo& system);
 
@@ -47,7 +49,7 @@ bool getIsolatedCPUs(std::string& cpu);
 size_t getWatchFileLimit();
 uint64_t getProcessorSerial();
 
-std::string getSysErrorMessage(int errnum);
+std::string getSysErrorMessage(int errnum, EErrorLocale language = EEL_POSIX);
 std::string getInetErrorMessage(int errnum);
 std::string getSignalName(int signal);
 

@@ -313,8 +313,31 @@ typedef TDataBuffer<uint8_t> TByteBuffer;
 #endif
 
 
+class TMemoryLock {
+protected:
+	bool lockAddress(void * addr, const size_t size) {
+		// Lock memory region
+		errno = EXIT_SUCCESS;
+		int r = mlock(addr, size);
+		if (EXIT_SUCCESS == r) {
+			// Access memory region and write 0
+			// --> Prevent delayed copy-on-write page faults in critical application sections
+			memset(addr, 0, size);
+			return true;
+		}
+		return false;
+	}
+
+	bool unlockAddress(void * addr, const size_t size) {
+		// Lock memory region
+		errno = EXIT_SUCCESS;
+		return EXIT_SUCCESS == munlock(addr, size);
+	}
+};
+
+
 template<typename T>
-class TMappedMemory : public app::TObject {
+class TMappedMemory : public app::TObject, private TMemoryLock {
 private:
 	typedef T buffer_t;
 
@@ -410,7 +433,7 @@ public:
 		if (locked)
 			return true;
 		if (util::assigned(mmem) && aligned > 0) {
-			if (sysutil::lockAddress(mmem, aligned)) {
+			if (lockAddress(mmem, aligned)) {
 				locked = true;
 				return true;
 			} else {
@@ -429,7 +452,7 @@ public:
 		if (!locked)
 			return true;
 		if (util::assigned(mmem) && aligned > 0) {
-			if (sysutil::unlockAddress(mmem, aligned)) {
+			if (unlockAddress(mmem, aligned)) {
 				locked = false;
 				return true;
 			} else {
@@ -449,7 +472,7 @@ public:
 
 
 template<typename T>
-class TSharedMemory : public app::TObject {
+class TSharedMemory : public app::TObject, private TMemoryLock {
 private:
 	typedef T buffer_t;
 
@@ -595,7 +618,7 @@ public:
 		if (locked)
 			return true;
 		if (util::assigned(shm) && aligned > 0) {
-			if (sysutil::lockAddress(shm, aligned)) {
+			if (lockAddress(shm, aligned)) {
 				locked = true;
 				return true;
 			} else {
@@ -614,7 +637,7 @@ public:
 		if (!locked)
 			return true;
 		if (util::assigned(shm) && aligned > 0) {
-			if (sysutil::unlockAddress(shm, aligned)) {
+			if (unlockAddress(shm, aligned)) {
 				locked = false;
 				return true;
 			} else {
@@ -738,8 +761,6 @@ public:
     }
 };
 
-
 } /* namespace util */
-
 
 #endif /* MEMORY_H_ */

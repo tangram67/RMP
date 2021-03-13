@@ -13,7 +13,7 @@
 #include "hash.h"
 #include "classes.h"
 #include "functors.h"
-#include "syslocale.h"
+#include "localization.h"
 #include "stringtypes.h"
 #include "stringtemplates.h"
 

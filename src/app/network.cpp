@@ -8,6 +8,7 @@
 #include "network.h"
 #include "../inc/globals.h"
 #include "../inc/encoding.h"
+#include "../inc/sysutils.h"
 #include "storeconsts.h"
 
 namespace app {

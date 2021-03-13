@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <fnmatch.h>
+#include "../inc/sysutils.h"
 #include "../inc/templates.h"
 #include "../inc/mimetypes.h"
 #include "../inc/datetime.h"

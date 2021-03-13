@@ -8,6 +8,7 @@
 #include <iostream>
 #include <openssl/ssl.h>
 #include "exception.h"
+#include "sysutils.h"
 #include "fileutils.h"
 #include "stringutils.h"
 #include "encoding.h"

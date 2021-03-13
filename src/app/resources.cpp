@@ -10,6 +10,7 @@
 #include "../inc/sockets.h"
 #include "../inc/process.h"
 #include "../inc/htmlutils.h"
+#include "../inc/sysutils.h"
 
 namespace app {
 
@@ -427,8 +428,9 @@ static const struct CCredits credits[] =
 		{ ECT_FRONTEND, "Drag&amp;&#8203;Drop", "Bootstrap Table Drag &amp; Drop",          "github.com/isocra",             "https://github.com/isocra/TableDnD" },
 		{ ECT_FRONTEND, "Animate",              "CSS animation library",                    "daneden.github.io",             "https://daneden.github.io/animate.css/" },
 		{ ECT_FRONTEND, "Light&shy;box",        "The original lightbox script",             "lokeshdhakar.com",              "https://lokeshdhakar.com/projects/lightbox2/" },
-		{ ECT_FRONTEND, "PACE",                 "Automatic page load progress bar",         "github.hubspot.com",            "https://github.hubspot.com/pace/docs/welcome/" },
+		{ ECT_FRONTEND, "Javascrypt",           "Browser-Based Cryptography Tools",         "www.fourmilab.ch",              "https://www.fourmilab.ch/javascrypt/" },
 		{ ECT_FRONTEND, "Chart.js",             "Simple yet flexible JavaScript charting",  "www.chartjs.org",               "https://www.chartjs.org/" },
+		{ ECT_FRONTEND, "PACE",                 "Automatic page load progress bar",         "codebyzach.github.io",          "https://codebyzach.github.io/pace/" },
 		{ ECT_NONE, nil, nil, nil, nil }
 };
 

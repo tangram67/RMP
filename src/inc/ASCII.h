@@ -11,7 +11,7 @@
 #include <string>
 #include <cwchar>
 #include "charconsts.h"
-#include "localizations.h"
+#include "codesets.h"
 
 namespace util {
 

@@ -499,27 +499,40 @@ std::string sysutil::getDomainName() {
 }
 
 
-std::string sysutil::getSysErrorMessage(int errnum) {
-	char* c_str;
+std::string sysutil::getSysErrorMessage(int errnum, EErrorLocale language) {
+	char* p;
+	std::string s;
 	size_t size = 128;
-	TBuffer buffer(size);
-	c_str = strerror_r(errnum, buffer.data(), size);
-	if (assigned(c_str))
-		return std::string(c_str);
+	char buffer[size];
+	locale_t locale = (locale_t)0;
+	if (language == EEL_POSIX) {
+		locale = newlocale(LC_MESSAGES_MASK, "POSIX", (locale_t)0);
+	}
+	if (locale == (locale_t)0) {
+		p = strerror_r(errnum, buffer, size);
+	} else {
+		p = strerror_l(errnum, locale);
+	}
+	if (assigned(p)) {
+		s = std::string(p);
+	}
+	if (locale != (locale_t)0) {
+		freelocale(locale);
+	}
+	if (!s.empty()) {
+		return s;
+	}
 	return "Getting error text via strerror_r(" + std::to_string((size_s)errnum) + ") failed.";
 }
 
-
-std::string sysutil::getInetErrorMessage(int errnum)
-{
+std::string sysutil::getInetErrorMessage(int errnum) {
 	const char* c_str = gai_strerror(errnum);
 	if (assigned(c_str))
 		return std::string(c_str);
 	return "Getting error text via gai_strerror(" + std::to_string((size_s)errnum) + ") failed.";
 }
 
-std::string sysutil::getSignalName(int signal)
-{
+std::string sysutil::getSignalName(int signal) {
 	std::string name = "SIGUNKNOWN";
 	char *p = strsignal(signal);
 	size_t len = strnlen(p, 255);
@@ -528,6 +541,7 @@ std::string sysutil::getSignalName(int signal)
 	}
 	return name;
 }
+
 
 // Use getch() of TApplication instead!!!
 // --> avoids unnecessary tcgetattr/tcsetattr operations on STDIN_FILENO

@@ -217,6 +217,7 @@ public:
 	TColor rainbow(const double percent);
 	TColor colors(const double percent);
 	TColor circular(const double percent);
+	TColor gauge(const double percent);
 
 	const CColorSystem * getColorSystem(const char* system);
 	const CColorSystem * getColorSystem(const std::string& system);

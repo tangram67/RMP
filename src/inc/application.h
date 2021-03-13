@@ -17,6 +17,7 @@
 #include <termios.h>
 #include <sys/capability.h>
 #include "capabilities.h"
+#include "translation.h"
 #include "stringutils.h"
 #include "dataclasses.h"
 #include "exception.h"
@@ -114,11 +115,13 @@ private:
 	mutable app::TMutex pathMtx;
 	mutable app::TMutex terminateMtx;
 	mutable app::TMutex configMtx;
+	mutable app::TMutex systemMtx;
 	app::TMutex stopMtx;
 	app::TMutex haltedMtx;
 	app::TMutex shutdownMtx;
 	app::TMutex unpreparedMtx;
 	app::TMutex storageMtx;
+	app::TMutex updateMtx;
 	util::TStringList workingFolders;
 	util::TTimePart heapTime;
 	app::PIniFile config;
@@ -156,6 +159,7 @@ private:
 
     size_t executed;
 	TAppModuleList modules;
+	TAppModuleList prepared;
 	size_t changes;
 
 	TWatchNotifyList watches;
@@ -233,12 +237,13 @@ private:
 	void flushSystemSettings();
 
 	void writeStream(std::stringstream& sstrm);
-	PWebServer startWebServer(const std::string& name, const std::string& documentRoot, const bool autostart);
+	PWebServer startWebServer(const std::string& name, const std::string& documentRoot, app::TTranslator& nls, const bool autostart);
 
 	void onAcceptSocket(const std::string& addr, bool& ok);
 
 	// Overwrite "TBaseApplication::execute() = 0"
 	int execute() { return EXIT_SUCCESS; };
+	void update(const EUpdateReason reason);
 	void unprepare();
 	void release();
 	void suicide();
@@ -358,6 +363,24 @@ public:
 			return getWebServer().addWebToken(key, value);
 		}
 		throw util::app_error("TApplication::addWebToken() Not allowed, webserver disabled by configuration.");
+	}
+
+	PWebToken addWebText(const std::string& key, const size_t textID, const std::string& text) {
+		if (hasWebServer()) {
+			if (hasTranslator()) {
+				PWebToken token = getWebServer().getWebToken(key);
+				if (!util::assigned(token)) {
+					// Create new web token with translated text
+					token = getWebServer().addWebToken(key, getTranslator().text(textID, text));
+				} else {
+					// Update token text for existing token
+					token->setValue(getTranslator().text(textID, text), true);
+				}
+				return token;
+			}
+			throw util::app_error("TApplication::addWebText() No translator instance found.");
+		}
+		throw util::app_error("TApplication::addWebText() Not allowed, webserver disabled by configuration.");
 	}
 
 	template<typename member_t, typename class_t>
@@ -665,6 +688,7 @@ public:
 	app::TTaskController& getTasks() const;
 	app::TWebServer& getWebServer() const;
 	app::TSerial& getTerminal() const;
+	app::TTranslator& getTranslator() const;
 #ifdef USE_GPIO_CONTROL
 	app::TGPIOController& getGPIOController() const;
 #endif
@@ -680,6 +704,7 @@ public:
 	app::PTaskController tasks() const;
 	app::PWebServer webserver() const;
 	app::PSerial terminal() const;
+	app::PTranslator translator() const;
 #ifdef USE_GPIO_CONTROL
 	app::PGPIOController gpio() const;
 #endif
@@ -721,6 +746,7 @@ public:
 	bool hasTasks() const;
 	bool hasTimeouts() const;
 	bool hasTerminal() const;
+	bool hasTranslator() const;
 	bool hasGPIO() const;
 
 	bool isDaemonized() const { return daemonized; };
@@ -742,7 +768,7 @@ public:
 	void enableEvents() { eventsEnabled = true; };
 	bool areEventsEnabled() const { return eventsEnabled && !terminated; };
 
-	void initialize(int argc, char *argv[]);
+	void initialize(int argc, char *argv[], TTranslator& nls);
 	int execute(TModule& module);
 	void finalize();
 	void cleanup();
@@ -762,6 +788,10 @@ public:
 	util::TTimePart getDeallocateTime() const;
 	util::TTimePart getHeapDelay() const;
 	void deallocateHeapMemory();
+
+	bool setSystemTime(const util::TTimePart seconds, const util::TTimePart millis = 0);
+	bool setSystemLocale(const ELocale locale);
+	ELocale getSystemLocale();
 
 	void commitApplicationSettings();
 	bool backupConfigurationFiles();

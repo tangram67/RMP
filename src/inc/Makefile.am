@@ -40,6 +40,7 @@ libradweb_a_SOURCES = \
 	chunktypes.h \
 	classes.h \
 	codepages.h \
+	codesets.h \
 	compare.cpp \
 	compare.h \
 	component.cpp \
@@ -171,6 +172,8 @@ libradweb_a_SOURCES = \
 	tasks.cpp \
 	tasks.h \
 	templates.h \
+	translation.h \
+	translation.cpp \
 	threadqueue.h \
 	threads.cpp \
 	threads.h \

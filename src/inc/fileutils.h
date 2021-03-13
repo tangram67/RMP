@@ -142,8 +142,8 @@ public:
 	bool isOpen() const { return util::assigned(file); };
 	std::string getPath() const { return path; };
 
-	FILE * operator () () { return file; };
-
+	FILE * getMount() const { return getMount(); };
+	FILE * operator () () const { return file; };
 	FILE * open(const std::string& path = "/proc/mounts");
 	bool read(struct mntent * entity, struct mntent * result, TBuffer& buffer);
 	void close();
@@ -161,11 +161,10 @@ private:
 
 public:
 	bool isOpen() const { return util::assigned(dir); };
-	DIR * getDirectory() const { return dir; };
 	std::string getPath() const { return path; };
 
-	DIR * operator () () { return dir; };
-
+	DIR * getDirectory() const { return dir; };
+	DIR * operator () () const { return getDirectory(); };
 	DIR * open(const std::string& path);
 	struct dirent * read();
 	void close();
@@ -184,18 +183,19 @@ private:
 
 public:
 	bool isOpen() const { return util::assigned(fh); };
-	FILE * getFile() const { return fh; };
 	std::string getName() const { return file; };
 	std::string getMode() const { return mode; };
+
 	bool seek(const off_t offset, const ESeekOffset whence = SO_FROM_START) const;
 	ssize_t read(void *const data, size_t const size) const;
 	ssize_t write(void const *const data, size_t const size) const;
 	ssize_t write(const std::string& data) const;
+	int scanf(const char* fmt, ...);
 	int printf(const char* fmt, ...);
 	bool flush() const;
 
-	FILE * operator () () { return fh; };
-
+	FILE * getFile() const { return fh; };
+	FILE * operator () () const { return getFile(); };
 	FILE * open(const std::string& fileName, const std::string& mode);
 	void close();
 
@@ -232,7 +232,7 @@ public:
 	bool chown(uid_t owner, gid_t group) const;
 
 	int error() const { return errval; };
-	app::THandle operator () () const { return fd; };
+	app::THandle operator () () const { return handle(); };
 
 	void close();
 

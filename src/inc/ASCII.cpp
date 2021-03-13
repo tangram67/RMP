@@ -4,13 +4,14 @@
  *  Created on: 19.01.2015
  *      Author: Dirk Brinkmeier
  */
+#include <algorithm>
 #include "ASCII.h"
 #include "codepages.h"
 #include "asciitables.h"
+#include "stringutils.h"
 #include "templates.h"
 #include "functors.h"
 #include "memory.h"
-#include <algorithm>
 
 using namespace util;
 

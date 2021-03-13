@@ -18,6 +18,7 @@
 #include "nullptr.h"
 #include "timeout.h"
 #include "sockettypes.h"
+#include "translation.h"
 #include "webserver.h"
 #include "datatypes.h"
 #include "inifile.h"
@@ -80,6 +81,7 @@ struct CApplicationConfig {
 	util::TTimePart heapDelay;
 	bool useTerminalInput;
 	bool useDefaultDatabase;
+	bool useMulitLanguageSupport;
 	bool startMQTTClient;
 	bool startWebServer;
 	bool setTempDir;
@@ -119,6 +121,7 @@ struct CApplicationConfig {
 		startMQTTClient = false;
 		useTerminalInput = false;
 		useDefaultDatabase = false;
+		useMulitLanguageSupport = false;
 		defaultMQTTConnection = "application";
 		defaultDatabaseName = "application";
 		defaultDatabaseType = "PGSQL"; // MSSQL, SQLITE, PGSQL, ...
@@ -189,6 +192,7 @@ struct CSystemObjects {
 	app::PTimeoutController timeouts;
 	app::PThreadController threads;
 	inet::PSocketController sockets;
+	app::PTranslator nls;
 	app::PSerial serial;
 	app::PWebServer webServer;
 	app::PIniFile webConfig;
@@ -220,6 +224,7 @@ struct CSystemObjects {
 		timeouts = nil;
 		threads = nil;
 		serial = nil;
+		nls = nil;
 		webServer = nil;
 		webConfig = nil;
 		gpioConfig = nil;

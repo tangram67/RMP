@@ -14,8 +14,6 @@
 #include "stringutils.h"
 #include "../config.h"
 
-#include <assert.h>
-
 static bool localesInitialized = false;
 
 #ifdef STL_HAS_LAMBDAS
@@ -51,20 +49,18 @@ static const char* initLocale __attribute__((unused)) = initLocales();
 
 namespace app {
 
-
-TLocale::TLocale() {
+TLocale::TLocale(const ELocaleType type) : type(type) {
 	locale = ELocale::sysloc;
 	sysloc = create(locale);
 }
 
-TLocale::TLocale(const ELocale locale) : locale(locale) {
+TLocale::TLocale(const ELocale locale, const ELocaleType type) : locale(locale), type(type) {
 	sysloc = create(locale);
 }
 
 TLocale::~TLocale() {
 	destroy();
 }
-
 
 void TLocale::clear() {
 	locale = ELocale::nloc;
@@ -86,8 +82,8 @@ void TLocale::clear() {
 	booleanFalseNameW = BOOLEAN_FALSE_NAME_W;
 }
 
-
 void TLocale::assign(const TLocale &value) {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_WRITE);
 	destroy();
 	sysloc = duplocale(value());
 	locale = value.locale;
@@ -109,6 +105,15 @@ void TLocale::assign(const TLocale &value) {
 	booleanFalseNameW = value.booleanFalseNameW;
 }
 
+bool TLocale::duplicate(const TLocale &value, locale_t& locale) const {
+	// Do not duplicate constant locales
+	// --> Not needed, since they are NOT INTENDED to be changed!
+	if (type != ELT_CONSTANT) {
+		app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+		locale = duplocale(sysloc);
+	}
+	return (locale_t)0 != locale;
+}
 
 bool TLocale::setProperties(const std::string& code, const std::string& charset) {
 	if (!code.empty()) {
@@ -153,9 +158,8 @@ bool TLocale::setProperties(const std::string& code, const std::string& charset)
 	return !name.empty();
 }
 
-
 locale_t TLocale::create(const ELocale locale) {
-	locale_t retVal = nil;
+	locale_t r = (locale_t)0;
 	bool useLocale = false;
 	std::string code;
 
@@ -186,22 +190,22 @@ locale_t TLocale::create(const ELocale locale) {
 			break;
 	}
 
-	// Create libc locale
+	// Create libC based locale
 	if (setProperties(code)) {
 		errno = EXIT_SUCCESS;
-		retVal = newlocale(LC_ALL, name.c_str(), (locale_t)0);
+		r = newlocale(LC_ALL_MASK, name.c_str(), (locale_t)0);
 	}
 
 	// Try UTF-8 charset for given locale code
-	if (!util::assigned(retVal)) {
+	if (!util::assigned(r)) {
 		if (setProperties(code, "UTF-8")) {
 			errno = EXIT_SUCCESS;
-			retVal = newlocale(LC_ALL, name.c_str(), (locale_t)0);
+			r = newlocale(LC_ALL_MASK, name.c_str(), (locale_t)0);
 		}
 	}
 
 	// Setting locale failed
-	if (!util::assigned(retVal)) {
+	if (!util::assigned(r)) {
 		std::string s = getInfo();
 		clear();
 		throw util::sys_error("TLocale::create() failed for <" + s + ">");
@@ -212,9 +216,8 @@ locale_t TLocale::create(const ELocale locale) {
 		this->locale = locale;
 	}
 
-	return retVal;
+	return r;
 }
-
 
 void TLocale::destroy() {
 	if (util::assigned(sysloc)) {
@@ -224,16 +227,97 @@ void TLocale::destroy() {
 }
 
 bool TLocale::isValidLocale(const ELocale locale) {
-	return locale != ELocale::nloc /*&& locale != ELocale::siloc && locale != ELocale::sysloc && locale != ELocale::syspos*/ ;
+	return ELocale::nloc != locale /*&& locale != ELocale::siloc && locale != ELocale::sysloc && locale != ELocale::syspos*/ ;
 }
+
+const char* TLocale::getBooleanTrueNameWithNolock() const {
+	return util::assigned(booleanTrueNameA) ? booleanTrueNameA : BOOLEAN_TRUE_NAME_A;
+};
+const char* TLocale::getBooleanFalseNameWithNolock() const {
+	return util::assigned(booleanFalseNameA) ? booleanFalseNameA : BOOLEAN_FALSE_NAME_A;
+};
 
 std::string TLocale::getInfo() const {
-	return "[" + getName() + "/" + getBase() + "/" + getRegion() + "]";
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return "[" + name + "/" + base + "/" + region + "]";
 }
-
 std::string TLocale::getLocation() const {
-	return "[" + getLanguage() + "/" + getCountry() + "/" + getMainland() + "]";
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return "[" + language + "/" + country + "/" + mainland + "]";
 }
+const std::string& TLocale::getBase() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return base;
+};
+const std::string& TLocale::getName() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return name;
+};
+const std::string& TLocale::getRegion() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return region;
+};
+const std::string& TLocale::getMainland() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return mainland;
+};
+const std::string& TLocale::getCodeset() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return codeset;
+};
+const std::string& TLocale::getCountry() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return country;
+};
+const std::string& TLocale::getLanguage() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return language;
+};
+const std::string& TLocale::getDescription() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return description;
+};
+const std::string& TLocale::asISO639() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return iso;
+};
+const char* TLocale::getBooleanTrueName() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return getBooleanTrueNameWithNolock();
+};
+const char* TLocale::getBooleanFalseName() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return getBooleanFalseNameWithNolock();
+};
+const wchar_t* TLocale::getBooleanTrueNameW() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return util::assigned(booleanTrueNameW) ? booleanTrueNameW : BOOLEAN_TRUE_NAME_W;
+};
+const wchar_t* TLocale::getBooleanFalseNameW() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return util::assigned(booleanFalseNameW) ? booleanFalseNameW : BOOLEAN_FALSE_NAME_W;
+};
+const char* TLocale::getTimeFormat() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return util::assigned(datetimeA) ? datetimeA : DEFAULT_LOCALE_TIME_FORMAT_A;
+};
+const wchar_t* TLocale::getWideTimeFormat() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return util::assigned(datetimeW) ? datetimeW : DEFAULT_LOCALE_TIME_FORMAT_W;
+};
+ELocale TLocale::getLocale() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return locale;
+};
+ERegion TLocale::getZone() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return zone;
+};
+
+locale_t TLocale::getNativeLocale() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return sysloc;
+};
 
 std::string TLocale::getSystemLocale() {
 	// Query current system locale
@@ -248,17 +332,16 @@ std::string TLocale::getSystemLocale() {
 }
 
 bool TLocale::isSystemLocale() const {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
 	std::string c = getSystemLocale();
 	return (c == name);
 }
-
 
 bool TLocale::find(const std::string& name, TLanguage& language) {
 	if (!name.empty())
 		return find(name.c_str(), language);
 	return false;
 }
-
 
 bool TLocale::find(const char* name, TLanguage& language) {
 	const struct TLanguage *it;
@@ -271,7 +354,6 @@ bool TLocale::find(const char* name, TLanguage& language) {
 	return false;
 }
 
-
 bool TLocale::find(const ELocale locale, TLanguage& language) {
 	const struct TLanguage *it;
 	for (it = locales; util::assigned(it->name); ++it) {
@@ -282,7 +364,6 @@ bool TLocale::find(const ELocale locale, TLanguage& language) {
 	}
 	return false;
 }
-
 
 ELocale TLocale::find(const std::string& name) {
 	if (!name.empty())
@@ -312,6 +393,7 @@ std::string TLocale::find(const ELocale locale) {
 }
 
 std::string TLocale::query(const nl_item item) {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
 	std::string retVal;
 	const char* p = nl_langinfo(item);
 	if (util::assigned(p)) {
@@ -323,6 +405,7 @@ std::string TLocale::query(const nl_item item) {
 }
 
 void TLocale::modify(const int mask, const std::string& value) {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_WRITE);
 	if (util::assigned(sysloc) && !value.empty()) {
 		locale_t loc = newlocale(mask, value.c_str(), sysloc);
 		if (util::assigned(loc)) {
@@ -334,6 +417,7 @@ void TLocale::modify(const int mask, const std::string& value) {
 
 void TLocale::use() const {
 	// Set applications locale
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_WRITE);
 	if (util::assigned(sysloc)) {
 		// Set glibc standard C locale
 		const char* p = setlocale(LC_ALL, name.c_str());
@@ -342,20 +426,20 @@ void TLocale::use() const {
 			// Check C system locale
 			std::string c = getSystemLocale();
 			if (name != c)
-				throw util::app_error_fmt("TLocale::useLocale()::setlocale() failed: Wrong locale [%] after setlocale(%)", c, name);
+				throw util::app_error_fmt("TLocale::use()::getSystemLocale() failed: Wrong locale [%] after setlocale(%)", c, name);
 
 			// Set global C++ local
 			imbue(name);
 
 		} else
-			throw util::sys_error_fmt("TLocale::setLocale(%) failed.", name);
+			throw util::sys_error_fmt("TLocale::use()::setLocale(%) failed.", name);
 	}
 }
 
 void TLocale::imbue(const std::string& name) const {
 	// Set global C++ local
 	std::locale cloc(name.c_str());
-	std::locale apploc(cloc, new noGroupBoolNameFacet<char>(cloc, getBooleanTrueName(), getBooleanFalseName()));
+	std::locale apploc(cloc, new noGroupBoolNameFacet<char>(cloc, getBooleanTrueNameWithNolock(), getBooleanFalseNameWithNolock()));
 	std::locale::global(apploc);
 	std::cout.imbue(apploc);
 	std::wcout.imbue(apploc);
@@ -369,27 +453,37 @@ void TLocale::imbue(const std::string& name) const {
 	// Check C++ system locale before applying facet
 	// Locale name with facet applied is set to '*' for some reason...
 	if (name != cloc.name())
-		throw util::app_error("TLocale::useLocale()::locale() failed: Wrong locale [" + cloc.name() + "] after std::locale(" + name + ")" );
+		throw util::app_error("TLocale::imbue() failed: Wrong locale [" + cloc.name() + "] after std::locale(" + name + ")" );
 }
 
 locale_t TLocale::change(locale_t locale) {
-	locale_t retVal = uselocale(locale);
-	if (retVal == (locale_t)0)
-		throw util::sys_error("TLocale::switchLocale()::uselocale() failed.");
-	return retVal;
+	if (locale == (locale_t)0)
+		throw util::sys_error("TLocale::change() failed, locale not set.");
+	locale_t r = uselocale(locale);
+	if (r == (locale_t)0)
+		throw util::sys_error("TLocale::change()::uselocale() failed.");
+	return r;
 }
 
 void TLocale::restore(locale_t locale) {
 	if (locale == (locale_t)0)
-		throw util::sys_error("TLocale::restoreLocale() failed, locale not set.");
+		throw util::sys_error("TLocale::restore() failed, locale not set.");
 	locale_t r = uselocale(locale);
 	if (r == (locale_t)0)
-		throw util::sys_error("TLocale::restoreLocale()::uselocale() failed.");
+		throw util::sys_error("TLocale::restore()::uselocale() failed.");
 }
 
-void TLocale::set(const ELocale locale) {
-	if (isValidLocale(locale))
-		sysloc = create(locale);
+bool TLocale::set(const ELocale locale) {
+	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_WRITE);
+	locale_t r = (locale_t)0;
+	if (isValidLocale(locale)) {
+		r = create(locale);
+		if ((locale_t)0 != r) {
+			sysloc = r;
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -398,6 +492,14 @@ TLocale& TLocale::operator = (const TLocale &value) {
 	return *this;
 }
 
+bool TLocale::operator == (const TLocale &value) const {
+	// app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return (locale == value.locale);
+};
+bool TLocale::operator != (const TLocale &value) const {
+	// app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
+	return (locale != value.locale);
+};
 
 ERegion TLocale::area(const std::string& name) {
 	return area(name.c_str());

@@ -586,6 +586,10 @@ bool TApplication::hasTerminal() const {
 	return util::assigned(sysdat.obj.serial);
 }
 
+bool TApplication::hasTranslator() const {
+	return util::assigned(sysdat.obj.nls);
+}
+
 
 inet::TSocketController& TApplication::getSockets() const {
 	if (util::assigned(sysdat.obj.sockets)) {
@@ -786,6 +790,12 @@ TSerial& TApplication::getTerminal() const {
 	}
 	throw util::app_error("TApplication::getSerialPort() Serial terminal not available.");
 }
+TTranslator& TApplication::getTranslator() const {
+	if (util::assigned(sysdat.obj.nls)) {
+		return *sysdat.obj.nls;
+	}
+	throw util::app_error("TApplication::getTtranslator() Language translator not available.");
+}
 
 TCredentials& TApplication::getCredentials() const {
 	return sysdat.users;
@@ -875,6 +885,13 @@ app::PSerial TApplication::terminal() const {
 		return sysdat.obj.serial;
 	}
 	throw util::app_error("TApplication::terminal() Serial terminal not available.");
+}
+
+app::PTranslator TApplication::translator() const {
+	if (util::assigned(sysdat.obj.nls)) {
+		return sysdat.obj.nls;
+	}
+	throw util::app_error("TApplication::translator() Language translator not available.");
 }
 
 #ifdef USE_GPIO_CONTROL
@@ -1051,7 +1068,7 @@ bool TApplication::isLicensed(const std::string& name) const {
 }
 
 
-void TApplication::initialize(int argc, char *argv[]) {
+void TApplication::initialize(int argc, char *argv[], TTranslator& nls) {
 	sysdat.obj.self = this;
 	sysdat.obj.exceptionLog = nil;
 	sysdat.obj.applicationLog = nil;
@@ -1301,13 +1318,24 @@ void TApplication::initialize(int argc, char *argv[]) {
 		// Change locale settings if needed
 		ELocale newloc = syslocale.find(sysdat.app.language);
 		if (newloc != ELocale::nloc && newloc != ELocale::sysloc) {
-			syslocale.set(newloc);
-			syslocale.use();
+			if (syslocale.set(newloc)) {
+				syslocale.use();
+			}
 		}
 		sysdat.app.locale = newloc;
-		std::cout << "System locale [" << syslocale.getSystemLocale() << "]" << std::endl;
-		std::cout << "Locale information " << syslocale.getInfo() << std::endl;
+		std::cout << "System locale        [" << syslocale.getSystemLocale() << "]" << std::endl;
+		std::cout << "Locale information   " << syslocale.getInfo() << std::endl;
 		std::cout << "Location information " << syslocale.getLocation() << std::endl;
+
+		// Set translation settings for given locale
+		sysdat.app.useMulitLanguageSupport = config->readBool("UseMultiLanguageSupport", sysdat.app.useMulitLanguageSupport);
+		config->writeBool("UseMultiLanguageSupport", sysdat.app.useMulitLanguageSupport, INI_BLYES);
+		std::cout << "Translator enabled   [" << sysdat.app.useMulitLanguageSupport << "]" << std::endl;
+		std::cout << "Translator language  [" << (int)syslocale.getLocale() << "]" << std::endl;
+		nls.setEnabled(sysdat.app.useMulitLanguageSupport);
+		nls.setPath(sysdat.app.configFolder);
+		nls.setLanguage(syslocale.getLocale());
+		sysdat.obj.nls = &nls;
 
 		// Read log folder from configuration
 		sysdat.app.logFolder = LOG_BASE_FOLDER + sysdat.app.appDisplayName + "/";
@@ -1478,7 +1506,7 @@ void TApplication::initialize(int argc, char *argv[]) {
 		config->writeBool("Enabled", sysdat.app.startWebServer, INI_BLYES);
 		config->writeBool("Autostart", autostart, INI_BLYES);
 		if (sysdat.app.startWebServer) {
-			sysdat.obj.webServer = startWebServer("AppWebServer", sysdat.app.currentFolder + "www", autostart);
+			sysdat.obj.webServer = startWebServer("AppWebServer", sysdat.app.currentFolder + "www", nls, autostart);
 		}
 
 		if (util::assigned(sysdat.obj.webServer)) {
@@ -1774,15 +1802,17 @@ void TApplication::initialize(int argc, char *argv[]) {
 
 	} catch (const std::exception& e) {
 		error = EXIT_FAILURE;
+		std::string sExcept = e.what();
+		std::string sText = "Exception in TApplication::initialize() \n" + sExcept + "\n";
+		std::cout << app::red << "TApplication::initialize() " << sText << app::reset << std::endl;
 		if (util::assigned(sysdat.obj.applicationLog) && util::assigned(sysdat.obj.exceptionLog)) {
-			std::string sExcept = e.what();
-			std::string sText = "Exception in TApplication::initialize() \n" + sExcept + "\n";
 			errorLog(sText);
 		}
 	} catch (...) {
 		error = EXIT_FAILURE;
+		std::string sText = "Unknown exception in TApplication::initialize()";
+		std::cout << app::red << "TApplication::initialize() " << sText << app::reset << std::endl;
 		if (util::assigned(sysdat.obj.applicationLog) && util::assigned(sysdat.obj.exceptionLog)) {
-			std::string sText = "Unknown exception in TApplication::initialize()";
 			errorLog(sText);
 		}
 	}
@@ -2069,6 +2099,8 @@ int TApplication::execute(TModule& module) {
 				std::string sText = "Preparing module [" + sName + "] failed, Error code = " + sError;
 				errorLog(sText);
 			} else {
+				// Queue up module for unprepare
+				prepared.push_back(&module);
 				writeLog("[Application] Prepared module <" + sName + ">");
 			}
 		} catch (const std::exception& e) {
@@ -2121,8 +2153,8 @@ int TApplication::execute(TModule& module) {
 		}
 
 		// Queue up module for cleanup
-		++executed;
 		modules.push_back(&module);
+		++executed;
 
 	} else {
 		if (executed > 0) {
@@ -2134,11 +2166,39 @@ int TApplication::execute(TModule& module) {
 	return error;
 }
 
+void TApplication::update(const EUpdateReason reason) {
+	// Execute system update callback actions
+	app::TLockGuard<app::TMutex> lock(updateMtx);
+	if (!prepared.empty()) {
+		for (ssize_t i = util::pred(prepared.size()); i >= 0; --i) {
+			TModule* module = prepared[i];
+			std::string sName = util::nameOf(*module);
+			writeLog("[Application] Update module <" + sName + ">");
+
+			// Call unprepare method for given module
+			try {
+				module->update(reason);
+			} catch (const std::exception& e) {
+				std::string sExcept = e.what();
+				std::string sText = "Exception on update of module [" + sName + "] \n" + sExcept + "\n";
+				errorLog(sText);
+				if (error == EXIT_SUCCESS)
+					error = EXIT_FAILURE;
+			} catch (...) {
+				std::string sText = "Unknown exception on update of module [" + sName + "]";
+				errorLog(sText);
+				if (error == EXIT_SUCCESS)
+					error = EXIT_FAILURE;
+			}
+		}
+	}
+}
+
 void TApplication::unprepare() {
 	// Execute "last will and testament" actions
-	if (!modules.empty()) {
-		for (ssize_t i = util::pred(modules.size()); i >= 0; --i) {
-			TModule* module = modules[i];
+	if (!prepared.empty()) {
+		for (ssize_t i = util::pred(prepared.size()); i >= 0; --i) {
+			TModule* module = prepared[i];
 			std::string sName = util::nameOf(*module);
 			writeLog("[Application] Unrepare module <" + sName + ">");
 
@@ -2196,7 +2256,7 @@ void TApplication::release() {
 }
 
 
-PWebServer TApplication::startWebServer(const std::string& name, const std::string& documentRoot, const bool autostart) {
+PWebServer TApplication::startWebServer(const std::string& name, const std::string& documentRoot, app::TTranslator& nls, const bool autostart) {
 	// Open config file for webserver(s)
 	if (!util::assigned(sysdat.obj.webConfig)) {
 		std::string configFile = sysdat.app.configFolder + "webserver.conf";
@@ -2204,8 +2264,9 @@ PWebServer TApplication::startWebServer(const std::string& name, const std::stri
 	}
 
 	// Create and start a new webserver instance
-	PWebServer web = new TWebServer(name, documentRoot, sysdat.obj.webConfig, sysdat.obj.threads, sysdat.obj.timers, sysdat.obj.webLog, sysdat.obj.exceptionLog);
+	PWebServer web = new TWebServer(name, documentRoot, sysdat.obj.webConfig, sysdat.obj.threads, sysdat.obj.timers, sysdat.obj.nls, sysdat.obj.webLog, sysdat.obj.exceptionLog);
 	if (util::assigned(web)) {
+		// Autostart webserver instance
 		if (web->start(autostart)) {
 			logger(app::ELogBase::LOG_APP, "[Application] Webserver <%> started.", name);
 		} else {
@@ -2219,11 +2280,12 @@ PWebServer TApplication::startWebServer(const std::string& name, const std::stri
 
 void TApplication::update() {
 	sysdat.obj.logger->flush();
-	if (util::assigned(sysdat.obj.webServer))
-		sysdat.obj.webServer->update();
+	// if (util::assigned(sysdat.obj.webServer))
+	//	sysdat.obj.webServer->update();
 	deallocateHeapMemory();
 	storage.saveToFile(sysdat.app.storeFile);
 	notifySystemState(SYS_RELOAD);
+	update(ER_REFRESH);
 }
 
 
@@ -2370,6 +2432,64 @@ void TApplication::finalize() {
 	cleanup();
 }
 
+bool TApplication::setSystemTime(const util::TTimePart seconds, const util::TTimePart millis) {
+	bool ok = false;
+	{
+		app::TLockGuard<app::TMutex> lock(systemMtx);
+		if (util::setSystemTime(seconds, millis)) {
+			logger(app::ELogBase::LOG_APP, "[Application] System time set to UTC %.%", seconds, millis);
+			ok = true;
+		} else {
+			logger(app::ELogBase::LOG_APP, "[Application] [Error] Setting system time to UTC %.% failed $", seconds, millis, sysutil::getSysErrorMessage(errno));
+		}
+	}
+	if (ok) {
+		update(ER_DATETIME);
+	}
+	return ok;
+}
+
+bool TApplication::setSystemLocale(const ELocale locale) {
+	bool ok = false;
+	{
+		app::TLockGuard<app::TMutex> lock(systemMtx);
+		TLanguage language;
+		if (app::TLocale::find(locale, language)) {
+			if (locale != syslocale.getLocale()) {
+				if (syslocale.set(locale)) {
+					syslocale.use();
+					sysdat.app.language = syslocale.getSystemLocale();
+					sysdat.app.locale = locale;
+					if (!isDaemonized()) {
+						std::cout << "System locale        [" << syslocale.getSystemLocale() << "]" << std::endl;
+						std::cout << "Locale information   " << syslocale.getInfo() << std::endl;
+						std::cout << "Location information " << syslocale.getLocation() << std::endl;
+					}
+					if (hasTranslator()) {
+						getTranslator().setLanguage(locale);
+					}
+					++changes;
+					application.writeLog("[Application] Setting system locale to \"" + std::string(language.language) + "\" for country \"" + std::string(language.country) + "\" [" + sysdat.app.language + "]");
+				}
+				ok = true;
+			} else {
+				logger(app::ELogBase::LOG_APP, "[Application] [Error] Setting system locale (%) failed $", (int)locale, sysutil::getSysErrorMessage(errno));
+			}
+		} else {
+			logger(app::ELogBase::LOG_APP, "[Application] [Error] Invalid or unknown locale (%)", (int)locale);
+		}
+	}
+	if (ok) {
+		update(ER_LANGUAGE);
+	}
+	return ok;
+}
+
+ELocale TApplication::getSystemLocale() {
+	return sysdat.app.locale;
+}
+
+
 void TApplication::flushApplicationSettings() {
 	app::TLockGuard<app::TMutex> lock(configMtx);
 	config->setSection(APP_CONFIG);
@@ -2378,6 +2498,7 @@ void TApplication::flushApplicationSettings() {
 	config->writeString("Hostname", sysdat.app.hostName);
 	config->writeString("Description", sysdat.app.appDescription);
 	config->writeString("Jumbotron", sysdat.app.appJumbotron);
+	config->writeString("Locale", sysdat.app.language);
 
 	config->flush();
 	changes = 0;

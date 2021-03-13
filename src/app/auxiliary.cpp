@@ -68,9 +68,9 @@ int TAuxiliary::execute() {
 		wtWebserverLog   = application.addWebToken("MSG_WEBSERVER_LOG", "-");
 
 		// Add heder text as web token content
-		wtRequestsHeader = application.addWebToken("REQUESTS_HEADER", "Serverauslastung");
-		wtSessionsHeader = application.addWebToken("SESSIONS_HEADER", "Benutzersitzungen");
-		wtCredentialsHeader = application.addWebToken("CREDENTIALS_HEADER", "Benutzerverwaltung");
+		wtRequestsHeader = application.addWebToken("REQUESTS_HEADER", "Server workload");
+		wtSessionsHeader = application.addWebToken("SESSIONS_HEADER", "User sessions");
+		wtCredentialsHeader = application.addWebToken("CREDENTIALS_HEADER", "User credentials");
 
 		// Progress bars
 		application.addWebLink("percent.png", &app::TAuxiliary::getPercentBitmap, this, false, false);
@@ -141,9 +141,9 @@ void TAuxiliary::prepareWebRequest(const std::string& uri, const util::TVariantV
 		size_t count = application.getWebServer().getWebApiCount();
 		if (count > 0) {
 			std::string text = count > 1 ? "APIs" : "API";
-			*wtRequestsHeader = util::csnprintf("Serverauslastung (% aktive %)", count, text);
+			*wtRequestsHeader = util::csnprintf("Server workload (% active %)", count, text);
 		} else {
-			*wtRequestsHeader = "Serverauslastung";
+			*wtRequestsHeader = "Server workload";
 		}
 		wtRequestsHeader->invalidate();
 		found = true;
@@ -152,10 +152,10 @@ void TAuxiliary::prepareWebRequest(const std::string& uri, const util::TVariantV
 	if (!found && util::strcasestr(uri, "sessions.html")) {
 		size_t count = application.getWebServer().getWebSessionCount();
 		if (count > 0) {
-			std::string text = count > 1 ? "Sitzungen" : "Sitzung";
-			*wtSessionsHeader = util::csnprintf("Benutzersitzungen (% %)", count, text);
+			std::string text = count > 1 ? "sessions" : "session";
+			*wtSessionsHeader = util::csnprintf("User sessions (% %)", count, text);
 		} else {
-			*wtSessionsHeader = "Benutzersitzungen";
+			*wtSessionsHeader = "User sessions";
 		}
 		wtSessionsHeader->invalidate();
 		found = true;
@@ -192,10 +192,10 @@ void TAuxiliary::updateLoggerView() {
 
 void TAuxiliary::setCredentialsHeader(const size_t count) {
 	if (count > 0) {
-		std::string text = count > 1 ? "Eintrag" : "Einträge";
-		*wtCredentialsHeader = util::csnprintf("Benutzerverwaltung (% %)", count, text);
+		std::string text = count > 1 ? "users" : "users";
+		*wtCredentialsHeader = util::csnprintf("User credentials (% %)", count, text);
 	} else {
-		*wtCredentialsHeader = "Benutzerverwaltung";
+		*wtCredentialsHeader = "User credentials";
 	}
 	wtCredentialsHeader->invalidate();
 }
@@ -742,10 +742,11 @@ ssize_t TAuxiliary::drawColorGradient(util::TPNG& canvas, size_t width, size_t h
 	canvas.fill(width, height, CL_NONE);
 
 	// Draw color gradient on x axis (width)
+	size_t yLast = util::pred(height);
 	for (size_t x=0; x<width; ++x) {
 		double percent = (double)x * 100.0 / (double)width;
 		util::TColor color = canvas.gradient(percent, from, to);
-		canvas.line(x,0, x,height, color);
+		canvas.line(x,0, x,yLast, color);
 	}
 
 	return (ssize_t)(width * height);
@@ -761,11 +762,12 @@ ssize_t TAuxiliary::drawTemperatureColors(util::TPNG& canvas, size_t width, size
 	canvas.fill(width, height, CL_NONE);
 
 	// Draw temperature colors on x axis (width)
+	size_t yLast = util::pred(height);
 	const CColorSystem* system = canvas.getColorSystem("REC709");
 	for (size_t x=0; x<width; ++x) {
 		double percent = (double)x * 100.0 / (double)width;
 		util::TColor color = canvas.temperature(percent, 1000.0, 10000.0, system);
-		canvas.line(x,0, x,height, color);
+		canvas.line(x,0, x,yLast, color);
 	}
 
 	return (ssize_t)(width * height);
@@ -781,10 +783,11 @@ ssize_t TAuxiliary::drawRainbowColors(util::TPNG& canvas, size_t width, size_t h
 	canvas.fill(width, height, CL_NONE);
 
 	// Draw rainbow colors on x axis (width)
+	size_t yLast = util::pred(height);
 	for (size_t x=0; x<width; ++x) {
 		double percent = (double)x * 100.0 / (double)width;
 		util::TColor color = canvas.rainbow(percent);
-		canvas.line(x,0, x,height, color);
+		canvas.line(x,0, x,yLast, color);
 	}
 
 	return (ssize_t)(width * height);
@@ -800,10 +803,11 @@ ssize_t TAuxiliary::drawNaturalColors(util::TPNG& canvas, size_t width, size_t h
 	canvas.fill(width, height, CL_NONE);
 
 	// Draw rainbow colors on x axis (width)
+	size_t yLast = util::pred(height);
 	for (size_t x=0; x<width; ++x) {
 		double percent = (double)x * 100.0 / (double)width;
 		util::TColor color = canvas.colors(percent);
-		canvas.line(x,0, x,height, color);
+		canvas.line(x,0, x,yLast, color);
 	}
 
 	return (ssize_t)(width * height);

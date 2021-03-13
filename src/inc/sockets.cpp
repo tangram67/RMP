@@ -9,6 +9,7 @@
 #include <sys/un.h>
 #include <openssl/ssl.h>
 #include "exception.h"
+#include "sysutils.h"
 #include "stringutils.h"
 #include "sslconsts.h"
 #include "ssltypes.h"

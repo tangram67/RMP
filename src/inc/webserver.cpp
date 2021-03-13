@@ -6,6 +6,7 @@
  */
 
 #include "webserver.h"
+#include "sysutils.h"
 #include "stringutils.h"
 #include "localizations.h"
 #include "webrequest.h"
@@ -102,13 +103,14 @@ static void webSocketConnectionDispatcher(void *cls, struct MHD_Connection *conn
 namespace app {
 
 
-TWebServer::TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, PLogFile infoLog, PLogFile exceptionLog) {
+TWebServer::TWebServer(const std::string& name, const std::string& documentRoot, app::PIniFile config, app::PThreadController threads, app::PTimerController timers, app::PTranslator nls, PLogFile infoLog, PLogFile exceptionLog) {
 	this->name = name;
 	this->config = config;
 	this->infoLog = infoLog;
 	this->exceptionLog = exceptionLog;
 	this->threads = threads;
 	this->timers = timers;
+	this->nls = nls;
 	web.documentRoot = documentRoot;
 	credentialCallbackMethod = nil;
 	httpsParam = HTTPS_PARAMS;
@@ -257,22 +259,31 @@ void TWebServer::setRunningConfiguration(const TWebSettings& config) {
 }
 
 
-bool fileDecider(util::TFile& file) {
-	return file.isHTML() || file.isJSON();
-}
-
-bool zipDecider(util::TFile& file) {
-	if (std::string::npos != file.getMime().find("image"))
-		return false;
-	if (file.hasToken())
-		return false;
-	return true;
-}
-
 void TWebServer::scanWebRoot(const bool debug) {
 	app::TReadWriteGuard<app::TReadWriteLock> lock(requestLck, RWL_WRITE);
+	const util::TStringList& allowed = web.parserList;
 	util::TDateTime time;
 	time.start();
+
+	std::function<bool(util::TFile& file)> fileDecider = [allowed] (util::TFile& file) {
+		// Allowed list of parsed files apart from HTML and JSON
+		// --> allow all JS will cause false parser positives for jQuery, etc. !!!
+		if (file.isHTML() || file.isJSON()) {
+			return true;
+		}
+		if (std::string::npos != allowed.find(file.getName())) {
+			return true;
+		}
+		return false;
+	};
+
+	std::function<bool(util::TFile& file)> zipDecider = [] (util::TFile& file) {
+		if (std::string::npos != file.getMime().find("image"))
+			return false;
+		if (file.hasToken())
+			return false;
+		return true;
+	};
 
 	// Cache files in web root folder
 	content.setDebug(debug);
@@ -306,6 +317,15 @@ PWebToken TWebServer::addWebToken(const std::string& key, const std::string& val
 	return retVal;
 }
 
+PWebToken TWebServer::getWebToken(const std::string& key) {
+	return tokenList.getToken(key);
+}
+
+bool TWebServer::hasWebToken(const std::string& key) {
+	return tokenList.hasToken(key);
+}
+
+
 inline int isValidURL(char c) {
 	unsigned char u = (unsigned char)c;
 	if ((u <= USPC) || (u == (unsigned char)'/') || (u == (unsigned char)'\\'))
@@ -326,6 +346,18 @@ void TWebServer::addRestAuthExclusion(const std::string& api) {
 		addUrlAuthExclusion(web.restRoot + s);
 	}
 }
+
+
+void TWebServer::setTranslator(app::TTranslator& nls) {
+	if (!hasTranslator()) {
+		this->nls = &nls;
+	}
+}
+
+bool TWebServer::hasTranslator() const {
+	return util::assigned(nls);
+}
+
 
 void TWebServer::setMode(const EServerMode value) {
 	std::lock_guard<std::mutex> lock(modeMtx);
@@ -1427,6 +1459,7 @@ void TWebServer::readConfig() {
 	web.disableVfsGZip = config->readBool("DisableVfsGZip", web.disableVfsGZip);
 	web.vfsDataDeleteDelay = config->readInteger("VfsDataDeleteDelay", web.vfsDataDeleteDelay);
 	web.indexPages = config->readString("IndexPage", INDEX_PAGE);
+	web.parserList = config->readString("AllowedParserFiles", "bootstrap-table-na-DB.min.js;bootstrap-table-na-DB.js");
 	web.certFile = config->readString("CertFile", web.certFile); // Default value is "builtin"
 	web.keyFile = config->readString("KeyFile", web.keyFile); // Default value is "builtin"
 	web.dhFile = config->readString("DiffieHellmanFile", web.dhFile); // Default value is "builtin"
@@ -1511,6 +1544,7 @@ void TWebServer::writeConfig() {
 	config->writeBool("DisableVfsGZip", web.disableVfsGZip, INI_BLYES);
 	config->writeInteger("VfsDataDeleteDelay", web.vfsDataDeleteDelay);
 	config->writeString("IndexPage", web.indexPages.csv());
+	config->writeString("AllowedParserFiles", web.parserList.csv());
 	config->writeString("CertFile", web.certFile);
 	config->writeString("KeyFile", web.keyFile);
 	config->writeString("DiffieHellmanFile", web.dhFile);

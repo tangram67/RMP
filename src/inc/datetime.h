@@ -21,6 +21,7 @@
 #include <sstream>
 #include "timetypes.h"
 #include "syslocale.h"
+#include "localization.h"
 #include "gcc.h"
 
 #if not defined USE_DST_TIMESTAMP

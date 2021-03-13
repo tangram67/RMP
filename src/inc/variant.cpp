@@ -13,6 +13,7 @@
 #include "convert.h"
 #include "variant.h"
 #include "encoding.h"
+#include "sysutils.h"
 #include "htmlutils.h"
 #include "stringutils.h"
 

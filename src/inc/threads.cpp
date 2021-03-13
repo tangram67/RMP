@@ -17,6 +17,7 @@
 #include "threads.h"
 #include "nullptr.h"
 #include "convert.h"
+#include "sysutils.h"
 #include "exception.h"
 #include "../config.h"
 

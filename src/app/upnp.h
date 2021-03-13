@@ -53,6 +53,8 @@ private:
 	std::string serverid;
 	std::string deviceURL;
 	std::string xmlResponseData;
+	std::string friendlyName;
+	std::string description;
 	app::TTimerDelay timeout;
 	inet::PMulticastSocket mcast4;
 	TBroadcastThread* thread;

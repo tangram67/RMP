@@ -9,6 +9,7 @@
 #define STRINGTEMPLATES_H_
 
 #include <sstream>
+#include <iomanip>
 #include "functors.h"
 #include "../config.h"
 

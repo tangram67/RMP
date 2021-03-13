@@ -178,17 +178,6 @@ public:
 };
 
 
-static TAnsi ansi;
-static TAnsi red(EAC_RED);
-static TAnsi green(EAC_GREEN);
-static TAnsi yellow(EAC_YELLOW);
-static TAnsi blue(EAC_BLUE);
-static TAnsi magenta(EAC_MAGENTA);
-static TAnsi cyan(EAC_CYAN);
-static TAnsi white(EAC_WHITE);
-static TAnsi reset(EAC_RESET);
-
-
 inline std::istream& operator >> (std::istream& is, TAnsi& o)
 {
 	// is >> o; => not const!
@@ -201,6 +190,17 @@ inline std::ostream& operator << (std::ostream& os, const TAnsi& o)
 		os << o.getAnsi();
 	return os;
 }
+
+
+static TAnsi ansi; // Can be modified per use...
+static const TAnsi red(EAC_RED);
+static const TAnsi green(EAC_GREEN);
+static const TAnsi yellow(EAC_YELLOW);
+static const TAnsi blue(EAC_BLUE);
+static const TAnsi magenta(EAC_MAGENTA);
+static const TAnsi cyan(EAC_CYAN);
+static const TAnsi white(EAC_WHITE);
+static const TAnsi reset(EAC_RESET);
 
 } // namespace app
 

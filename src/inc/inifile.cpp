@@ -23,11 +23,12 @@
 
 namespace app {
 
-
-TIniValue::TIniValue(const std::string& line, const size_t index, PIniValue const anchor) {
+TIniValue::TIniValue(const std::string& line, const size_t index, PIniValue const anchor, const bool debug) {
 	this->line = line;
 	this->index = index;
 	this->type = INI_NONE;
+	this->debug = debug;
+	forceOrder(std::string::npos);
 	setSection(false);
 	setEmpty(true);
 	if (util::assigned(anchor)) {
@@ -39,120 +40,10 @@ TIniValue::TIniValue(const std::string& line, const size_t index, PIniValue cons
 }
 
 TIniValue::~TIniValue() {
-
 }
 
-#ifdef PARSE_SECTION_BY_INDEX
-
 bool TIniValue::extractValue() {
-	bool retVal = false, bFound = false;
-
-	if (line.size() > 0) {
-		std::string sKey;
-		size_t p = 0, q = 0;
-
-		// Suppress leading whitespaces + space ' '
-		while ((line[p] <= 0x20) and (p < line.size())) p++;
-		while (p < line.size()) {
-			// Store start position of key string
-			q = p;
-
-			// Check for comment '#'
-			if (line[p] == '#') {
-				// Leave line as it is, mark as found (= non empty!)
-				type = INI_COMMENT;
-				retVal = true;
-				break;
-			}
-
-			// Check for section identifier '['
-			if (line[p] == '[') {
-				// Section found and you're done!
-				retVal = extractSection(p);
-				if (retVal)
-					type = INI_SECTION;
-				break;
-			}
-
-			// Check for broken section like ']<some text>'
-			if (line[p] == ']') {
-				// All is invalid up from here to next section key!
-				section.clear();
-				key.clear();
-				break;
-			}
-
-			// Check if valid section was set before
-			// --> otherwise looking further through this line is pretty useless
-			if (!section.getHash())
-				break;
-
-			// Look for trailing whitespaces or equal '=' char
-			while ((line[p] > 0x20) and (line[p] != '=') and (line[p] != ']') and (p < line.size())) p++;
-
-			// Check for broken section like '<some text>]'
-			if (line[p] == ']') {
-				// All is invalid up from here to next section key!
-				section.clear();
-				key.clear();
-				break;
-			}
-
-			// Key string with length > 0 found?
-			if (p > q) {
-
-				// Key string is valid!
-				sKey = line.substr(q, p - q);
-
-				// Suppress trailing whitespaces
-				while ((line[p] <= 0x20) and (line[p] != '=') and (p < line.size())) p++;
-
-				// Value string found?
-				if (line[p] == '=') {
-
-					// Ignore key if no '=' found!
-					bFound = true;
-
-					// Start with next char after '='
-					p++;
-
-					// Suppress trailing whitespaces
-					while ((line[p] <= 0x20) and (p < line.size())) p++;
-					if (p < line.size()) {
-						q = p;
-
-						// Look for trailing whitespaces
-						// Allow SPC in strings, trim afterwards!
-						//while ((line[p] > 0x20) and (p < line.size())) p++;
-						while ((line[p] >= 0x20) and (p < line.size())) p++;
-
-						// Value string with length > 0 found?
-						if (p > q) {
-							value = util::trim(line.substr(q, p - q));
-						}
-					}
-				}
-
-				// A valid key=value string was found...
-				if (bFound) {
-					key.setString(sKey);
-					retVal = true;
-				} else {
-					// Key was invalid, '=' missing!
-					key.clear();
-				}
-
-			} else
-				break;
-		}
-	}
-	return retVal;
-}
-
-#else
-
-bool TIniValue::extractValue() {
-	bool retVal = false, bFound = false;
+	bool retVal = false, found = false;
 
 	if (line.size() > 0) {
 		std::string sKey;
@@ -164,7 +55,7 @@ bool TIniValue::extractValue() {
 		q = p;
 
 		// Suppress leading whitespaces + space ' '
-		while ((*p <= 0x20) and (p != eol)) p++;
+		while (((uint8_t)*p <= 0x20) and (p != eol)) p++;
 		while (p != eol) {
 			// Store start position of key string
 			q = p;
@@ -200,7 +91,7 @@ bool TIniValue::extractValue() {
 				break;
 
 			// Look for trailing whitespace or equal '=' char
-			while ((*p > 0x20) and (*p != '=') and (*p != ']') and (p != eol)) p++;
+			while (((uint8_t)*p > 0x20) and (*p != '=') and (*p != ']') and (p != eol)) p++;
 
 			// Check for broken section like '<some text>]'
 			if (*p == ']') {
@@ -217,36 +108,37 @@ bool TIniValue::extractValue() {
 				sKey = std::string(q, p);
 
 				// Suppress trailing whitespace
-				while ((*p <= 0x20) and (*p != '=') and (p != eol)) p++;
+				while (((uint8_t)*p <= 0x20) and (*p != '=') and (p != eol)) p++;
 
 				// Value string found?
 				if (*p == '=') {
 
 					// Ignore key if no '=' found!
-					bFound = true;
+					found = true;
 
 					// Start with next char after '='
 					p++;
 
 					// Suppress trailing whitespace
-					while ((*p <= 0x20) and (p != eol)) p++;
+					while (((uint8_t)*p <= 0x20) and (p != eol)) p++;
 					if (p != eol) {
 						q = p;
 
 						// Look for trailing whitespace
 						// Allow SPC in strings, trim afterwards!
-						//while ((*p > 0x20) and (p != eol)) p++;
-						while ((*p >= 0x20) and (p != eol)) p++;
+						// while ((*p > 0x20) and (p != eol)) p++;
+						while (((uint8_t)*p >= 0x20) and (p != eol)) p++;
 
 						// Value string with length > 0 found?
 						if (p > q) {
 							value = util::trim(std::string(q, p));
+							if (debug) std::cout << "TIniValue::extractValue() Value \"" << value << "\" --> \"" << std::string(q, p) << "\"" << std::endl;
 						}
 					}
 				}
 
 				// A valid key=value string was found...
-				if (bFound) {
+				if (found) {
 					key.setString(sKey);
 					retVal = true;
 				} else {
@@ -260,8 +152,6 @@ bool TIniValue::extractValue() {
 	}
 	return retVal;
 }
-
-# endif
 
 bool TIniValue::extractSection(const size_t& pos) {
 	bool retVal = false;
@@ -290,7 +180,6 @@ bool TIniValue::extractSection(const size_t& pos) {
 	setSection(retVal);
 	return retVal;
 }
-
 
 bool TIniValue::extractSection(const std::string::const_iterator& pos) {
 	bool retVal = false;
@@ -327,7 +216,6 @@ bool TIniValue::extractSection(const std::string::const_iterator& pos) {
 	return retVal;
 }
 
-
 void TIniValue::parseLine() {
 	if (line.size()) {
 		setEmpty(!extractValue());
@@ -336,13 +224,11 @@ void TIniValue::parseLine() {
 	}
 }
 
-
 void TIniValue::setValue(const std::string& value) {
 	this->value = value;
 	// Rebuild proper line, wait for flush with parameter compress to do that...
 	// rebuildLine();
 }
-
 
 void TIniValue::rebuildLine() {
 	if (!isEmpty()) {
@@ -366,19 +252,23 @@ void TIniValue::rebuildLine() {
 
 
 TIniFile::TIniFile() {
-	fileExists = false;
+	prime();
 }
-
 
 TIniFile::TIniFile(const std::string& fileName) {
+	prime();
 	open(fileName);
 }
-
 
 TIniFile::~TIniFile() {
 	clear();
 }
 
+void TIniFile::prime() {
+	order = 0;
+	fileExists = false;
+	debug = false;
+}
 
 void TIniFile::open(const std::string& fileName) {
 	this->fileName = fileName;
@@ -389,27 +279,28 @@ void TIniFile::open(const std::string& fileName) {
 	readIniFile();
 }
 
-void TIniFile::clear() {
-#ifndef STL_HAS_RANGE_FOR
-	size_t i,n;
-	n = lines.size();
-	for (i=0; i<n; i++)
-		util::freeAndNil(lines[i]);
-#else
-	for (PIniValue o : lines)
-		util::freeAndNil(o);
-#endif
+void TIniFile::close() {
+	fileExists = false;
+	fileName.clear();
+	filePath.clear();
+	clear();
 }
 
+void TIniFile::clear() {
+	order = 0;
+	sections.clear();
+	section.clear();
+	section.setIndex(std::string::npos);
+	util::clearObjectList(lines);
+}
 
 PIniValue TIniFile::addLineValue(std::string& line, const size_t index, const PIniValue anchor) {
 	app::PIniValue o;
-	o = new TIniValue(line, index, anchor);
+	o = new TIniValue(line, index, anchor, debug);
 	lines.push_back(o);
 	addSectionMap(o);
 	return o;
 }
-
 
 void TIniFile::addSectionMap(const PIniValue o) {
 	// Add section to map
@@ -419,7 +310,6 @@ void TIniFile::addSectionMap(const PIniValue o) {
 		sections.insert(TSectionMapItem(s, o->getIndex()));
 	}
 }
-
 
 void TIniFile::readIniFile() {
 	if (fileExists) {
@@ -432,25 +322,20 @@ void TIniFile::readIniFile() {
 			// Read first line
 			std::getline(strm, line);
 			if (strm.good()) {
-				//lines.push_back(o = new TIniValue(line, lines.size(), prev));
-				//prev = o;
 				prev = addLineValue(line, lines.size(), prev);
 			}
 
 			// Read all lines until EOF
 			while (strm.good()) {
 				std::getline(strm, line);
-				//lines.push_back(o = new TIniValue(line, lines.size(), prev));
-				//prev = o;
 				prev = addLineValue(line, lines.size(), prev);
 			}
 
-			// Check last read line for valid entry
-			// We have 2 possibilities:
-			// 1. <line>EOF --> valid entry
-			// 2. <line>\n
-			//    EOF --> delete last read empty string!!
-			if (line.size() <= 0 && lines.size() > 0) {
+			// Check last read line for valid entry:
+			// 1. <line>\n  --> valid entry
+			// 2. <line>EOF --> valid entry
+			// 3. EOF --> delete last read empty string entry
+			if (line.empty() && !lines.empty()) {
 				o = lines[util::pred(lines.size())];
 				util::freeAndNil(o);
 				lines.pop_back();
@@ -464,7 +349,6 @@ void TIniFile::readIniFile() {
 	}
 }
 
-
 void TIniFile::flush(const bool compress) {
 	if (!lines.size())
 		return;
@@ -476,7 +360,6 @@ void TIniFile::flush(const bool compress) {
 	*/
 	writeIniFile(fileName, compress);
 }
-
 
 void TIniFile::writeIniFile(const std::string fileName, bool compress) {
 	std::ofstream strm;
@@ -490,11 +373,11 @@ void TIniFile::writeIniFile(const std::string fileName, bool compress) {
 				if (o->isEmpty()) {
 					continue;
 				}
+				// Skip empty lines for output
 				if (compress) {
-					// Leave empty line out
 					o->rebuildLine();
 				}
-				// Add empty line on change of section
+				// Add single empty line on change of section
 				if (util::assigned(prev)) {
 					if ( prev->getSectionHash() != o->getSectionHash() &&
 						 //prev->getType() != INI_COMMENT &&
@@ -503,6 +386,7 @@ void TIniFile::writeIniFile(const std::string fileName, bool compress) {
 					}
 				}
 				line = o->getLine();
+				if (debug) std::cout << "TIniFile::writeIniFile() Wite line \"" << line << "\"" << std::endl;
 				strm << line << std::endl;
 			}
 			prev = o;
@@ -515,6 +399,37 @@ void TIniFile::writeIniFile(const std::string fileName, bool compress) {
 	strm.close();
 }
 
+void TIniFile::sort(const std::string section) {
+	// Natural ascending sort method
+	auto sorter = [] (const TIniValue* o1, const TIniValue* o2) {
+		return util::strnatcasesort(o1->getKey(), o2->getKey());
+	};
+	sort(section, sorter);
+}
+
+void TIniFile::sort() {
+	// Sort all sections by natural ascending sort method
+	auto sorter = [this] (const TSectionValue& value) {
+		sort(value.first);
+	};
+	std::for_each(sections.begin(), sections.end(), sorter);
+}
+
+void TIniFile::reorder(const std::string section) {
+	// Order items by read sequence
+	auto sorter = [] (const TIniValue* o1, const TIniValue* o2) {
+		return o1->getOrder() < o2->getOrder();
+	};
+	sort(section, sorter);
+}
+
+void TIniFile::reorder() {
+	// Reorder all sections by read sequence
+	auto sorter = [this] (const TSectionValue& value) {
+		reorder(value.first);
+	};
+	std::for_each(sections.begin(), sections.end(), sorter);
+}
 
 void TIniFile::debugOutput() {
 	app::PIniValue o;
@@ -551,8 +466,12 @@ void TIniFile::debugOutput() {
 	std::cout << std::endl;
 }
 
+void TIniFile::setLineOrder(app::PIniValue value) const {
+	++order;
+	value->setOrder(order);
+}
 
-int TIniFile::readInteger(const std::string& key, int defValue) {
+int TIniFile::readInteger(const std::string& key, int defValue) const {
 	long int retVal = defValue;
 	const char* p;
 	char* q;
@@ -561,6 +480,7 @@ int TIniFile::readInteger(const std::string& key, int defValue) {
 	if (idx != std::string::npos) {
 		o = lines[idx];
 		if (util::assigned(o)) {
+			setLineOrder(o);
 			o->setType(INI_INT);
 			if (o->getValue().size() > 0) {
 				p = o->getValue().c_str();
@@ -585,8 +505,7 @@ int TIniFile::readInteger(const std::string& key, int defValue) {
 	return retVal;
 }
 
-
-bool TIniFile::readBool(const std::string& key, bool defValue) {
+bool TIniFile::readBool(const std::string& key, bool defValue) const {
 	bool retVal = defValue;
 	std::string s;
 	app::PIniValue o;
@@ -594,6 +513,7 @@ bool TIniFile::readBool(const std::string& key, bool defValue) {
 	if (idx != std::string::npos) {
 		o = lines[idx];
 		if (util::assigned(o)) {
+			setLineOrder(o);
 			EEntryType type;
 			retVal = readBoolValueAndType(o->getValue(), type);
 			o->setType(type);
@@ -601,7 +521,6 @@ bool TIniFile::readBool(const std::string& key, bool defValue) {
 	}
 	return retVal;
 }
-
 
 bool TIniFile::readBoolValueAndType(std::string value, EEntryType& type) {
 	bool retVal;
@@ -645,7 +564,6 @@ bool TIniFile::readBoolValueAndType(std::string value, EEntryType& type) {
 	return retVal;
 }
 
-
 std::string TIniFile::writeBoolValueForType(const bool value, const EEntryType type) {
 	switch (type) {
 		case INI_BLTRUE:
@@ -671,8 +589,7 @@ std::string TIniFile::writeBoolValueForType(const bool value, const EEntryType t
 	}
 }
 
-
-double TIniFile::readDouble(const std::string& key, double defValue) {
+double TIniFile::readDouble(const std::string& key, double defValue) const {
 	double retVal = defValue;
 	const char* p;
 	char* q;
@@ -681,6 +598,7 @@ double TIniFile::readDouble(const std::string& key, double defValue) {
 	if (idx != std::string::npos) {
 		o = lines[idx];
 		if (util::assigned(o)) {
+			setLineOrder(o);
 			o->setType(INI_DOUBLE);
 			if (o->getValue().size() > 0) {
 				p = o->getValue().c_str();
@@ -697,14 +615,32 @@ double TIniFile::readDouble(const std::string& key, double defValue) {
 	return retVal;
 }
 
+bool TIniFile::readText(const std::string& key, std::string& value) const {
+	value.clear();
+	app::PIniValue o;
+	size_t idx = findKey(key);
+	if (idx != std::string::npos) {
+		o = lines[idx];
+		if (util::assigned(o)) {
+			setLineOrder(o);
+			o->setType(INI_STRING);
+			if (o->getValue().size() > 0) {
+				value = o->getValue();
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
-std::string TIniFile::readString(const std::string& key, const std::string& defValue) {
+std::string TIniFile::readString(const std::string& key, const std::string& defValue) const {
 	std::string retVal(defValue);
 	app::PIniValue o;
 	size_t idx = findKey(key);
 	if (idx != std::string::npos) {
 		o = lines[idx];
 		if (util::assigned(o)) {
+			setLineOrder(o);
 			o->setType(INI_STRING);
 			if (o->getValue().size() > 0)
 				retVal = o->getValue();
@@ -713,14 +649,14 @@ std::string TIniFile::readString(const std::string& key, const std::string& defV
 	return retVal;
 }
 
-
-std::string TIniFile::readPath(const std::string& key, const std::string& defValue) {
+std::string TIniFile::readPath(const std::string& key, const std::string& defValue) const {
 	std::string retVal(defValue);
 	app::PIniValue o;
 	size_t idx = findKey(key);
 	if (idx != std::string::npos) {
 		o = lines[idx];
 		if (util::assigned(o)) {
+			setLineOrder(o);
 			o->setType(INI_PATH);
 			if (o->getValue().size() > 0)
 				retVal = o->getValue();
@@ -729,8 +665,7 @@ std::string TIniFile::readPath(const std::string& key, const std::string& defVal
 	return validPath(retVal);
 }
 
-
-size_t TIniFile::readSize(const std::string& key, size_t defValue) {
+size_t TIniFile::readSize(const std::string& key, size_t defValue) const {
 	size_t retVal = defValue;
 	std::string s(readString(key, ""));
 	if (!s.empty()) {
@@ -739,7 +674,7 @@ size_t TIniFile::readSize(const std::string& key, size_t defValue) {
 	return retVal;
 }
 
-uint64_t TIniFile::readHex(const std::string& key, uint64_t defValue) {
+uint64_t TIniFile::readHex(const std::string& key, uint64_t defValue) const {
 	size_t retVal = defValue;
 	std::string s(readString(key, ""));
 	if (s.size() > 2) {
@@ -826,6 +761,7 @@ std::string TIniFile::printf(const std::string &fmt, ...) const {
 void TIniFile::writeItem(const std::string& key, const std::string& value, const EEntryType type) {
 	app::PIniValue o;
 	size_t idx = findKey(key);
+	if (debug) std::cout << "TIniFile::writeItem(0) Write [" << key << " = " << value << "]" << std::endl;
 
 	// Overwrite existing item value?
 	if (idx != std::string::npos) {
@@ -842,6 +778,7 @@ void TIniFile::writeItem(const std::string& key, const std::string& value, const
 				o->setValue(s);
 			} else {
 				// Write for all other types unchanged to existing object
+				if (debug) std::cout << "TIniFile::writeItem(1) Write [" << key << " = " << value << "]" << std::endl;
 				o->setValue(value);
 				o->setType(type);
 			}
@@ -849,6 +786,7 @@ void TIniFile::writeItem(const std::string& key, const std::string& value, const
 	} else {
 		// Create new item!
 		std::string line = createLine(key, value);
+		if (debug) std::cout << "TIniFile::writeItem(2) Line created [" << line << "]" << std::endl;
 		idx = findInsertIndex();
 		if (idx != std::string::npos) {
 			// Add line at the end of file
@@ -861,7 +799,6 @@ void TIniFile::writeItem(const std::string& key, const std::string& value, const
 		}
 	}
 }
-
 
 bool TIniFile::deleteKey(const std::string& key) {
 	bool retVal = false;
@@ -877,9 +814,7 @@ bool TIniFile::deleteKey(const std::string& key) {
 	return retVal;
 }
 
-
-std::string TIniFile::validPath(const std::string& path)
-{
+std::string TIniFile::validPath(const std::string& path) const {
 	std::string s(path);
 	util::trim(s);
 	if (!s.empty())
@@ -890,7 +825,6 @@ std::string TIniFile::validPath(const std::string& path)
 			s += sysutil::PATH_SEPERATOR;
 	return s;
 }
-
 
 size_t TIniFile::findInsertIndex() {
 	app::PIniValue o = nil;
@@ -911,19 +845,16 @@ size_t TIniFile::findInsertIndex() {
 	while (p < lines.size()) {
 		o = lines[p];
 		if (util::assigned(o)) {
-
 			if (o->isEmpty() && o->getSectionHash() == section.getHash()) {
 				retVal = p;
 				break;
 			}
-
 			if (util::assigned(prev)) {
 				if (prev->getSectionHash() == section.getHash() && prev->getSectionHash() != o->getSectionHash()) {
 					retVal = p;
 					break;
 				}
 			}
-
 		}
 		prev = o;
 		p++;
@@ -944,8 +875,7 @@ size_t TIniFile::findInsertIndex() {
 	return retVal;
 }
 
-
-size_t TIniFile::findKey(const std::string& key) {
+size_t TIniFile::findKey(const std::string& key) const {
 	app::PIniValue o;
 	size_t i = 0;
 	if (section.getIndex() != std::string::npos)
@@ -959,8 +889,6 @@ size_t TIniFile::findKey(const std::string& key) {
 	return std::string::npos;
 }
 
-
-
 void TIniFile::setSection(const std::string& section) {
 	size_t idx = findSection(section);
 	if (idx == std::string::npos) {
@@ -972,7 +900,6 @@ void TIniFile::setSection(const std::string& section) {
 	this->section.assign(lines[idx]->getSectionHashKey());
 	this->section.setIndex(idx);
 }
-
 
 int TIniFile::deleteSection(const std::string& section) {
 	util::hash_type hash = util::calcHash(section);
@@ -1021,7 +948,6 @@ int TIniFile::deleteSection(const std::string& section) {
 	return retVal;
 }
 
-
 int TIniFile::readSection(const std::string& section, util::TVariantValues& values) {
 	values.clear();
 	size_t idx = findSection(section);
@@ -1046,7 +972,6 @@ int TIniFile::readSection(const std::string& section, util::TVariantValues& valu
 	return values.size();
 }
 
-
 size_t TIniFile::findSection(const std::string& section) {
 	std::string s = section;
 	std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -1058,7 +983,6 @@ size_t TIniFile::findSection(const std::string& section) {
 	return std::string::npos;
 }
 
-
 size_t TIniFile::createSection(const std::string& section) {
 	std::string line = "[" + section + "]";
 	addEmptyLine();
@@ -1066,11 +990,9 @@ size_t TIniFile::createSection(const std::string& section) {
 	return util::pred(lines.size());
 }
 
-
 std::string TIniFile::createLine(const std::string& Key, const std::string& value) {
 	return Key + EQUAL_SIGN + value;
 }
-
 
 // Add empty line at the end of list
 void TIniFile::addEmptyLine() {
@@ -1084,18 +1006,16 @@ void TIniFile::addEmptyLine() {
 	}
 }
 
-
 // Add new item at the end of list
 void TIniFile::addNewLine(const std::string& line, const EEntryType type) {
 	app::PIniValue o, prev = nil;
 	if (lines.size())
 		prev = lines[util::pred(lines.size())];
-	o = new TIniValue(line, lines.size(), prev);
+	o = new TIniValue(line, lines.size(), prev, debug);
 	o->setType(type);
 	lines.push_back(o);
 	addSectionMap(o);
 }
-
 
 // Insert new item at given position
 void TIniFile::insertNewLine(const std::string& line, size_t pos, const EEntryType type) {
@@ -1107,7 +1027,7 @@ void TIniFile::insertNewLine(const std::string& line, size_t pos, const EEntryTy
 		// Insert item at given position
 		if (pos < lines.size() && pos >= 0)
 			prev = lines[util::pred(pos)];
-		o = new TIniValue(line, pos, prev);
+		o = new TIniValue(line, pos, prev, debug);
 		o->setType(type);
 		lines.insert(it+pos, o);
 		addSectionMap(o);
@@ -1117,7 +1037,6 @@ void TIniFile::insertNewLine(const std::string& line, size_t pos, const EEntryTy
 
 	}
 }
-
 
 void TIniFile::rebuildIndex(size_t idx) {
 	// Rebuild index up from idx
@@ -1142,6 +1061,5 @@ void TIniFile::rebuildIndex(size_t idx) {
 		}
 	}
 }
-
 
 } /* namespace app */

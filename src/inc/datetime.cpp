@@ -201,10 +201,13 @@ std::string dateTimeToStr (
 			case EDT_SYSTEM:
 				{
 					// Calculate time string representation via strftime
+					locale_t local = (locale_t)0;
+					app::TLocaleGuard<locale_t> guard(local, locale.getType());
+					locale.duplicate(locale, local);
 					int r, n = 32;
 					util::TStringBuffer buf(n);
 					while (true) {
-						r = strftime_l(buf.data(), buf.size(), fmt, &ctm, locale());
+						r = strftime_l(buf.data(), buf.size(), fmt, &ctm, local);
 						if (r > 0) {
 							retVal = std::string(buf.data(), r);
 							break;
@@ -312,10 +315,13 @@ std::wstring dateTimeToStrW (
 			case EDT_SYSTEM:
 				{
 					// Calculate time string representation via strftime
+					locale_t local = (locale_t)0;
+					app::TLocaleGuard<locale_t> guard(local, locale.getType());
+					locale.duplicate(locale, local);
 					int r, n = 32;
 					util::TWideBuffer buf(n);
 					while (true) {
-						r = wcsftime_l(buf.data(), buf.size(), fmt, &ctm, locale());
+						r = wcsftime_l(buf.data(), buf.size(), fmt, &ctm, local);
 						if (r > 0) {
 							retVal = std::wstring(buf.data(), r);
 							break;
@@ -641,10 +647,13 @@ std::string systemDateTimeToStr(const TTimePart time, const app::TLocale& locale
 	std::string retVal = "";
 	struct tm ctm;
 	if (assigned(localtime_r(&time, &ctm))) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 	    int r, n = 32;
 	    util::TStringBuffer buf(n);
 	    while (true) {
-	    	r = strftime_l(buf.data(), buf.size(), SYSTEM_DATE_TIME_FORMAT_A, &ctm, locale());
+	    	r = strftime_l(buf.data(), buf.size(), SYSTEM_DATE_TIME_FORMAT_A, &ctm, local);
 	    	if (r > 0) {
 	    		retVal = std::string(buf.data(), r);
 	    		break;
@@ -662,10 +671,13 @@ std::wstring systemDateTimeToStrW(const TTimePart time, const app::TLocale& loca
 	std::wstring retVal(L"");
 	struct tm ctm;
 	if (assigned(localtime_r(&time, &ctm))) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 	    int r, n = 32;
 	    util::TWideBuffer buf(n);
 	    while (true) {
-	    	r = wcsftime_l(buf.data(), buf.size(), SYSTEM_DATE_TIME_FORMAT_W, &ctm, locale());
+	    	r = wcsftime_l(buf.data(), buf.size(), SYSTEM_DATE_TIME_FORMAT_W, &ctm, local);
 	    	if (r > 0) {
 	    		retVal = std::wstring(buf.data(), r);
 	    		break;
@@ -1648,10 +1660,13 @@ std::string TDateTime::formatLocalDateTime(const char* fmt, const app::TLocale& 
 	// Calculate local time string representation via strftime
 	std::string retVal;
 	if (util::assigned(fmt)) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		int r, n = 32;
 		util::TStringBuffer buf(n);
 		while (true) {
-			r = strftime_l(buf.data(), buf.size(), fmt, &ctm, locale());
+			r = strftime_l(buf.data(), buf.size(), fmt, &ctm, local);
 			if (r > 0) {
 				retVal = std::string(buf.data(), r);
 				break;
@@ -1698,10 +1713,13 @@ std::wstring TDateTime::formatLocalDateTime(const wchar_t* fmt, const app::TLoca
 	// Calculate local time string representation via strftime
 	std::wstring retVal;
 	if (util::assigned(fmt)) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		int r, n = 32;
 		util::TWideBuffer buf(n);
 		while (true) {
-			r = wcsftime_l(buf.data(), buf.size(), fmt, &ctm, locale());
+			r = wcsftime_l(buf.data(), buf.size(), fmt, &ctm, local);
 			if (r > 0) {
 				retVal = std::wstring(buf.data(), r);
 				break;

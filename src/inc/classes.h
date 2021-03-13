@@ -55,6 +55,8 @@ namespace app {
 
 static const size_t nsizet = static_cast<size_t>(-1);
 
+enum EUpdateReason { ER_DATETIME, ER_LANGUAGE, ER_REFRESH };
+
 class TObject;
 class TModule;
 
@@ -129,6 +131,8 @@ class TModule : public TObject {
 public:
 	virtual int prepare() { return EXIT_SUCCESS; };
 	virtual void unprepare() {};
+
+	virtual void update(const EUpdateReason reason) {};
 
 	virtual int execute() = 0;
 	virtual void cleanup() = 0;

@@ -12,6 +12,7 @@
 #include "templates.h"
 #include "componenttypes.h"
 #include "stringutils.h"
+#include "translation.h"
 #include "webtypes.h"
 #include "webtoken.h"
 
@@ -48,6 +49,7 @@ class TTagList : public THtmlList {
 private:
 	mutable	util::hash_type hashTag;
 	mutable	app::TStringVector icons;
+	mutable TItemTagList tags;
 	bool addEmptyDefault;
 	std::string tag;
 
@@ -60,13 +62,14 @@ public:
 	bool isEmptyDefaultAllowed() const { return addEmptyDefault; };
 
 	const std::string& html(const std::string caption = "") const;
-	const app::TStringVector& gylphicons() const { return icons; };
+	const app::TStringVector& getIcons() const { return icons; };
+	const TItemTagList& getTags() const { return tags; };
 	void invalidate();
 
 
-	void add(const std::string& text);
+	void add(const std::string& text, size_t tag = 0);
 	void add(const util::TStringList& items);
-	void add(const std::string& text, const std::string& glyphicon);
+	void add(const std::string& text, const std::string& glyphicon, size_t tag = 0);
 	void clear();
 
 	TTagList& operator = (const app::TStringVector& vector);
@@ -93,6 +96,7 @@ public:
 	typedef app::TStringVector::const_iterator const_iterator;
 
 private:
+	app::PTranslator nls;
 	app::PWebToken token;
 	std::string nstr;
 	std::string id;
@@ -133,6 +137,8 @@ protected:
 	inline size_t count() const { return items.size(); };
 	inline TTagList& elements() { return items; };
 
+	std::string translate(const size_t id, const std::string& defValue) const;
+
 public:
 	// HTML properties like id, name and text
 	void setName(const std::string& name);
@@ -162,6 +168,8 @@ public:
 	const std::string& getClick() const { return onclick; };
 	void setEnabled(const bool value);
 	bool isEnabled() const { return enabled; };
+	void setTranslator(app::TTranslator& nls);
+	bool hasTranslator() const { return util::assigned(nls); };
 	bool isInvalidated() const { return invalidated; };
 
 	// Let derived classes override string methods
@@ -330,6 +338,7 @@ private:
 	std::string id;
 	std::string name;
 	std::string link;
+	size_t captionID;
 	std::string caption;
 	std::string glyph;
 	bool active;
@@ -346,7 +355,7 @@ public:
 	const std::string getLink() const;
 	void setLink(const std::string& value);
 
-	void getProperties(std::string& caption, std::string& link) const;
+	void getProperties(size_t& captionID, std::string& caption, std::string& link) const;
 
 	TMenuItem();
 	virtual ~TMenuItem();
@@ -379,7 +388,9 @@ private:
 	std::string id;
 	std::string name;
 	std::string link;
+	size_t captionID;
 	std::string caption;
+	size_t textID;
 	std::string text;
 	std::string glyph;
 	EComponentSize size;
@@ -397,7 +408,7 @@ public:
 	const std::string getLink() const;
 	void setLink(const std::string& value);
 
-	void getProperties(std::string& caption, std::string& text, std::string& link) const;
+	void getProperties(size_t& captionID, std::string& caption, size_t& textID, std::string& text, std::string& link) const;
 
 	TTileItem();
 	virtual ~TTileItem();
@@ -406,6 +417,7 @@ public:
 
 class TContextMenu : public TComponent {
 private:
+	size_t titleID;
 	std::string title;
 	std::string defVal;
 	TContextMenuItemList menu;
@@ -419,13 +431,16 @@ private:
 	const std::string& html(const std::string caption) const { return defVal; };
 
 public:
-	void setTitle(const std::string& value) { title = value; };
+	void setTitle(const std::string& title);
+	void setTitle(const size_t titleID, const std::string& title);
 	const std::string& getTitle() const { return title.empty() ? defVal : title; };
 
 	void setAnchor(PContextMenuItem item);
-	PContextMenuItem addItem(const std::string& id,  const std::string& caption, const int level = 0, const std::string& glyph = "");
+	PContextMenuItem addItem(const std::string& id, const std::string& caption, const int level = 0, const std::string& glyph = "");
+	PContextMenuItem addItem(const std::string& id, const size_t captionID, const std::string& caption, const int level = 0, const std::string& glyph = "");
 	void addSeparator();
 	PMenuItem addSubItem(const std::string& id, const std::string& caption, const int level = 0, const std::string& glyph = "");
+	PMenuItem addSubItem(const std::string& id, const size_t captionID, const std::string& caption, const int level = 0, const std::string& glyph = "");
 	void addSubSeparator();
 	void clearSubMenu(PContextMenuItem item);
 
@@ -489,7 +504,9 @@ public:
 	bool getFixed() const { return fixed; };
 
 	PMainMenuItem addItem(const std::string& id, const std::string& caption, const std::string& link, const int level = 0, const std::string& glyph = "", const bool active = false);
+	PMainMenuItem addItem(const std::string& id, const size_t captionID, const std::string& caption, const std::string& link, const int level = 0, const std::string& glyph = "", const bool active = false);
 	PMenuItem addSubItem(const std::string& id, const std::string& caption, const std::string& link, const int level = 0, const std::string& glyph = "");
+	PMenuItem addSubItem(const std::string& id, const size_t captionID, const std::string& caption, const std::string& link, const int level = 0, const std::string& glyph = "");
 	void addSubHeader(const std::string& caption);
 	void addSubSeparator();
 	void clearSubMenu(PMainMenuItem item);
@@ -523,6 +540,8 @@ public:
 	std::string getRoot() const { return root; };
 
 	PTileItem addItem(const std::string& id, const std::string& caption, const std::string& text, const std::string& link,
+			const EComponentSize size, const int level = 0, const std::string& glyph = "", const EComponentAlign align = ECA_DEFAULT);
+	PTileItem addItem(const std::string& id, const size_t captionID, const std::string& caption, const size_t textID, const std::string& text, const std::string& link,
 			const EComponentSize size, const int level = 0, const std::string& glyph = "", const EComponentAlign align = ECA_DEFAULT);
 
 	const std::string& html() const;

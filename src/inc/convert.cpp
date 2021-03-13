@@ -10,6 +10,7 @@
 #include "memory.h"
 #include "templates.h"
 #include "stringutils.h"
+#include "localization.h"
 #include "numlimits.h"
 #include "exception.h"
 #include "convert.h"
@@ -21,10 +22,13 @@ using namespace util;
 double util::strToDouble(const std::string& value, double defValue, const app::TLocale& locale) {
 	double retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtod_l(p, &q, locale());
+		retVal = strtod_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -35,10 +39,13 @@ double util::strToDouble(const std::string& value, double defValue, const app::T
 long double util::strToLongDouble(const std::string& value, long double defValue, const app::TLocale& locale) {
 	long double retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtold_l(p, &q, locale());
+		retVal = strtold_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -49,10 +56,13 @@ long double util::strToLongDouble(const std::string& value, long double defValue
 float util::strToFloat(const std::string& value, float defValue, const app::TLocale& locale) {
 	float retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtof_l(p, &q, locale());
+		retVal = strtof_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -63,10 +73,13 @@ float util::strToFloat(const std::string& value, float defValue, const app::TLoc
 int32_t util::strToInt(const std::string& value, int32_t defValue, const app::TLocale& locale, int base) {
 	long int retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtol_l(p, &q, base, locale());
+		retVal = strtol_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q )
 			retVal = defValue;
 
@@ -81,10 +94,13 @@ int32_t util::strToInt(const std::string& value, int32_t defValue, const app::TL
 uint32_t util::strToUnsigned(const std::string& value, uint32_t defValue, const app::TLocale& locale, int base) {
 	unsigned long int retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoul_l(p, &q, base, locale());
+		retVal = strtoul_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -98,10 +114,13 @@ uint32_t util::strToUnsigned(const std::string& value, uint32_t defValue, const 
 int64_t util::strToInt64(const std::string& value, int64_t defValue, const app::TLocale& locale, int base) {
 	int64_t retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoll_l(p, &q, base, locale());
+		retVal = strtoll_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -112,10 +131,13 @@ int64_t util::strToInt64(const std::string& value, int64_t defValue, const app::
 uint64_t util::strToUnsigned64(const std::string& value, uint64_t defValue, const app::TLocale& locale, int base) {
 	uint64_t retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoull_l(p, &q, base, locale());
+		retVal = strtoull_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -126,10 +148,13 @@ uint64_t util::strToUnsigned64(const std::string& value, uint64_t defValue, cons
 double util::strToDouble(const std::wstring& value, double defValue, const app::TLocale& locale) {
 	double retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstod_l(p, &q, locale());
+		retVal = wcstod_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -140,10 +165,13 @@ double util::strToDouble(const std::wstring& value, double defValue, const app::
 long double util::strToLongDouble(const std::wstring& value, long double defValue, const app::TLocale& locale) {
 	long double retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstold_l(p, &q, locale());
+		retVal = wcstold_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -154,10 +182,13 @@ long double util::strToLongDouble(const std::wstring& value, long double defValu
 float util::strToFloat(const std::wstring& value, float defValue, const app::TLocale& locale) {
 	float retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstof_l(p, &q, locale());
+		retVal = wcstof_l(p, &q, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -168,10 +199,13 @@ float util::strToFloat(const std::wstring& value, float defValue, const app::TLo
 int32_t util::strToInt(const std::wstring& value, int32_t defValue, const app::TLocale& locale, int base) {
 	long int retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstol_l(p, &q, base, locale());
+		retVal = wcstol_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -186,10 +220,13 @@ int32_t util::strToInt(const std::wstring& value, int32_t defValue, const app::T
 uint32_t util::strToUnsigned(const std::wstring& value, uint32_t defValue, const app::TLocale& locale, int base) {
 	unsigned long int retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoul_l(p, &q, base, locale());
+		retVal = wcstoul_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -203,10 +240,13 @@ uint32_t util::strToUnsigned(const std::wstring& value, uint32_t defValue, const
 int64_t util::strToInt64(const std::wstring& value, int64_t defValue, const app::TLocale& locale, int base) {
 	int64_t retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoll_l(p, &q, base, locale());
+		retVal = wcstoll_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -217,10 +257,13 @@ int64_t util::strToInt64(const std::wstring& value, int64_t defValue, const app:
 uint64_t util::strToUnsigned64(const std::wstring& value, uint64_t defValue, const app::TLocale& locale, int base) {
 	uint64_t retVal = defValue;
 	if (!value.empty()) {
+		locale_t local = (locale_t)0;
+		app::TLocaleGuard<locale_t> guard(local, locale.getType());
+		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoull_l(p, &q, base, locale());
+		retVal = wcstoull_l(p, &q, base, local);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -235,6 +278,10 @@ size_t util::strToSize(const std::string& value, std::string& unit, size_t defVa
 		return (size_t)0;
 	}
 
+	locale_t local = (locale_t)0;
+	app::TLocaleGuard<locale_t> guard(local, locale.getType());
+	locale.duplicate(locale, local);
+
 	const char *const p = value.c_str();
 	size_t retVal;
 	char* q;
@@ -242,7 +289,7 @@ size_t util::strToSize(const std::string& value, std::string& unit, size_t defVa
 	errno = EXIT_SUCCESS;
 
 	// Convert digits to value
-	retVal = strtoul_l(p, &q, base, locale());
+	retVal = strtoul_l(p, &q, base, local);
 	if (EXIT_SUCCESS != errno || (p == q))
 		retVal = defValue;
 

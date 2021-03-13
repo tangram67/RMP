@@ -17,6 +17,7 @@
 #include "musictypes.h"
 #include "../config.h"
 #include "../inc/globals.h"
+#include "../inc/sysutils.h"
 #include "../inc/application.h"
 #include "../inc/htmlconsts.h"
 #include "../inc/audiotypes.h"
@@ -90,14 +91,14 @@ TPlayer::TPlayer() {
 	libraryThreadActive = false;
 #ifdef USE_APPLICATION_AS_OUTPUT
 	app::ansi.disable();
-	app::red.disable();
-	app::green.disable();
-	app::yellow.disable();
-	app::blue.disable();
-	app::magenta.disable();
-	app::cyan.disable();
-	app::white.disable();
-	app::reset.disable();
+//	app::red.disable();
+//	app::green.disable();
+//	app::yellow.disable();
+//	app::blue.disable();
+//	app::magenta.disable();
+//	app::cyan.disable();
+//	app::white.disable();
+//	app::reset.disable();
 #endif
 }
 
@@ -10886,6 +10887,7 @@ bool TPlayer::stopInetStream() {
 			clearInetStreamWithNolock();
 			radio.stream.terminate();
 			radio.terminated = true;
+			radio.streaming = false;
 			radio.next.clear();
 			ok = true;
 		}
@@ -11547,7 +11549,7 @@ void TPlayer::onStreamTimeout() {
 }
 
 void TPlayer::onStreamRefresh() {
-	// Update at leasr received bytes
+	// Update at least received bytes
 	updateRadioStreamInfo();
 }
 

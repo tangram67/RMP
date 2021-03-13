@@ -68,6 +68,7 @@ using PContextMenuItem = TContextMenuItem*;
 using TContextMenuItemList = std::vector<PContextMenuItem>;
 using PTileItem = TTileItem*;
 using TTileItemList = std::vector<PTileItem>;
+using TItemTagList = std::vector<size_t>;
 
 #else
 
@@ -79,6 +80,7 @@ typedef TContextMenuItem* PContextMenuItem;
 typedef std::vector<PContextMenuItem> TContextMenuItemList;
 typedef TTileItem* PTileItem;
 typedef std::vector<PTileItem> TTileItemList;
+typedef std::vector<size_t> TItemTagList;
 
 #endif
 

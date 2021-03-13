@@ -26,6 +26,7 @@ struct CHashIndex;
 using PIniFile = TIniFile*;
 using PIniValue = TIniValue*;
 using TIniValues = std::vector<app::PIniValue>;
+using TSectionValue = std::pair<std::string, size_t>;
 using TSectionMap = std::map<std::string, size_t>;
 using TSectionMapItem = std::pair<std::string, size_t>;
 using THashIndex = CHashIndex;
@@ -72,11 +73,13 @@ class TIniValue {
 private:
 	bool bEmpty;
 	bool bSection;
+	bool debug;
 
 	std::string line;
 	size_t index;
 	std::string value;
 	EEntryType type;
+	mutable size_t order;
 
 	util::THashString section;
 	util::THashString key;
@@ -104,11 +107,15 @@ public:
 	void setValue(const std::string& value);
 	void setIndex(size_t value) { index = value; }
 	size_t getIndex() const { return index; }
+	void setOrder(size_t value) const { if (std::string::npos == order) order = value; }
+	void forceOrder(size_t value) { order = value; }
+	size_t getOrder() const { return order; }
 	const std::string& getLine() const { return line; }
 	EEntryType getType() const { return type; }
 	void setType(EEntryType value) { type = value; }
 
-	TIniValue(const std::string& line, const size_t index, const PIniValue anchor);
+	TIniValue() = delete;
+	TIniValue(const std::string& line, const size_t index, const PIniValue anchor, const bool debug);
 	virtual ~TIniValue();
 };
 
@@ -118,17 +125,21 @@ private:
 	std::string fileName;
 	std::string filePath;
 	bool fileExists;
+	bool debug;
 
+	mutable size_t order;
 	TIniValues lines;
 	THashIndex section;
 	TSectionMap sections;
 
+	void prime();
 	void clear();
 	void readIniFile();
 	PIniValue addLineValue(std::string& line, const size_t index, const PIniValue anchor);
+	void setLineOrder(app::PIniValue value) const;
 	void addSectionMap(const PIniValue o);
 	void writeIniFile(const std::string fileName, bool compress);
-	size_t findKey(const std::string& key);
+	size_t findKey(const std::string& key) const;
 	size_t findSection(const std::string& section);
 	size_t createSection(const std::string& section);
 	std::string createLine(const std::string& Key, const std::string& value);
@@ -138,8 +149,42 @@ private:
 	void addEmptyLine();
 	size_t findInsertIndex();
 	void rebuildIndex(size_t pos);
-	std::string validPath(const std::string& path);
+	std::string validPath(const std::string& path) const;
 	std::string printf(const std::string &fmt, ...) const;
+
+	template<typename sort_t>
+	void sort(const std::string section, sort_t &&sorter) {
+		size_t idx = findSection(section);
+		// std::cout << "TIniFile::sort() Section = " << section << " Index = " << idx << std::endl;
+		if (std::string::npos != idx) {
+			util::hash_type hash = util::calcHash(section);
+			PIniValue o = nil;
+			size_t start = util::succ(idx);
+			size_t end = 0;
+
+			// Walk through lines to find items for given section hash
+			for (size_t i=idx; i<lines.size(); ++i) {
+				o = lines[i];
+				if (hash != o->getSectionHash()) {
+					end = util::pred(i);
+					break;
+				}
+			}
+			if (end == 0 && util::assigned(o)) {
+				if (hash == o->getSectionHash()) {
+					end = lines.size();
+				}
+			}
+
+			// Sort given lines for section
+			// std::cout << "TIniFile::sort() Start = " << start << " End = " << end << std::endl;
+			if (end > 0 && end > start) {
+				TIniValues::iterator from = lines.begin() + start;
+				TIniValues::iterator to = lines.begin() + end;
+				std::sort(from, to, sorter);
+			}
+		}
+	}
 
 public:
 	typedef TSectionMap::const_iterator const_iterator;
@@ -164,13 +209,14 @@ public:
 	static std::string writeBoolValueForType(const bool value, const EEntryType type);
 
 	// Ini value reader
-	int readInteger(const std::string& key, int defValue);
-	size_t readSize(const std::string& key, size_t defValue);
-	uint64_t readHex(const std::string& key, uint64_t defValue);
-	bool readBool(const std::string& key, bool defValue);
-	double readDouble(const std::string& key, double defValue);
-	std::string readString(const std::string& key, const std::string& defValue);
-	std::string readPath(const std::string& key, const std::string& defValue);
+	int readInteger(const std::string& key, int defValue) const;
+	size_t readSize(const std::string& key, size_t defValue) const;
+	uint64_t readHex(const std::string& key, uint64_t defValue) const;
+	bool readBool(const std::string& key, bool defValue) const;
+	double readDouble(const std::string& key, double defValue) const;
+	std::string readString(const std::string& key, const std::string& defValue) const;
+	std::string readPath(const std::string& key, const std::string& defValue) const;
+	bool readText(const std::string& key, std::string& value) const;
 
 	// Ini value writer
 	void writeInteger(const std::string& key, int value);
@@ -189,11 +235,18 @@ public:
 	const std::string& getFileName() const { return fileName; }
 
 	// Write ini file to disk
+	void sort();
+	void reorder();
+	void sort(const std::string section);
+	void reorder(const std::string section);
 	void flush(const bool compress = true);
 	void open(const std::string& fileName);
+	void close();
 	
 	// Console output of ini objects
 	void debugOutput();
+	bool getDebug() const { return debug; };
+	void setDebug(const bool value) { debug = value; };
 
 	TIniFile();
 	TIniFile(const std::string& fileName);

@@ -9,6 +9,7 @@
 #include <sys/eventfd.h>
 #include "exception.h"
 #include "fileutils.h"
+#include "sysutils.h"
 #include "random.h"
 #include "gcc.h"
 #include "ipc.h"

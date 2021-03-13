@@ -878,7 +878,7 @@ void TBitmapPainter::bezier2(TRGBData& image, int x0, int y0, int x1, int y1, in
 
 
 bool TBitmapPainter::validate(int x, int y, int sx, int sy) {
-	if (x < 0 || x > sx || y < 0 || y > sy)
+	if (x < 0 || x >= sx || y < 0 || y >= sy)
 		return false;
 	return true;
 }
@@ -1053,6 +1053,33 @@ TColor TColorPicker::circular(const double percent) {
 
 	return color;
 }
+
+
+// Create gauge gradient from "red" = 0.0% to "green" = 100.0%
+TColor TColorPicker::gauge(const double percent) {
+	double ratio = percent;
+	if (percent < 0.0)
+		ratio = 0.0;
+	if (percent > 100.0)
+		ratio = 100.0;
+
+	// Normalize ratio to fit into 2 regions sized of 256 units each
+	// --> 2.0 * 256.0 / 100.0 = 5.12
+	int n = floor(ratio * 5.12);
+
+	// Find the distance to the start of the closest region
+	int x = n % 256, r = n / 256;
+
+	TColor color = CL_WHITE;
+	switch (r) {
+		case 0: color.red = 255;     color.green = x;   color.blue = 0; break; // Red
+		case 1: color.red = 255 - x; color.green = 255; color.blue = 0; break; // Yellow to Green
+	}
+
+	return color;
+}
+
+
 
 // Create color gradient for physically correct color teperature based on normalized percent value
 TColor TColorPicker::temperature(const double percent, const double from, const double to, const std::string& name) {
@@ -3290,10 +3317,10 @@ size_t TBitmap::encode(char*& buffer, size_t& size, const TRGBData& data, const 
 	reverse(data, bitmap, width, height);
 
 	// Fill "magic" header bytes
-	size_t idx = 0;			*(WORD  *)(header + idx) = 'B' | 'M' << 8;							// bfType 'BM'
-	idx += sizeof(WORD);	*(DWORD *)(header + idx) = convertFromLittleEndian32((DWORD)size);	// bfSize
-	idx += sizeof(DWORD);	*(DWORD *)(header + idx) = 0;										// bfReserved1, bfReserved2
-	idx += sizeof(DWORD);	*(DWORD *)(header + idx) = convertFromLittleEndian32((DWORD)54);	// bfOffBits = 54
+	size_t idx = 0;       *(WORD  *)(header + idx) = 'B' | 'M' << 8;                         // bfType 'BM'
+	idx += sizeof(WORD);  *(DWORD *)(header + idx) = convertFromLittleEndian32((DWORD)size); // bfSize
+	idx += sizeof(DWORD); *(DWORD *)(header + idx) = 0;                                      // bfReserved1, bfReserved2
+	idx += sizeof(DWORD); *(DWORD *)(header + idx) = convertFromLittleEndian32((DWORD)54);   // bfOffBits = 54
 
 	// Fill BMP Header
 	info.biSize          = (DWORD)isize;

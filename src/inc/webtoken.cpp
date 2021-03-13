@@ -182,7 +182,14 @@ PWebToken TWebTokenList::addToken(std::string key) {
 	return token;
 }
 
-PWebToken TWebTokenList::getToken(std::string key) {
+bool TWebTokenList::hasToken(std::string key) const {
+	TWebTokenMap::const_iterator it = tokenMap.find(key);
+	if (it != tokenMap.end())
+		return true;
+	return false;
+}
+
+PWebToken TWebTokenList::getToken(std::string key) const {
 	PWebToken token = nil;
 	TWebTokenMap::const_iterator it = tokenMap.find(key);
 	if (it != tokenMap.end())

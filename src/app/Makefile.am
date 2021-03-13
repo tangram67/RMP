@@ -35,5 +35,7 @@ libapplication_a_SOURCES = \
 	upnpservices.h \
 	upnptypes.h
 
+#libapplication_a_CPPFLAGS = -I$(top_srcdir)/src
+#AM_CXXFLAGS = -std=c++0x -O3 -Wall -c -fmessage-length=0 -MMD -O3
 AM_CXXFLAGS = -std=c++0x
 
