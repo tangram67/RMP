@@ -1108,7 +1108,7 @@ void TPlayer::setupMainMenu() {
 	// Add main menu
 	mnMain.setID("navbar-main-menu");
 	mnMain.setName("NAVBAR_MAIN_MENU");
-	mnMain.setHint("Reference Media Player");
+	mnMain.setTooltip("Reference Media Player");
 	mnMain.setLogo("/images/logo36.png");
 	mnMain.setClick("onMainLogoClick();");
 	mnMain.setOwner(application.webserver());
@@ -1167,7 +1167,7 @@ void TPlayer::setupButtons() {
 
 	// Add repeat/shuffle mode buttons
 	btnRandom.setOwner(application.webserver());
-	btnRandom.setHint("Randomize playlist or album");
+	btnRandom.setTooltip("Randomize playlist or album");
 	btnRandom.setName("BTN_RANDOM_MODE");
 	btnRandom.setID("btnRandom");
 	btnRandom.setValue("RANDOM");
@@ -1179,7 +1179,7 @@ void TPlayer::setupButtons() {
 	btnRandom.update();
 
 	btnRepeat.setOwner(application.webserver());
-	btnRepeat.setHint("Repeat playlist or album");
+	btnRepeat.setTooltip("Repeat playlist or album");
 	btnRepeat.setName("BTN_REPAT_MODE");
 	btnRepeat.setID("btnRepeat");
 	btnRepeat.setValue("REPEAT");
@@ -1191,7 +1191,7 @@ void TPlayer::setupButtons() {
 	btnRepeat.update();
 
 	btnHalt.setOwner(application.webserver());
-	btnHalt.setHint("Stop after current song");
+	btnHalt.setTooltip("Stop after current song");
 	btnHalt.setName("BTN_HALT_MODE");
 	btnHalt.setID("btnHalt");
 	btnHalt.setValue("HALT");
@@ -1203,7 +1203,7 @@ void TPlayer::setupButtons() {
 	btnHalt.update();
 
 	btnDirect.setOwner(application.webserver());
-	btnDirect.setHint("Play song on row click...");
+	btnDirect.setTooltip("Play song on row click...");
 	btnDirect.setName("BTN_DIRECT_MODE");
 	btnDirect.setID("btnDirect");
 	btnDirect.setValue("DIRECT");
@@ -1215,7 +1215,7 @@ void TPlayer::setupButtons() {
 	btnDirect.update();
 
 	btnSingle.setOwner(application.webserver());
-	btnSingle.setHint("Repeat current song");
+	btnSingle.setTooltip("Repeat current song");
 	btnSingle.setName("BTN_SINGLE_MODE");
 	btnSingle.setID("btnSingle");
 	btnSingle.setValue("SINGLE");
@@ -1227,7 +1227,7 @@ void TPlayer::setupButtons() {
 	btnSingle.update();
 
 	btnDisk.setOwner(application.webserver());
-	btnDisk.setHint("Normal mode: Stop playback after last song of album" + STR_FEED + "Repeat mode: Repeat songs of current album only");
+	btnDisk.setTooltip("Normal mode: Stop playback after last song of album" + STR_FEED + "Repeat mode: Repeat songs of current album only");
 	btnDisk.setName("BTN_DISK_MODE");
 	btnDisk.setID("btnDisk");
 	btnDisk.setValue("DISK");
@@ -1239,7 +1239,7 @@ void TPlayer::setupButtons() {
 	btnDisk.update();
 
 	btnShuffle.setOwner(application.webserver());
-	btnShuffle.setHint("Play next random song");
+	btnShuffle.setTooltip("Play next random song");
 	btnShuffle.setName("BTN_SHUFFLE_SONG");
 	btnShuffle.setID("btnShuffle");
 	btnShuffle.setValue("RAND");
@@ -1252,7 +1252,7 @@ void TPlayer::setupButtons() {
 	btnShuffle.update();
 
 	btnSR44K.setOwner(application.webserver());
-	btnSR44K.setHint("Set word clock base rate to 44.1 kHz");
+	btnSR44K.setTooltip("Set word clock base rate to 44.1 kHz");
 	btnSR44K.setCaption("44.1 kHz");
 	btnSR44K.setName("BTN_REMOTE_SR44K");
 	btnSR44K.setID("btnSR44K");
@@ -1265,7 +1265,7 @@ void TPlayer::setupButtons() {
 	btnSR44K.update();
 
 	btnSR48K.setOwner(application.webserver());
-	btnSR48K.setHint("Set word clock base rate to 48.0 kHz");
+	btnSR48K.setTooltip("Set word clock base rate to 48.0 kHz");
 	btnSR48K.setCaption("48.0 kHz");
 	btnSR48K.setName("BTN_REMOTE_SR48K");
 	btnSR48K.setID("btnSR48K");
@@ -1278,7 +1278,7 @@ void TPlayer::setupButtons() {
 	btnSR48K.update();
 
 	btnInput0.setOwner(application.webserver());
-	btnInput0.setHint("Select USB input");
+	btnInput0.setTooltip("Select USB input");
 	btnInput0.setCaption("USB");
 	btnInput0.setName("BTN_INPUT_0");
 	btnInput0.setID("btnInput0");
@@ -1291,7 +1291,7 @@ void TPlayer::setupButtons() {
 	btnInput0.update();
 
 	btnInput1.setOwner(application.webserver());
-	btnInput1.setHint("Select AES1 input");
+	btnInput1.setTooltip("Select AES1 input");
 	btnInput1.setCaption("AES1");
 	btnInput1.setName("BTN_INPUT_1");
 	btnInput1.setID("btnInput1");
@@ -1304,7 +1304,7 @@ void TPlayer::setupButtons() {
 	btnInput1.update();
 
 	btnInput2.setOwner(application.webserver());
-	btnInput2.setHint("Select AES2 input");
+	btnInput2.setTooltip("Select AES2 input");
 	btnInput2.setCaption("AES2");
 	btnInput2.setName("BTN_INPUT_2");
 	btnInput2.setID("btnInput2");
@@ -1317,7 +1317,7 @@ void TPlayer::setupButtons() {
 	btnInput2.update();
 
 	btnInput3.setOwner(application.webserver());
-	btnInput3.setHint("Select SPDIF1 input");
+	btnInput3.setTooltip("Select SPDIF1 input");
 	btnInput3.setCaption("SPDIF1");
 	btnInput3.setName("BTN_INPUT_3");
 	btnInput3.setID("btnInput3");
@@ -1330,7 +1330,7 @@ void TPlayer::setupButtons() {
 	btnInput3.update();
 
 	btnInput4.setOwner(application.webserver());
-	btnInput4.setHint("Select SPDIF2 input");
+	btnInput4.setTooltip("Select SPDIF2 input");
 	btnInput4.setCaption("SPDIF2");
 	btnInput4.setName("BTN_INPUT_4");
 	btnInput4.setID("btnInput4");
@@ -1343,7 +1343,7 @@ void TPlayer::setupButtons() {
 	btnInput4.update();
 
 	btnFilter0.setOwner(application.webserver());
-	btnFilter0.setHint("Filter 1");
+	btnFilter0.setTooltip("Filter 1");
 	btnFilter0.setCaption("Linear phase");
 	btnFilter0.setName("BTN_FILTER_0");
 	btnFilter0.setID("btnFilter0");
@@ -1356,7 +1356,7 @@ void TPlayer::setupButtons() {
 	btnFilter0.update();
 
 	btnFilter1.setOwner(application.webserver());
-	btnFilter1.setHint("Filter 2");
+	btnFilter1.setTooltip("Filter 2");
 	btnFilter1.setCaption("Filter 2");
 	btnFilter1.setName("BTN_FILTER_1");
 	btnFilter1.setID("btnFilter1");
@@ -1369,7 +1369,7 @@ void TPlayer::setupButtons() {
 	btnFilter1.update();
 
 	btnFilter2.setOwner(application.webserver());
-	btnFilter2.setHint("Filter 3");
+	btnFilter2.setTooltip("Filter 3");
 	btnFilter2.setCaption("Filter 3");
 	btnFilter2.setName("BTN_FILTER_2");
 	btnFilter2.setID("btnFilter2");
@@ -1382,7 +1382,7 @@ void TPlayer::setupButtons() {
 	btnFilter2.update();
 
 	btnFilter3.setOwner(application.webserver());
-	btnFilter3.setHint("Filter 4");
+	btnFilter3.setTooltip("Filter 4");
 	btnFilter3.setCaption("Apodizing");
 	btnFilter3.setName("BTN_FILTER_3");
 	btnFilter3.setID("btnFilter3");
@@ -1395,7 +1395,7 @@ void TPlayer::setupButtons() {
 	btnFilter3.update();
 
 	btnFilter4.setOwner(application.webserver());
-	btnFilter4.setHint("Filter 5");
+	btnFilter4.setTooltip("Filter 5");
 	btnFilter4.setCaption("Filter 5");
 	btnFilter4.setName("BTN_FILTER_4");
 	btnFilter4.setID("btnFilter4");
@@ -1408,7 +1408,7 @@ void TPlayer::setupButtons() {
 	btnFilter4.update();
 
 	btnFilter5.setOwner(application.webserver());
-	btnFilter5.setHint("Filter 6");
+	btnFilter5.setTooltip("Filter 6");
 	btnFilter5.setCaption("Filter 6");
 	btnFilter5.setName("BTN_FILTER_5");
 	btnFilter5.setID("btnFilter5");
@@ -1421,7 +1421,7 @@ void TPlayer::setupButtons() {
 	btnFilter5.update();
 
 	btnPhase0.setOwner(application.webserver());
-	btnPhase0.setHint("Phase 0" + STR_DEGREE);
+	btnPhase0.setTooltip("Phase 0" + STR_DEGREE);
 	btnPhase0.setCaption("Phase 0" + STR_DEGREE);
 	btnPhase0.setName("BTN_PHASE_0");
 	btnPhase0.setID("btnPhase0");
@@ -1434,7 +1434,7 @@ void TPlayer::setupButtons() {
 	btnPhase0.update();
 
 	btnPhase1.setOwner(application.webserver());
-	btnPhase1.setHint("Phase 180" + STR_DEGREE);
+	btnPhase1.setTooltip("Phase 180" + STR_DEGREE);
 	btnPhase1.setCaption("Phase 180" + STR_DEGREE);
 	btnPhase1.setName("BTN_PHASE_1");
 	btnPhase1.setID("btnPhase1");

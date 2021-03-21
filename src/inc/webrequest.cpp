@@ -432,7 +432,8 @@ PWebSession TWebRequest::findSession(struct MHD_Connection *connection) {
 			if (util::assigned(o)) {
 				// Check if session idle and not used since given time
 				// --> Also check for same client IP to prevent idle sessions assigned to a different client
-				if (!o->busy() && o->refC <= 0 /*&& o->useC < 2*/ && addr == o->client && o->timestamp < ts) {
+				// if (!o->busy() && o->refC <= 0 /*&& o->useC < 2*/ && addr == o->client && o->timestamp < ts) {
+				if (!o->busy() && o->refC <= 0 && o->useC < 2 && o->timestamp < ts) {
 					o->reset();
 					session = o;
 					break;
@@ -519,10 +520,11 @@ std::string TWebRequest::getConnectionValue(const std::string key) const {
 }
 
 
-void TWebRequest::readUriArguments(struct MHD_Connection *connection) {
+size_t TWebRequest::readUriArguments(struct MHD_Connection *connection) {
 	if (params.empty()) {
 		MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, uriArgumentReaderDispatcher, this); // @suppress("Invalid arguments")
 	}
+	return params.size();
 }
 
 

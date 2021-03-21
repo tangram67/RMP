@@ -135,6 +135,10 @@ TWebServer::TWebServer(const std::string& name, const std::string& documentRoot,
 	executer.setExecHandler(&app::TWebServer::actionAsyncExecuter, this);
 	executer.setName("Executer-" + getName());
 	defaultToken = new app::TWebToken("default");
+	wtAppDescription = nil;
+	wtAppJumbotron = nil;
+	wtAppBanner = nil;
+	wtSysLanguage = nil;
 	tokenList.setFiles(content);
 	mode = ESM_CREATED;
 	port = 0;
@@ -750,15 +754,18 @@ void TWebServer::onHeartbeatTimer() {
 
 
 void TWebServer::addWebToken() {
+
 	// Add default web variables
 	addWebToken("APP_VER",  application.getVersion());
-	addWebToken("APP_DESC", application.getDescription());
-	addWebToken("APP_NAME", application.getJumbotron());
-	addWebToken("APP_HINT", application.getBanner());
 	addWebToken("APP_LOGO", application.getLogo());
 
+	// Add application description text
+	wtAppDescription = addWebToken("APP_DESC", application.getDescription());
+	wtAppJumbotron = addWebToken("APP_NAME", application.getJumbotron());
+	wtAppBanner = addWebToken("APP_HINT", application.getBanner());
+
 	// Add system tokens
-	addWebToken("SYS_LANGUAGE_NAME", syslocale.asISO639());
+	wtSysLanguage = addWebToken("SYS_LANGUAGE_NAME", syslocale.asISO639());
 	addWebToken("SYS_HOST_NAME", application.getHostName());
 	addWebToken("SYS_SCREEN_ORIENTATION", web.usePortraitMode ? "portrait" : "any");
 
@@ -793,9 +800,17 @@ void TWebServer::addWebToken() {
 	data.init = util::assigned(data.wtUserCount);
 }
 
+void TWebServer::updateLanguageText() {
+	if (util::assigned(wtAppDescription)) {
+		wtAppDescription->setValue(application.getDescription(), true);
+		wtAppJumbotron->setValue(application.getJumbotron(), true);
+		wtAppBanner->setValue(application.getBanner(), true);
+		wtSysLanguage->setValue(syslocale.asISO639(), true);
+	}
+}
+
 void TWebServer::updateWebToken() {
 	if (data.init) {
-
 		// Set static web token values
 		*data.wtWebRefreshTimer = web.refreshTimer;
 		*data.wtDisplayRefreshTimer = web.refreshTimer;
@@ -1459,7 +1474,7 @@ void TWebServer::readConfig() {
 	web.disableVfsGZip = config->readBool("DisableVfsGZip", web.disableVfsGZip);
 	web.vfsDataDeleteDelay = config->readInteger("VfsDataDeleteDelay", web.vfsDataDeleteDelay);
 	web.indexPages = config->readString("IndexPage", INDEX_PAGE);
-	web.parserList = config->readString("AllowedParserFiles", "bootstrap-table-na-DB.min.js;bootstrap-table-na-DB.js");
+	web.parserList = config->readString("AllowedParserFiles", PARSER_FILES);
 	web.certFile = config->readString("CertFile", web.certFile); // Default value is "builtin"
 	web.keyFile = config->readString("KeyFile", web.keyFile); // Default value is "builtin"
 	web.dhFile = config->readString("DiffieHellmanFile", web.dhFile); // Default value is "builtin"

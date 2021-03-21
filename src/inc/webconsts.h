@@ -36,6 +36,17 @@ STATIC_CONST char GREETER_URL[] = "/login.html";
 STATIC_CONST char DEFAULT_WEB_ACTION[] = "DEFAULT_WEB_ACTION";
 STATIC_CONST char ALLOWED_LIST[] = "0.0.0.0;127.0.0.1;::1;fd66:1967:0:1;192.168.200;192.168.201";
 STATIC_CONST char AJAX_RESPONSE_FILE[] = "/ajax/response.html";
+STATIC_CONST char PARSER_FILES[] = \
+		"bootstrap-table-na-DB.min.js;bootstrap-table-na-DB.js;" \
+		"credentialmanager.min.js;credentialmanager.js;" \
+		"credentialdialog.min.js;credentialdialog.js;" \
+		"alertdialogs.min.js;alertdialogs.js;" \
+		"credentials.min.js;credentials.js;" \
+		"statistics.min.js;statistics.js;" \
+		"mainmenu.min.js;mainmenu.js;" \
+		"network.min.js;network.js;" \
+		"sysconf.min.js;sysconf.js;" \
+		"appconf.min.js;appconf.js";
 
 STATIC_CONST char URI_CLIENT_ADDRESS[] = "_URI_CLIENT_ADDRESS_";
 STATIC_CONST char URI_MIME_TYPE[] = "_URI_MIME_TYPE_";

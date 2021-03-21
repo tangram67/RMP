@@ -86,6 +86,23 @@ void TTagList::add(const std::string& text, const std::string& glyphicon, size_t
 	tags.push_back(tag);
 }
 
+void TTagList::loadFromFile(const std::string& fileName) {
+	clear();
+	if (util::fileExists(fileName)) {
+		size_t tag = 0;
+		std::string line;
+		std::ifstream is;
+		util::TStreamGuard<std::ifstream> strm(is);
+		strm.open(fileName, std::ios_base::in);
+		while (is.good()) {
+			std::getline(is, line);
+			if (!line.empty()) {
+				add(line, tag++);
+			}
+		}
+	}
+}
+
 void TTagList::clear() {
 	THtmlList::clear();
 	icons.clear();
@@ -227,11 +244,13 @@ TComponent::TComponent() : app::TObject(), TPersistent() {
 	token = nil;
 	nls = nil;
 	width = 0;
+	height = 0;
 	style = ECS_DEFAULT;
 	align = ECA_NONE;
 	size = ESZ_DEFAULT;
 	type = ECT_DEFAULT;
 	focus = ELF_NONE;
+	tooltipID = 0;
 	compare = util::EC_COMPARE_PARTIAL;
 }
 
@@ -331,6 +350,12 @@ void TComponent::setWidth(const size_t value) {
 	width = value;
 };
 
+void TComponent::setHeight(const size_t value) {
+	if (height != value)
+		invalidate();
+	height = value;
+};
+
 void TComponent::setFocus(const EListFocus value) {
 	if (focus != value)
 		invalidate();
@@ -349,11 +374,20 @@ void TComponent::setGlyphicon(const std::string& name) {
 	glyphicon = name;
 };
 
-void TComponent::setHint(const std::string& tooltip) {
-	if (hint != tooltip)
+void TComponent::setTooltip(const size_t tooltipID, const std::string& tooltip) {
+	if (this->tooltip != tooltip)
 		invalidate();
-	hint = tooltip;
+	this->tooltipID = tooltipID;
+	this->tooltip = tooltip;
+}
+
+void TComponent::setTooltip(const std::string& tooltip) {
+	setTooltip(0, tooltip);
 };
+
+std::string TComponent::getTooltip() const {
+	return translate(tooltipID, tooltip);
+}
 
 void TComponent::setClick(const std::string& action) {
 	if (!action.empty()) {
@@ -627,7 +661,11 @@ const std::string& TListBox::html(const std::string& caption) const {
 		strHTML += "      <span class=\"caret\" style=\"pointer-events:none\" aria-hidden=\"true\"></span>\n";
 		strHTML += "    </a>\n";
 
-		strHTML += "    <ul id=\"ul-select\" class=\"dropdown-menu\">\n";
+		if (getHeight() > 0) {
+			strHTML += "    <ul id=\"ul-select\" class=\"dropdown-menu\" style=\"max-height:" + std::to_string(getHeight()) + "px; overflow:auto;\">\n";
+		} else {
+			strHTML += "    <ul id=\"ul-select\" class=\"dropdown-menu\">\n";
+		}
 		strHTML += "    " + text(caption) + "\n";
 		strHTML += "    </ul>\n";
 
@@ -763,11 +801,11 @@ const std::string& TButton::html() const {
 		if (width > 0) {
 			strHTML = "<button " + tagToStr("id", getID()) + tagToStr("name", getName()) + tagToStr("disabled", disbledToStr()) + \
 								   tagToStr("value", getValue()) + tagToStr("addClick", clickToStr()) + tagToStr("onclick", getClick()) + \
-								   tagToStr("data-toggle", "tooltip") + tagToStr("data-placement", "top") + tagToStr("title", getHint()) + tagToStr("class", getClass()) + " style=\"width: " + std::to_string((size_u)width) + "px !important;\">\n";
+								   tagToStr("data-toggle", "tooltip") + tagToStr("data-placement", "top") + tagToStr("title", getTooltip()) + tagToStr("class", getClass()) + " style=\"width: " + std::to_string((size_u)width) + "px !important;\">\n";
 		} else {
 			strHTML = "<button " + tagToStr("id", getID()) + tagToStr("name", getName()) + tagToStr("disabled", disbledToStr()) + \
 								   tagToStr("value", getValue()) + tagToStr("addClick", clickToStr()) + tagToStr("onclick", getClick()) + \
-								   tagToStr("data-toggle", "tooltip") + tagToStr("data-placement", "top") + tagToStr("title", getHint()) + tagToStr("class", getClass()) + ">\n";
+								   tagToStr("data-toggle", "tooltip") + tagToStr("data-placement", "top") + tagToStr("title", getTooltip()) + tagToStr("class", getClass()) + ">\n";
 		}
 		if (!text().empty())
 			strHTML += text();
@@ -1400,12 +1438,13 @@ const std::string& TMainMenu::text() const {
 		items.add("    <span class=\"icon-bar\"></span>");
 		items.add("    <span class=\"icon-bar\"></span>");
 		items.add("  </button>");
-		if (hint.empty()) {
+		if (tooltip.empty()) {
 			if (onclick.empty())
 				items.add("  <a class=\"navbar-brand\" href=\"#\"><img alt=\"&copy; db Application\" src=\"" + logo + "\"></a>");
 			else
 				items.add("  <a class=\"navbar-brand\"><img alt=\"&copy; db Application\" src=\"" + logo + "\" onclick=\"" + onclick + "\"></a>");
 		} else {
+			std::string hint = translate(tooltipID, tooltip);
 			if (onclick.empty())
 				items.add("  <a class=\"navbar-brand\" href=\"#\"><img alt=\"&copy; db Application\" src=\"" + logo + "\" title=\"" + hint + "\"></a>");
 			else

@@ -203,6 +203,7 @@ public:
 	bool hasPostProcessor() const { return util::assigned(postProcessor); };
 	bool hasURIArguments() const { return !params.empty(); };
 	bool hasModifiedIfHeader() const;
+
 	bool isZipAllowed() const;
 	bool isMultipartMessage() const;
 	bool isXMLHttpRequest() const;
@@ -249,7 +250,7 @@ public:
 	MHD_Result sendResponseFromDirectory(struct MHD_Connection *connection, EHttpMethod method, const bool useCaching,
 			const app::TWebDirectory& directory, const util::TFile& file, int64_t& send, int& error);
 
-	void readUriArguments(struct MHD_Connection *connection);
+	size_t readUriArguments(struct MHD_Connection *connection);
 	void readConnectionValues(struct MHD_Connection *connection);
 	std::string getHeaderValue(struct MHD_Connection *connection, enum MHD_ValueKind kind, const std::string& key) const;
 	std::string getHeaderValue(struct MHD_Connection *connection, enum MHD_ValueKind kind, const char* key) const;

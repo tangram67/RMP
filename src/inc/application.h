@@ -107,6 +107,9 @@ private:
 	uid_t uid;
 	pid_t tid;
 	pid_t pid;
+	FILE* fsin;
+	FILE* fsout;
+	FILE* fserr;
 	pthread_t signalThd;
 	pthread_t watchThd;
 	pthread_t udevThd;
@@ -141,6 +144,12 @@ private:
 	std::string isolatedCPU;
 	int niceLevel;
 	int error;
+
+	// Local text store
+	mutable std::string appDisplayName;
+	mutable std::string appBanner;
+	mutable std::string appDescription;
+	mutable std::string appJumbotron;
 
 #ifdef USE_KEYLOK_DONGLE
 	app::TKeyLok keylok;
@@ -207,6 +216,8 @@ private:
 			std::string& groupNames, std::string& capabilityNames, bool& userChanged);
 	void parseCommandLine(int argc, char *argv[]);
 	sql::EDatabaseType parseDefaultDatabaseType(const std::string& description) const;
+	const std::string& getSystemTimeZoneWithNolock() const;
+	std::string getSystemTimeZoneNameWithNolock() const;
 
 	void installSignalHandlers();
 	void installSignalHandler(int signal, TAppSignalHandler handler, struct sigaction * action, sigset_t * mask);
@@ -243,13 +254,14 @@ private:
 
 	// Overwrite "TBaseApplication::execute() = 0"
 	int execute() { return EXIT_SUCCESS; };
-	void update(const EUpdateReason reason);
 	void unprepare();
 	void release();
 	void suicide();
 	void stop();
 	void halt();
 	void inhibit();
+	void updateLanguageText();
+	void update(const EUpdateReason reason);
 
 	void setTerminated();
 	bool getAndSetTerminated();
@@ -739,6 +751,7 @@ public:
 	bool useGPIO() const;
 	bool useSockets() const;
 	bool useConsole() const { return inputModeSet; };
+	bool useTranslator() const;
 
 	bool hasWebServer() const;
 	bool hasThreads() const;
@@ -792,6 +805,10 @@ public:
 	bool setSystemTime(const util::TTimePart seconds, const util::TTimePart millis = 0);
 	bool setSystemLocale(const ELocale locale);
 	ELocale getSystemLocale();
+
+	bool setSystemTimeZone(const std::string zone);
+	const std::string& getSystemTimeZone() const;
+	std::string getSystemTimeZoneName() const;
 
 	void commitApplicationSettings();
 	bool backupConfigurationFiles();

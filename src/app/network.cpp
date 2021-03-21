@@ -173,7 +173,7 @@ void TNetworkShares::setupListBoxes() {
 void TNetworkShares::setupButtons() {
 
 	btnMount.setOwner(sysdat.obj.webServer);
-	btnMount.setHint("Click to mount remote filesystem");
+	btnMount.setTooltip("Click to mount remote filesystem");
 	btnMount.setGlyphicon("glyphicon-ok");
 	btnMount.setName("BTN_MOUNT");
 	btnMount.setID("btnMountPoint");
@@ -185,7 +185,7 @@ void TNetworkShares::setupButtons() {
 	btnMount.update();
 
 	btnUnmount.setOwner(sysdat.obj.webServer);
-	btnUnmount.setHint("Click to unmount remote filesystem");
+	btnUnmount.setTooltip("Click to unmount remote filesystem");
 	btnUnmount.setGlyphicon("glyphicon-remove");
 	btnUnmount.setName("BTN_UNMOUNT");
 	btnUnmount.setID("btnUnmountPoint");

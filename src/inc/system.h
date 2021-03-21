@@ -77,6 +77,7 @@ struct CApplicationConfig {
 	std::string defaultDatabaseName;
 	std::string defaultDatabaseType;
 	app::ELocale locale;
+	std::string timezone;
 	std::string mimeFile;
 	util::TTimePart heapDelay;
 	bool useTerminalInput;
@@ -112,6 +113,7 @@ struct CApplicationConfig {
 		logFolder.clear();
 		language = "de_DE.UTF-8";
 		locale = app::ELocale::sysloc;
+		timezone = "+01:00 Europe/Berlin (CET)";
 		mimeFile = "/etc/mime.types";
 		dataFolder = DATA_BASE_FOLDER;
 		runOnce = true;

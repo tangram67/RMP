@@ -70,6 +70,7 @@ public:
 	void add(const std::string& text, size_t tag = 0);
 	void add(const util::TStringList& items);
 	void add(const std::string& text, const std::string& glyphicon, size_t tag = 0);
+	void loadFromFile(const std::string& fileName);
 	void clear();
 
 	TTagList& operator = (const app::TStringVector& vector);
@@ -80,6 +81,7 @@ public:
 	TTagList(const std::string& tag);
 	virtual ~TTagList();
 };
+
 
 class TRadioButtons : public THtmlList {
 public:
@@ -112,9 +114,11 @@ protected:
 	EComponentType type;
 	EListFocus focus;
 	size_t width;
+	size_t height;
 	std::string glyphicon;
 	std::string onclick;
-	std::string hint;
+	std::string tooltip;
+	size_t tooltipID;
 	bool invalidated;
 	bool enabled;
 
@@ -155,6 +159,8 @@ public:
 	void setType(const EComponentType value);
 	size_t getWidth() const { return width; };
 	void setWidth(const size_t value);
+	size_t getHeight() const { return height; };
+	void setHeight(const size_t value);
 	EComponentType getType() const { return type; };
 	void setFocus(const EListFocus value);
 	EListFocus getFocus() const { return focus; };
@@ -162,12 +168,16 @@ public:
 	util::ECompareType getCompare() const { return compare; };
 	void setGlyphicon(const std::string& name);
 	const std::string& getGlyphicon() const { return glyphicon; };
-	void setHint(const std::string& tooltip);
-	const std::string& getHint() const { return hint; };
 	void setClick(const std::string& action);
 	const std::string& getClick() const { return onclick; };
+
+	void setTooltip(const std::string& tooltip);
+	void setTooltip(const size_t tooltipID, const std::string& tooltip);
+	std::string getTooltip() const;
+
 	void setEnabled(const bool value);
 	bool isEnabled() const { return enabled; };
+
 	void setTranslator(app::TTranslator& nls);
 	bool hasTranslator() const { return util::assigned(nls); };
 	bool isInvalidated() const { return invalidated; };
@@ -187,6 +197,7 @@ public:
 	TComponent();
 	virtual ~TComponent();
 };
+
 
 class TComboBox : public TComponent {
 private:

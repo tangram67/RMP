@@ -102,6 +102,10 @@ private:
 	PTimer bufferTimer;
 	PTimer statsTimer;
 	PWebToken defaultToken;
+	PWebToken wtAppDescription;
+	PWebToken wtAppJumbotron;
+	PWebToken wtAppBanner;
+	PWebToken wtSysLanguage;
 	TCredentialCallback credentialCallbackMethod;
 	TWebSocketDataHandlerList webSocketCientDataList;
 	TWebSocketVariantHandlerList webSocketCientVariantList;
@@ -371,6 +375,7 @@ public:
 
 	bool hasTranslator() const;
 	void setTranslator(app::TTranslator& nls);
+	void updateLanguageText();
 
 	bool isSecure() const { return web.useHttps; };
 	unsigned int getPort() const { return port; };

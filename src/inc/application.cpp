@@ -420,6 +420,9 @@ TApplication::TApplication() : TThreadAffinity(), args(false) {
 	tid = TThreadUtil::gettid();
 	pid = getpid();
 	uid = -1;
+	fsin = nil;
+	fsout = nil;
+	fserr = nil;
 	assignedCPU = app::nsizet;
 	signalThd = 0;
 	watchThd = 0;
@@ -492,6 +495,15 @@ TApplication::~TApplication() {
 }
 
 void TApplication::cleanup() {
+	if (util::assigned(fsin))
+		fclose(fsin);
+	if (util::assigned(fsout))
+		fclose(fsout);
+	if (util::assigned(fserr))
+		fclose(fserr);
+	fsin = nil;
+	fsout = nil;
+	fserr = nil;
 	deletePidFile();
 }
 
@@ -589,6 +601,12 @@ bool TApplication::hasTerminal() const {
 bool TApplication::hasTranslator() const {
 	return util::assigned(sysdat.obj.nls);
 }
+bool TApplication::useTranslator() const {
+	if (hasTranslator()) {
+		return getTranslator().isEnabled();
+	}
+	return false;
+}
 
 
 inet::TSocketController& TApplication::getSockets() const {
@@ -677,17 +695,11 @@ const std::string& TApplication::getFileName() const {
 const std::string& TApplication::getFileBaseName() const {
 	return sysdat.app.appBaseName;
 }
-const std::string& TApplication::getDisplayName() const {
-	return sysdat.app.appDisplayName;
-}
 const std::string& TApplication::getUserName() const {
 	return sysdat.app.userName;
 }
 const std::string& TApplication::getVersion() const {
 	return sysdat.app.appVersion;
-}
-const std::string& TApplication::getBanner() const {
-	return sysdat.app.appBanner;
 }
 const std::string& TApplication::getLogo() const {
 	return sysdat.app.appLogo;
@@ -705,8 +717,30 @@ void TApplication::setHostName(const std::string& hostName) {
 	}
 }
 
+const std::string& TApplication::getDisplayName() const {
+	if (useTranslator()) {
+		if (appDisplayName.empty())
+			appDisplayName = getTranslator().text(10, sysdat.app.appDisplayName);
+		return appDisplayName;
+	}
+	return sysdat.app.appDisplayName;
+}
+const std::string& TApplication::getBanner() const {
+	if (useTranslator()) {
+		if (appBanner.empty())
+			appBanner = getTranslator().text(11, sysdat.app.appBanner);
+		return appBanner;
+	}
+	return sysdat.app.appBanner;
+}
+
 const std::string& TApplication::getDescription() const {
 	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (useTranslator()) {
+		if (appDescription.empty())
+			appDescription = getTranslator().text(12, sysdat.app.appDescription);
+		return appDescription;
+	}
 	return sysdat.app.appDescription;
 }
 void TApplication::setDescription(const std::string& description) {
@@ -719,6 +753,11 @@ void TApplication::setDescription(const std::string& description) {
 
 const std::string& TApplication::getJumbotron() const {
 	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (useTranslator()) {
+		if (appJumbotron.empty())
+			appJumbotron = getTranslator().text(13, sysdat.app.appJumbotron);
+		return appJumbotron;
+	}
 	return sysdat.app.appJumbotron;
 }
 void TApplication::setJumbotron(const std::string& description) {
@@ -1327,6 +1366,11 @@ void TApplication::initialize(int argc, char *argv[], TTranslator& nls) {
 		std::cout << "Locale information   " << syslocale.getInfo() << std::endl;
 		std::cout << "Location information " << syslocale.getLocation() << std::endl;
 
+		// Get timezone information
+		sysdat.app.timezone = config->readString("Timezone", sysdat.app.timezone);
+		config->writeString("Timezone", sysdat.app.timezone);
+		std::cout << "Timezone information [" << getSystemTimeZoneNameWithNolock() << "] " << getSystemTimeZoneWithNolock() << std::endl;
+
 		// Set translation settings for given locale
 		sysdat.app.useMulitLanguageSupport = config->readBool("UseMultiLanguageSupport", sysdat.app.useMulitLanguageSupport);
 		config->writeBool("UseMultiLanguageSupport", sysdat.app.useMulitLanguageSupport, INI_BLYES);
@@ -1336,6 +1380,9 @@ void TApplication::initialize(int argc, char *argv[], TTranslator& nls) {
 		nls.setPath(sysdat.app.configFolder);
 		nls.setLanguage(syslocale.getLocale());
 		sysdat.obj.nls = &nls;
+
+		// Translate application description text objects
+		updateLanguageText();
 
 		// Read log folder from configuration
 		sysdat.app.logFolder = LOG_BASE_FOLDER + sysdat.app.appDisplayName + "/";
@@ -1818,6 +1865,18 @@ void TApplication::initialize(int argc, char *argv[], TTranslator& nls) {
 	}
 }
 
+void TApplication::updateLanguageText() {
+	if (useTranslator()) {
+		TTranslator& nls = getTranslator();
+		appDisplayName = nls.text(10, sysdat.app.appDisplayName);
+		appBanner      = nls.text(11, sysdat.app.appBanner);
+		appDescription = nls.text(12, sysdat.app.appDescription);
+		appJumbotron   = nls.text(13, sysdat.app.appJumbotron);
+		if (hasWebServer()) {
+			getWebServer().updateLanguageText();
+		}
+	}
+}
 
 sql::EDatabaseType TApplication::parseDefaultDatabaseType(const std::string& description) const {
 	// MSSQL, SQLITE, PGSQL, ...
@@ -2167,8 +2226,14 @@ int TApplication::execute(TModule& module) {
 }
 
 void TApplication::update(const EUpdateReason reason) {
-	// Execute system update callback actions
 	app::TLockGuard<app::TMutex> lock(updateMtx);
+
+	// Execute system update actions
+	if (ER_LANGUAGE == reason) {
+		updateLanguageText();
+	}
+
+	// Execute application module update callback actions
 	if (!prepared.empty()) {
 		for (ssize_t i = util::pred(prepared.size()); i >= 0; --i) {
 			TModule* module = prepared[i];
@@ -2451,6 +2516,9 @@ bool TApplication::setSystemTime(const util::TTimePart seconds, const util::TTim
 
 bool TApplication::setSystemLocale(const ELocale locale) {
 	bool ok = false;
+	bool bChanged = false;
+	std::string sChanged;
+	app::ELocale eChanged = app::ELocale::nloc;
 	{
 		app::TLockGuard<app::TMutex> lock(systemMtx);
 		TLanguage language;
@@ -2458,8 +2526,9 @@ bool TApplication::setSystemLocale(const ELocale locale) {
 			if (locale != syslocale.getLocale()) {
 				if (syslocale.set(locale)) {
 					syslocale.use();
-					sysdat.app.language = syslocale.getSystemLocale();
-					sysdat.app.locale = locale;
+					sChanged = syslocale.getSystemLocale();
+					eChanged = locale;
+					bChanged = true;
 					if (!isDaemonized()) {
 						std::cout << "System locale        [" << syslocale.getSystemLocale() << "]" << std::endl;
 						std::cout << "Locale information   " << syslocale.getInfo() << std::endl;
@@ -2470,23 +2539,79 @@ bool TApplication::setSystemLocale(const ELocale locale) {
 					}
 					++changes;
 					application.writeLog("[Application] Setting system locale to \"" + std::string(language.language) + "\" for country \"" + std::string(language.country) + "\" [" + sysdat.app.language + "]");
+				} else {
+					logger(app::ELogBase::LOG_APP, "[Application] [Error] Setting system locale (%) failed $", (int)locale, sysutil::getSysErrorMessage(errno));
 				}
-				ok = true;
-			} else {
-				logger(app::ELogBase::LOG_APP, "[Application] [Error] Setting system locale (%) failed $", (int)locale, sysutil::getSysErrorMessage(errno));
 			}
+			ok = true;
 		} else {
 			logger(app::ELogBase::LOG_APP, "[Application] [Error] Invalid or unknown locale (%)", (int)locale);
 		}
 	}
-	if (ok) {
+	if (bChanged) {
 		update(ER_LANGUAGE);
+		if (app::ELocale::nloc != eChanged) {
+			app::TLockGuard<app::TMutex> lock(configMtx);
+			sysdat.app.language = sChanged;
+			sysdat.app.locale = eChanged;
+		}
 	}
 	return ok;
 }
 
 ELocale TApplication::getSystemLocale() {
 	return sysdat.app.locale;
+}
+
+
+bool TApplication::setSystemTimeZone(const std::string zone) {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	if (std::string::npos != zone.find_first_of('/')) {
+		++changes;
+		sysdat.app.timezone = zone;
+		logger(app::ELogBase::LOG_APP, "[Application] Set system timezone % [%]", getSystemTimeZoneWithNolock(), getSystemTimeZoneNameWithNolock());
+		return true;
+	}
+	return false;
+}
+
+const std::string& TApplication::getSystemTimeZone() const {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return getSystemTimeZoneWithNolock();
+}
+
+const std::string& TApplication::getSystemTimeZoneWithNolock() const {
+	return sysdat.app.timezone;
+}
+
+std::string TApplication::getSystemTimeZoneName() const {
+	app::TLockGuard<app::TMutex> lock(configMtx);
+	return getSystemTimeZoneNameWithNolock();
+}
+
+std::string TApplication::getSystemTimeZoneNameWithNolock() const {
+	std::string name;
+	if (!sysdat.app.timezone.empty()) {
+		size_t p1 = sysdat.app.timezone.find_first_of(' ');
+		size_t p2 = sysdat.app.timezone.find_last_of('(');
+		if (std::string::npos != p1) {
+			if (std::string::npos != p2) {
+				if (p2 > (p1+2))
+					name = sysdat.app.timezone.substr(p1+1, p2-p1-2);
+			} else {
+				name = sysdat.app.timezone.substr(p1+1);
+			}
+		} else {
+			// Time offset missing, name starts at offset p1 = 0
+			if (std::string::npos != p2) {
+				if (p2 > 2)
+					name = sysdat.app.timezone.substr(0, p2-2);
+			} else {
+				name = sysdat.app.timezone;
+			}
+		}
+	}
+	return name;
 }
 
 
@@ -2499,6 +2624,7 @@ void TApplication::flushApplicationSettings() {
 	config->writeString("Description", sysdat.app.appDescription);
 	config->writeString("Jumbotron", sysdat.app.appJumbotron);
 	config->writeString("Locale", sysdat.app.language);
+	config->writeString("Timezone", sysdat.app.timezone);
 
 	config->flush();
 	changes = 0;
@@ -2530,9 +2656,21 @@ bool TApplication::backupConfigurationFilesWithNolock() {
 	util::TStringList result;
 	const std::string& fileName = getBackupFile();
 	const std::string& folderName = getConfigFolder();
+	if (util::fileExists(fileName)) {
+		// Rename existing backup file and limit backup file count
+		util::TFolderList backups;
+		std::string baseName = util::fileBaseName(fileName);
+		std::string baseFolder = util::filePath(fileName);
+		std::string fileCopy = util::uniqueFileName(fileName, UN_TIME);
+		util::moveFile(fileName, fileCopy);
+		if (!backups.deleteOldest(baseFolder + baseName + ".*.gz", 10)) {
+			logger(app::ELogBase::LOG_APP, "[Application] [Error] Delete oldest settings archives <%> failed.", baseFolder + baseName + ".*.gz");
+		}
+	}
 	util::TStringList content;
 	util::readDirektoryContent(folderName, "*.conf", content);
 	if (!content.empty()) {
+		// GZIP configuration folder file content
 		std::string files = content.asString(' ');
 		std::string commandLine = util::csnprintf("tar -czf % -C % %", fileName, folderName, files);
 		logger(app::ELogBase::LOG_APP, "[Application] Execute backup command $", commandLine);
@@ -2636,8 +2774,9 @@ bool TApplication::writePidFile() {
 }
 
 void TApplication::deletePidFile() {
-	if (!multiple)
+	if (!multiple) {
 		util::deleteFile(sysdat.app.pidFile);
+	}
 }
 
 long int TApplication::readPidFile() {
@@ -3172,7 +3311,7 @@ void TApplication::writeDebugFile(const std::string& fileName, const std::string
 void TApplication::daemonizer(const std::string& runAsUser, const std::string& runAsGroup,
 		const app::TStringVector& supplementalGroups, const app::TStringVector& capabilityList,
 		std::string& groupNames, std::string& capabilityNames, bool& userChanged) {
-	// The daemon startup code was taken in parts from the Linux Daemon Writing HOWTO
+	// The basic daemon startup code was taken in parts from the Linux Daemon Writing HOWTO
 	// Written by Devin Watson <dmwatson@comcast.net>
 	// The HOWTO is Copyright by Devin Watson, under the terms of the BSD License.
 	// See http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
@@ -3217,10 +3356,9 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 		throw app_error("TApplication::daemonizer::chdir() Failed to set current directory <" + std::string(pwd) + ">");
 
 	/* Redirect C++ stdin, stdout, and stderr streams to /dev/null */
-	FILE* file UNUSED;
-	file = freopen("/dev/null", "r", stdin);
-	file = freopen("/dev/null", "a", stdout);
-	file = freopen("/dev/null", "a", stderr);
+	fsin  = freopen("/dev/null", "r", stdin);
+	fsout = freopen("/dev/null", "a", stdout);
+	fserr = freopen("/dev/null", "a", stderr);
 
 	/* Get new PID (after spawn) */
 	pid = getpid();

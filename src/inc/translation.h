@@ -43,7 +43,7 @@ class TTranslator {
 	std::string nlsFileName(const ELocale locale);
 
 public:
-	bool getEnabled() const { return enabled; };
+	bool isEnabled() const { return enabled; };
 	void setEnabled(const bool value);
 
 	void setPath(const std::string& configPath);
