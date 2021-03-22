@@ -76,10 +76,17 @@ using TThreadHandler = void* (*) (void*);
 using PObject = TObject*;
 using PModule = TModule*;
 
-// String based key/value map
+// String based key/value list
 using TValueMap = std::map<std::string, std::string>;
 using TValueMapItem = std::pair<std::string, std::string>;
 using TStringVector = std::vector<std::string>;
+
+// String + object based key/value list
+template<typename T>
+using TObjectItem = std::pair<std::string, T*>;
+
+template<typename T>
+using TObjectVector = std::vector<TObjectItem<T>>;
 
 #else
 
@@ -97,10 +104,20 @@ typedef void* (*TThreadHandler)(void*);
 typedef TObject* PObject;
 typedef TModule* PModule;
 
-// String based key/value map
+// String based key/value list
 typedef std::map<std::string, std::string> TValueMap;
 typedef std::pair<std::string, std::string> TValueMapItem;
 typedef std::vector<std::string> TStringVector;
+
+template <typename T>
+struct TObjectItem {
+    typedef std::pair<std::string, T*> type;
+};
+
+template <typename T>
+struct TObjectVector {
+    typedef std::vector<TObjectItem<T>> type;
+};
 
 #endif
 

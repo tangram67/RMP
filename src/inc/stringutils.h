@@ -195,6 +195,48 @@ public:
 	virtual ~TStringList();
 };
 
+template<typename T>
+class TObjectList : public app::TObjectVector<T>, public app::TObject {
+private:
+	bool owns;
+
+#ifdef STL_HAS_TEMPLATE_ALIAS
+	using list_t = app::TObjectVector<T>;
+#else
+	typedef typename app::TObjectVector<T>::type list_t;
+#endif
+
+public:
+
+#ifdef STL_HAS_TEMPLATE_ALIAS
+	using iterator = typename list_t::iterator;
+	using const_iterator = typename list_t::const_iterator;
+#else
+	typedef typename list_t::iterator iterator;
+	typedef typename list_t::const_iterator const_iterator;
+#endif
+
+	void add(const std::string& key, T* value) {
+		push_back(key, value);
+	}
+
+	void clear() {
+		if (owns) {
+			for (auto it : this) {
+				if (util::assigned(it.second))
+					util::freeAndNil(it.second);
+			}
+		}
+		list_t::clear();
+	}
+
+	operator bool () const { return !list_t::empty(); };
+
+	TObjectList() { owns = false; };
+	TObjectList(const bool owns) : owns(owns) {};
+	virtual ~TObjectList() { clear(); };
+};
+
 } /* namespace util */
 
 #endif /* STRINGUTIL_H_ */
