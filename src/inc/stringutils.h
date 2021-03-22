@@ -202,8 +202,10 @@ private:
 
 #ifdef STL_HAS_TEMPLATE_ALIAS
 	using list_t = app::TObjectVector<T>;
+	using object_t = app::TObjectItem<T>;
 #else
-	typedef typename app::TObjectVector<T>::type list_t;
+	typedef typename app::TObjectVector<T>::type_t list_t;
+	typedef typename app::TObjectItem<T>::type_t object_t;
 #endif
 
 public:
@@ -217,7 +219,7 @@ public:
 #endif
 
 	void add(const std::string& key, T* value) {
-		push_back(key, value);
+		push_back(object_t(key, value));
 	}
 
 	void clear() {

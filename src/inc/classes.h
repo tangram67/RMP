@@ -111,12 +111,12 @@ typedef std::vector<std::string> TStringVector;
 
 template <typename T>
 struct TObjectItem {
-    typedef std::pair<std::string, T*> type;
+    typedef std::pair<std::string, T*> type_t;
 };
 
 template <typename T>
 struct TObjectVector {
-    typedef std::vector<TObjectItem<T>> type;
+    typedef std::vector<TObjectItem<T>> type_t;
 };
 
 #endif
