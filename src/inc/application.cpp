@@ -2292,29 +2292,30 @@ void TApplication::release() {
 		for (ssize_t i = util::pred(modules.size()); i >= 0; --i) {
 			TModule* module = modules[i];
 			std::string sName = util::nameOf(*module);
-			writeLog("[Application] Cleanup module <" + sName + ">");
+			writeLog("[Application] Release module <" + sName + ">");
 
 			if (!isDaemonized())
-				std::cout << app::yellow << "[" << executed << "] Cleanup module <" << sName << ">" << app::reset << std::endl;
+				std::cout << app::yellow << "[" << executed << "] Release module <" << sName << ">" << app::reset << std::endl;
 
 			// Call "last minute" cleanup method for given module
 			try {
 				module->cleanup();
 			} catch (const std::exception& e) {
 				std::string sExcept = e.what();
-				std::string sText = "Exception on cleanup of module [" + sName + "] \n" + sExcept + "\n";
+				std::string sText = "Exception on release of module [" + sName + "] \n" + sExcept + "\n";
 				errorLog(sText);
 				if (error == EXIT_SUCCESS)
 					error = EXIT_FAILURE;
 			} catch (...) {
-				std::string sText = "Unknown exception on cleanup of module [" + sName + "]";
+				std::string sText = "Unknown exception on release of module [" + sName + "]";
 				errorLog(sText);
 				if (error == EXIT_SUCCESS)
 					error = EXIT_FAILURE;
 			}
 
+			writeLog("[Application] Released module <" + sName + ">");
 			if (!isDaemonized())
-				std::cout << app::cyan << "[" << executed << "] Terminated module <" << sName << ">" << app::reset << std::endl;
+				std::cout << app::cyan << "[" << executed << "] Released module <" << sName << ">" << app::reset << std::endl;
 			--executed;
 		}
 	}

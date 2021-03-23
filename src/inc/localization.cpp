@@ -108,9 +108,11 @@ void TLocale::assign(const TLocale &value) {
 bool TLocale::duplicate(const TLocale &value, locale_t& locale) const {
 	// Do not duplicate constant locales
 	// --> Not needed, since they are NOT INTENDED to be changed!
-	if (type != ELT_CONSTANT) {
+	if (ELT_CONSTANT == type) {
+		locale = value();
+	} else {
 		app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
-		locale = duplocale(sysloc);
+		locale = duplocale(value());
 	}
 	return (locale_t)0 != locale;
 }
