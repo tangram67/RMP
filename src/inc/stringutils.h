@@ -201,11 +201,11 @@ private:
 	bool owns;
 
 #ifdef STL_HAS_TEMPLATE_ALIAS
+	using item_t = app::TObjectItem<T>;
 	using list_t = app::TObjectVector<T>;
-	using object_t = app::TObjectItem<T>;
 #else
+	typedef typename app::TObjectItem<T>::type_t item_t;
 	typedef typename app::TObjectVector<T>::type_t list_t;
-	typedef typename app::TObjectItem<T>::type_t object_t;
 #endif
 
 public:
@@ -218,8 +218,11 @@ public:
 	typedef typename list_t::const_iterator const_iterator;
 #endif
 
+	void add(const item_t& item) {
+		list_t::push_back(item);
+	}
 	void add(const std::string& key, T* value) {
-		push_back(object_t(key, value));
+		add(item_t(key, value));
 	}
 
 	void clear() {
