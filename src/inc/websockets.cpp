@@ -1176,13 +1176,13 @@ void TWebSockets::downgrade(PWebSocket socket) {
 void TWebSockets::close(PWebSocket socket) {
 	if (util::assigned(socket)) {
 		// Shutdown socket
+		downgrade(socket);
 		if (socket->handle != INVALID_HANDLE_VALUE) {
 			if (EXIT_SUCCESS == __s_shutdown(socket->handle, SHUT_RDWR)) {
 				if (debug) writeLogFmt("TWebSockets::close() Client Socket <%> shutdown.", socket->handle);
 				socket->handle = INVALID_HANDLE_VALUE;
 			}
 		}
-		downgrade(socket);
 	}
 }
 

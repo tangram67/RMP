@@ -115,7 +115,8 @@ TTimePart now() {
 TTimePart localTimeToUTC(const TTimePart time) {
 	struct tm ctm;
 	if (assigned(gmtime_r(&time, &ctm)))
-		return timegm(&ctm);
+		return mktime(&ctm);
+		// return timegm(&ctm);
 	return (TTimePart)0;
 }
 

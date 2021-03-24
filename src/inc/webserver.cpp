@@ -662,14 +662,15 @@ bool TWebServer::terminate() {
 		}
 
 		// Stop webserver instances
-		if (util::assigned(httpServer4))
+		if (util::assigned(httpServer4)) {
 			MHD_stop_daemon(httpServer4);
+			httpServer4 = nil;
+		}
 
-		if (util::assigned(httpServer6))
+		if (util::assigned(httpServer6)) {
 			MHD_stop_daemon(httpServer6);
-
-		httpServer4 = nil;
-		httpServer6 = nil;
+			httpServer6 = nil;
+		}
 
 		writeInfoLog("[Stop web server] Server handled " + std::to_string((size_u)data.requestCount) + " requests, served " + util::sizeToStr(data.bytesServed));
 		writeInfoLog("[Stop web server] Server changed state to stopped.");
