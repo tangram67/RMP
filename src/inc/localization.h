@@ -344,7 +344,7 @@ private:
 
 public:
 	void change() {
-		if (app::TLocale::nloc != locale) {
+		if (app::TLocale::nloc == locale) {
 			if (!newloc.isSystemLocale()) {
 				locale = location_t::change(newloc());
 #ifdef IMBUE_LOCATION_GUARD
