@@ -1188,24 +1188,16 @@ void TWebSockets::close(PWebSocket socket) {
 
 void TWebSockets::close() {
 	app::TLockGuard<app::TMutex> mtx(listMtx);
-	if (!sockets.empty()) {
-		for (size_t i=0; i<sockets.size(); i++) {
-			for (size_t i=0; i<sockets.size(); i++) {
-				PWebSocket o = sockets[i];
-				close(o);
-			}
-		}
+	for (auto o : sockets) {
+		close(o);
 	}
 }
 
 void TWebSockets::clear() {
 	app::TLockGuard<app::TMutex> mtx(listMtx);
-	if (!sockets.empty()) {
-		for (size_t i=0; i<sockets.size(); i++) {
-			PWebSocket o = sockets[i];
-			close(o);
-			util::freeAndNil(o);
-		}
+	for (auto o : sockets) {
+		close(o);
+		util::freeAndNil(o);
 	}
 	sockets.clear();
 	if (util::assigned(revents)) {
