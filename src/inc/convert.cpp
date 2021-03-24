@@ -22,13 +22,13 @@ using namespace util;
 double util::strToDouble(const std::string& value, double defValue, const app::TLocale& locale) {
 	double retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtod_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? strtod_l(p, &q, local) : strtod(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -39,13 +39,13 @@ double util::strToDouble(const std::string& value, double defValue, const app::T
 long double util::strToLongDouble(const std::string& value, long double defValue, const app::TLocale& locale) {
 	long double retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtold_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? strtold_l(p, &q, local) : strtold(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -56,13 +56,13 @@ long double util::strToLongDouble(const std::string& value, long double defValue
 float util::strToFloat(const std::string& value, float defValue, const app::TLocale& locale) {
 	float retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtof_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? strtof_l(p, &q, local) : strtof(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -73,13 +73,13 @@ float util::strToFloat(const std::string& value, float defValue, const app::TLoc
 int32_t util::strToInt(const std::string& value, int32_t defValue, const app::TLocale& locale, int base) {
 	long int retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtol_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? strtol_l(p, &q, base, local) : strtol(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q )
 			retVal = defValue;
 
@@ -94,13 +94,13 @@ int32_t util::strToInt(const std::string& value, int32_t defValue, const app::TL
 uint32_t util::strToUnsigned(const std::string& value, uint32_t defValue, const app::TLocale& locale, int base) {
 	unsigned long int retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoul_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? strtoul_l(p, &q, base, local) : strtoul(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -114,13 +114,13 @@ uint32_t util::strToUnsigned(const std::string& value, uint32_t defValue, const 
 int64_t util::strToInt64(const std::string& value, int64_t defValue, const app::TLocale& locale, int base) {
 	int64_t retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoll_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? strtoll_l(p, &q, base, local) : strtoll(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -131,13 +131,13 @@ int64_t util::strToInt64(const std::string& value, int64_t defValue, const app::
 uint64_t util::strToUnsigned64(const std::string& value, uint64_t defValue, const app::TLocale& locale, int base) {
 	uint64_t retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		char* q;
 		const char *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = strtoull_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? strtoull_l(p, &q, base, local) : strtoull(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -148,13 +148,13 @@ uint64_t util::strToUnsigned64(const std::string& value, uint64_t defValue, cons
 double util::strToDouble(const std::wstring& value, double defValue, const app::TLocale& locale) {
 	double retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstod_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? wcstod_l(p, &q, local) : wcstod(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -165,13 +165,13 @@ double util::strToDouble(const std::wstring& value, double defValue, const app::
 long double util::strToLongDouble(const std::wstring& value, long double defValue, const app::TLocale& locale) {
 	long double retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstold_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? wcstold_l(p, &q, local) : wcstold(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -182,13 +182,13 @@ long double util::strToLongDouble(const std::wstring& value, long double defValu
 float util::strToFloat(const std::wstring& value, float defValue, const app::TLocale& locale) {
 	float retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstof_l(p, &q, local);
+		retVal = app::TLocale::nloc != local ? wcstof_l(p, &q, local) : wcstof(p, &q);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -199,13 +199,13 @@ float util::strToFloat(const std::wstring& value, float defValue, const app::TLo
 int32_t util::strToInt(const std::wstring& value, int32_t defValue, const app::TLocale& locale, int base) {
 	long int retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstol_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? wcstol_l(p, &q, base, local) : wcstol(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -220,13 +220,13 @@ int32_t util::strToInt(const std::wstring& value, int32_t defValue, const app::T
 uint32_t util::strToUnsigned(const std::wstring& value, uint32_t defValue, const app::TLocale& locale, int base) {
 	unsigned long int retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoul_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? wcstoul_l(p, &q, base, local) : wcstoul(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 
@@ -240,13 +240,13 @@ uint32_t util::strToUnsigned(const std::wstring& value, uint32_t defValue, const
 int64_t util::strToInt64(const std::wstring& value, int64_t defValue, const app::TLocale& locale, int base) {
 	int64_t retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoll_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? wcstoll_l(p, &q, base, local) : wcstoll(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -257,13 +257,13 @@ int64_t util::strToInt64(const std::wstring& value, int64_t defValue, const app:
 uint64_t util::strToUnsigned64(const std::wstring& value, uint64_t defValue, const app::TLocale& locale, int base) {
 	uint64_t retVal = defValue;
 	if (!value.empty()) {
-		locale_t local = (locale_t)0;
+		locale_t local = app::TLocale::nloc;
 		app::TLocaleGuard<locale_t> guard(local, locale.getType());
 		locale.duplicate(locale, local);
 		wchar_t* q;
 		const wchar_t *const p = value.c_str();
 		errno = EXIT_SUCCESS;
-		retVal = wcstoull_l(p, &q, base, local);
+		retVal = app::TLocale::nloc != local ? wcstoull_l(p, &q, base, local) : wcstoull(p, &q, base);
 		if (EXIT_SUCCESS != errno || (p + value.size()) != q)
 			retVal = defValue;
 	}
@@ -278,7 +278,7 @@ size_t util::strToSize(const std::string& value, std::string& unit, size_t defVa
 		return (size_t)0;
 	}
 
-	locale_t local = (locale_t)0;
+	locale_t local = app::TLocale::nloc;
 	app::TLocaleGuard<locale_t> guard(local, locale.getType());
 	locale.duplicate(locale, local);
 
@@ -289,7 +289,7 @@ size_t util::strToSize(const std::string& value, std::string& unit, size_t defVa
 	errno = EXIT_SUCCESS;
 
 	// Convert digits to value
-	retVal = strtoul_l(p, &q, base, local);
+	retVal = app::TLocale::nloc != local ? strtoul_l(p, &q, base, local) : strtoul(p, &q, base);
 	if (EXIT_SUCCESS != errno || (p == q))
 		retVal = defValue;
 

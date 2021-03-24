@@ -108,20 +108,21 @@ void TLocale::assign(const TLocale &value) {
 bool TLocale::duplicate(const TLocale &value, locale_t& locale) const {
 	// Do not duplicate constant locales
 	// --> Not needed, since they are NOT INTENDED to be changed!
+	locale = app::TLocale::nloc;
 	if (ELT_CONSTANT == type) {
 		locale = value();
-	} else {
+	}
+	if (app::TLocale::nloc == locale) {
 		app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_READ);
 		locale = duplocale(value());
 	}
-	return (locale_t)0 != locale;
+	return app::TLocale::nloc != locale;
 }
 
 bool TLocale::setProperties(const std::string& code, const std::string& charset) {
 	if (!code.empty()) {
 		TLanguage c;
 		if (find(code.c_str(), c)) {
-			size_t fp;
 			base    = c.name;
 			locale  = c.locale;
 			region  = c.region;
@@ -142,7 +143,7 @@ bool TLocale::setProperties(const std::string& code, const std::string& charset)
 					name = c.name;
 					break;
 				default:
-					fp = code.find('.');
+					size_t fp = code.find('.');
 					if (std::string::npos != fp) {
 						name = util::csnprintf("%.%", code.substr(0, fp), codeset);
 					} else {
@@ -161,7 +162,7 @@ bool TLocale::setProperties(const std::string& code, const std::string& charset)
 }
 
 locale_t TLocale::create(const ELocale locale) {
-	locale_t r = (locale_t)0;
+	locale_t r = app::TLocale::nloc;
 	bool useLocale = false;
 	std::string code;
 
@@ -195,14 +196,14 @@ locale_t TLocale::create(const ELocale locale) {
 	// Create libC based locale
 	if (setProperties(code)) {
 		errno = EXIT_SUCCESS;
-		r = newlocale(LC_ALL_MASK, name.c_str(), (locale_t)0);
+		r = newlocale(LC_ALL_MASK, name.c_str(), app::TLocale::nloc);
 	}
 
 	// Try UTF-8 charset for given locale code
 	if (!util::assigned(r)) {
 		if (setProperties(code, "UTF-8")) {
 			errno = EXIT_SUCCESS;
-			r = newlocale(LC_ALL_MASK, name.c_str(), (locale_t)0);
+			r = newlocale(LC_ALL_MASK, name.c_str(), app::TLocale::nloc);
 		}
 	}
 
@@ -459,28 +460,28 @@ void TLocale::imbue(const std::string& name) const {
 }
 
 locale_t TLocale::change(locale_t locale) {
-	if (locale == (locale_t)0)
+	if (locale == app::TLocale::nloc)
 		throw util::sys_error("TLocale::change() failed, locale not set.");
 	locale_t r = uselocale(locale);
-	if (r == (locale_t)0)
+	if (r == app::TLocale::nloc)
 		throw util::sys_error("TLocale::change()::uselocale() failed.");
 	return r;
 }
 
 void TLocale::restore(locale_t locale) {
-	if (locale == (locale_t)0)
+	if (locale == app::TLocale::nloc)
 		throw util::sys_error("TLocale::restore() failed, locale not set.");
 	locale_t r = uselocale(locale);
-	if (r == (locale_t)0)
+	if (r == app::TLocale::nloc)
 		throw util::sys_error("TLocale::restore()::uselocale() failed.");
 }
 
 bool TLocale::set(const ELocale locale) {
 	app::TReadWriteGuard<app::TReadWriteLock> lock(rwl, RWL_WRITE);
-	locale_t r = (locale_t)0;
+	locale_t r = app::TLocale::nloc;
 	if (isValidLocale(locale)) {
 		r = create(locale);
-		if ((locale_t)0 != r) {
+		if (app::TLocale::nloc != r) {
 			sysloc = r;
 			return true;
 		}

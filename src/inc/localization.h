@@ -242,6 +242,8 @@ private:
 	const char* getBooleanFalseNameWithNolock() const;
 
 public:
+	STATIC_CONST locale_t nloc = (locale_t)0;
+
 	ELocale getLocale() const;
 	std::string getInfo() const;
 	std::string getLocation() const;
@@ -342,7 +344,7 @@ private:
 
 public:
 	void change() {
-		if (!util::assigned(locale)) {
+		if (app::TLocale::nloc != locale) {
 			if (!newloc.isSystemLocale()) {
 				locale = location_t::change(newloc());
 #ifdef IMBUE_LOCATION_GUARD
@@ -352,19 +354,19 @@ public:
 		}
 	}
 	void restore() {
-		if (util::assigned(locale)) {
+		if (app::TLocale::nloc != locale) {
 			location_t::restore(locale);
 #ifdef IMBUE_LOCATION_GUARD
 			TLocale::imbue(syslocale);
 #endif
-			locale = nil;
+			locale = app::TLocale::nloc;
 		}
 	}
 
 	TLocationGuard& operator=(const TLocationGuard&) = delete;
 	TLocationGuard(const TLocationGuard&) = delete;
 	explicit TLocationGuard(const location_t& newloc)
-		: newloc(newloc), locale(nil) {
+		: newloc(newloc), locale(app::TLocale::nloc) {
 #ifdef IMBUE_LOCATION_GUARD
 		syslocale = TLocale::getSystemLocale();
 #endif
