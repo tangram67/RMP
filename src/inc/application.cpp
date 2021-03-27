@@ -2155,7 +2155,7 @@ int TApplication::execute(TModule& module) {
 			error = module.prepare();
 			if (util::checkFailed(error)) {
 				std::string sError = std::to_string((size_s)error);
-				std::string sText = "Preparing module [" + sName + "] failed, Error code = " + sError;
+				std::string sText = "Prepare module [" + sName + "] failed, Error code = " + sError;
 				errorLog(sText);
 			} else {
 				// Queue up module for unprepare
@@ -2164,17 +2164,17 @@ int TApplication::execute(TModule& module) {
 			}
 		} catch (const std::exception& e) {
 			std::string sExcept = e.what();
-			std::string sText = "Exception on unprepare of module [" + sName + "] \"" + sExcept + "\"";
+			std::string sText = "Exception on pereparation of module [" + sName + "] \"" + sExcept + "\"";
 			errorLog(sText);
 			error = EXIT_FAILURE;
 		} catch (...) {
-			std::string sText = "Unknown exception on unprepare of module [" + sName + "]";
+			std::string sText = "Unknown exception on pereparation of module [" + sName + "]";
 			errorLog(sText);
 			error = EXIT_FAILURE;
 		}
 		if (!isDaemonized()) {
 			if (!util::checkSucceeded(error)) {
-				std::cout << app::red << "[" << executed << "] Preparing module <" << sName << "> failed." << app::reset << std::endl;
+				std::cout << app::red << "[" << executed << "] Prepared module <" << sName << "> failed." << app::reset << std::endl;
 			}
 		}
 
