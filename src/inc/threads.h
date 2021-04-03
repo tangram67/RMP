@@ -417,11 +417,11 @@ public:
 				exec_t &&threadExecMethod, message_t &&onThreadMessage, sync_t &&threadSyncMethod,
 				owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
 			auto thread = new TWorkerThread<class_t>(name);
-			auto p = static_cast<class_t*>(&data); // data_t is type of class_t
+			auto object = static_cast<class_t*>(&data); // data_t is type of class_t
 			thread->bindExecHandler(threadExecMethod, owner);
 			thread->bindMessageHandler(onThreadMessage, owner);
 			thread->bindSyncHandler(threadSyncMethod, owner);
-			addThread(thread, p, execute, cpu);
+			addThread(thread, object, execute, cpu);
 			return thread;
 		}
 
