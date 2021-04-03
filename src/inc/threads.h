@@ -373,7 +373,7 @@ public:
 	// Specialized templates to create and add managed threads derived from TManagedThread
 	template<typename exec_t, typename owner_t>
 		inline TManagedThread* addThread(const std::string& name, exec_t &&threadExecMethod, owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
-			TManagedThread* thread = new TManagedThread(name);
+			auto thread = new TManagedThread(name);
 			thread->bindExecHandler(threadExecMethod, owner);
 			addThread(thread, nil, execute, cpu);
 			return thread;
@@ -382,7 +382,7 @@ public:
 	template<typename exec_t, typename message_t, typename owner_t>
 		inline TManagedThread* addThread(const std::string& name, exec_t &&threadExecMethod, message_t &&onThreadMessage,
 				owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
-			TManagedThread* thread = new TManagedThread(name);
+			auto thread = new TManagedThread(name);
 			thread->bindExecHandler(threadExecMethod, owner);
 			thread->bindMessageHandler(onThreadMessage, owner);
 			addThread(thread, nil, execute, cpu);
@@ -393,10 +393,10 @@ public:
 	template<class class_t, typename data_t, typename exec_t, typename owner_t>
 		inline TWorkerThread<class_t>* addThread(const std::string& name, data_t &&data, exec_t &&threadExecMethod,
 				owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
-			TWorkerThread<class_t>* thread = new TWorkerThread<class_t>(name);
+			auto thread = new TWorkerThread<class_t>(name);
+			auto object = static_cast<class_t*>(&data); // data_t is type of class_t
 			thread->bindExecHandler(threadExecMethod, owner);
-			class_t* p = static_cast<class_t*>(&data); // data_t is type of class_t!
-			addThread(thread, p, execute, cpu);
+			addThread(thread, object, execute, cpu);
 			return thread;
 		}
 
@@ -404,11 +404,11 @@ public:
 		inline TWorkerThread<class_t>* addThread(const std::string& name, data_t &&data,
 				exec_t &&threadExecMethod, message_t &&onThreadMessage,
 				owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
-			TWorkerThread<class_t>* thread = new TWorkerThread<class_t>(name);
+			auto thread = new TWorkerThread<class_t>(name);
+			auto object = static_cast<class_t*>(&data); // data_t is type of class_t
 			thread->bindExecHandler(threadExecMethod, owner);
 			thread->bindMessageHandler(onThreadMessage, owner);
-			class_t* p = static_cast<class_t*>(&data); // data_t is type of class_t!
-			addThread(thread, p, execute, cpu);
+			addThread(thread, object, execute, cpu);
 			return thread;
 		}
 
@@ -416,11 +416,11 @@ public:
 		inline TWorkerThread<class_t>* addThread(const std::string& name, data_t &&data,
 				exec_t &&threadExecMethod, message_t &&onThreadMessage, sync_t &&threadSyncMethod,
 				owner_t &&owner, EThreadStartType execute = THD_START_ON_CREATE, size_t cpu = app::nsizet) {
-			TWorkerThread<class_t>* thread = new TWorkerThread<class_t>(name);
+			auto thread = new TWorkerThread<class_t>(name);
+			auto p = static_cast<class_t*>(&data); // data_t is type of class_t
 			thread->bindExecHandler(threadExecMethod, owner);
 			thread->bindMessageHandler(onThreadMessage, owner);
 			thread->bindSyncHandler(threadSyncMethod, owner);
-			class_t* p = static_cast<class_t*>(&data); // data_t is type of class_t!
 			addThread(thread, p, execute, cpu);
 			return thread;
 		}

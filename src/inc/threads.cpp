@@ -53,9 +53,7 @@ TMessageSlot::~TMessageSlot() {
 PThreadMessage TMessageSlot::find(int id) {
 	std::lock_guard<std::mutex> lock(mtx);
 	PThreadMessage o = nil;
-	size_t i,n;
-	n = msgList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<msgList.size(); i++) {
 		o = msgList[i];
 		if (util::assigned(o)) {
 			if (o->id == id)
@@ -74,7 +72,7 @@ void TMessageSlot::remove(int id) {
 		if (util::assigned(o)) {
 			if (o->id == id) {
 				msgList.erase(msgList.begin() + i);
-				delete o;
+				util::freeAndNil(o);
 				break;
 			} else i++;
 		} else i++;
@@ -84,16 +82,11 @@ void TMessageSlot::remove(int id) {
 void TMessageSlot::clear() {
 	std::lock_guard<std::mutex> lock(mtx);
 	PThreadMessage o = nil;
-	size_t i,n;
-	n = msgList.size();
-	if (n) {
-		for (i=0; i<n; i++) {
-			o = msgList[i];
-			if (util::assigned(o))
-				delete o;
-		}
-		msgList.clear();
+	for (size_t i=0; i<msgList.size(); i++) {
+		o = msgList[i];
+		util::freeAndNil(o);
 	}
+	msgList.clear();
 }
 
 void TMessageSlot::release(PThreadMessage msg) {
@@ -104,9 +97,7 @@ void TMessageSlot::release(PThreadMessage msg) {
 bool TMessageSlot::empty() const {
 	std::lock_guard<std::mutex> lock(mtx);
 	PThreadMessage o = nil;
-	size_t i,n;
-	n = msgList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<msgList.size(); i++) {
 		o = msgList[i];
 		if (util::assigned(o)) {
 			if (!o->executed)
@@ -119,11 +110,9 @@ bool TMessageSlot::empty() const {
 PThreadMessage TMessageSlot::enqueue() {
 	std::lock_guard<std::mutex> lock(mtx);
 	PThreadMessage o = nil;
-	size_t i,n;
 	size_t slot = nsizet;
 	int id = 0;
-	n = msgList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<msgList.size(); i++) {
 		o = msgList[i];
 		if (util::assigned(o)) {
 			if (o->executed) {
@@ -283,11 +272,11 @@ bool TThreadUtil::createObjectThread(pthread_t& thread, TThreadHandler handler, 
 		if (util::assigned(name)) {
 			if (strnlen(name, 20) > 15) {
 				// Limit name size to 15 characters + NULL
-				util::TBuffer desc(18);
-				strncpy(desc(), name, 15);
+				char desc[18];
+				strncpy(desc, name, 15);
 				desc[14] = '~';
 				desc[15] = '\0';
-				retVal = pthread_setname_np(thread, desc());
+				retVal = pthread_setname_np(thread, desc);
 			} else {
 				retVal = pthread_setname_np(thread, name);
 			}
@@ -444,19 +433,19 @@ pid_t TBaseThread::gettid() {
 int TBaseThread::receiver(void* message) {
 	if (util::assigned(message)) {
 		// Restore sliced virtual methods by calling derived methods from within derived class object
-		return this->receive(message);
+		return receive(message);
 	}
 	return EXIT_FAILURE;
 }
 
 int TBaseThread::dispatcher(void* creator) {
 	// Restore sliced virtual methods by calling derived methods from within derived class object
-	return this->run(creator);
+	return run(creator);
 }
 
 void TBaseThread::wait() {
 	// Restore sliced virtual methods by calling derived methods from within derived class object
-	this->waitFor();
+	waitFor();
 }
 
 void TBaseThread::unlock() {
@@ -472,7 +461,7 @@ TManagedThread::TManagedThread(const std::string& name) : TBaseThread(), TThread
 	this->name = name;
 }
 
-// Delegating ctors in gcc 4.7
+// Delegating ctors since gcc 4.7
 // TBaseThread::TBaseThread(const string& name, const TThreadProperties thread) : TBaseThread(name){
 // --> calls ctor of the same class!
 #ifdef STL_HAS_DELEGATING_CTOR
@@ -1192,13 +1181,11 @@ void TThreadData::clear()
 	n = list.size();
 	for (i=0; i<n; i++) {
 		o = list[i];
-		if (util::assigned(o))
-			delete o;
+		util::freeAndNil(o);
 	}
 #else
 	for (PThreadDataItem o : list) {
-		if (util::assigned(o))
-			delete o;
+		util::freeAndNil(o);
 	}
 #endif
 	hash = 0;
@@ -1224,8 +1211,8 @@ struct CItemEraser
 };
 
 size_t TThreadData::release(bool force) {
-	// Must be locked by caller!
-	// std::lock_guard<std::mutex> lock(mtx);
+	// Private method, MUST (!) be locked by caller!
+	// std::lock_guard<std::mutex> lock(dataMtx);
 	util::TTimePart _delay = force ? util::epoch() : delay;
 	int retVal = 0;
 	if (list.size() > 0) {
