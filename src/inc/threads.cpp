@@ -788,9 +788,7 @@ void TThreadController::terminate() {
 	
 #ifndef STL_HAS_RANGE_FOR
 	PBaseThread o;
-	size_t i,n;
-	n = threadList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<threadList.size(); i++) {
 		o = threadList[i];
 		if (util::assigned(o))
 			o->setTerminate(true);
@@ -809,9 +807,7 @@ void TThreadController::waitFor() {
 
 #ifndef STL_HAS_RANGE_FOR
 	PBaseThread o;
-	size_t i,n;
-	n = threadList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<threadList.size(); i++) {
 		o = threadList[i];
 		if (util::assigned(o)) {
 			while (!o->isTerminated())
@@ -839,9 +835,7 @@ void TThreadController::clear()
 {
 #ifndef STL_HAS_RANGE_FOR
 	PBaseThread o;
-	size_t i,n;
-	n = threadList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<threadList.size(); i++) {
 		o = threadList[i];
 		if (util::assigned(o))
 			delete o;
@@ -957,9 +951,7 @@ PWebDataReceiver TThreadData::findReceiverSlot() {
 	bool found = false;
 
 	// Find empty action slot
-	size_t i,n;
-	n = threadList.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<threadList.size(); i++) {
 		o = threadList[i];
 		if (util::assigned(o)) {
 			if (!o->running) {
@@ -1036,9 +1028,7 @@ void TThreadData::clearReceiverList() {
 	if (!threadList.empty()) {
 		std::lock_guard<std::mutex> lock(threadMtx);
 		PWebDataReceiver o;
-		size_t i,n;
-		n = threadList.size();
-		for (i=0; i<n; i++) {
+		for (size_t i=0; i<threadList.size(); i++) {
 			o = threadList[i];
 			util::freeAndNil(o);
 		}
@@ -1051,14 +1041,11 @@ void TThreadData::waitFor() {
 	bool running;
 	if (!threadList.empty()) {
 		PWebDataReceiver o;
-		size_t i,n;
 		do {
 			{ // Scope mutex threadMtx
 				std::lock_guard<std::mutex> lock(threadMtx);
 				running = false;
-				n = threadList.size();
-				for (i=0; i<n; i++) {
-
+				for (size_t i=0; i<threadList.size(); i++) {
 					o = threadList[i];
 					if (util::assigned(o)) {
 						if (o->running) {
@@ -1177,9 +1164,7 @@ void TThreadData::clear()
 {
 #ifndef STL_HAS_RANGE_FOR
 	PThreadDataItem o;
-	size_t i,n;
-	n = list.size();
-	for (i=0; i<n; i++) {
+	for (size_t i=0; i<threadList.size(); i++) {
 		o = list[i];
 		util::freeAndNil(o);
 	}
