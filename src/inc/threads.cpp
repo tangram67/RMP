@@ -599,9 +599,7 @@ void TManagedThread::postMessage(EThreadMessageType message) {
 
 
 void TManagedThread::createBaseThread(PThreadCreator creator) {
-	int retVal;
-	retVal = checkProperties();
-	if (util::checkFailed(retVal))
+	if (util::checkFailed(checkProperties()))
 		throw util::app_error("TBaseThread::createBaseThread() Thread properties not set.");
 	const char* desc = !name.empty() ? name.c_str() : nil;
 	if (!createPersistentThread(creator, desc))
