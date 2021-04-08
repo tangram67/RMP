@@ -290,12 +290,13 @@ ssize_t TStdioFile::write(const std::string& data) const {
     return (ssize_t)0;
 }
 
+
 int TStdioFile::printf(const char* fmt, ...) {
 	int r = EINVAL;
     if (util::assigned(fmt)) {
 		va_list ap;
 		va_start(ap, fmt);
-		r = fprintf(fh, fmt, ap);
+		r = vfprintf(fh, fmt, ap);
 		va_end(ap);
     }
     return r;
@@ -306,7 +307,7 @@ int TStdioFile::scanf(const char* fmt, ...) {
     if (util::assigned(fmt)) {
 		va_list ap;
 		va_start(ap, fmt);
-		r = fscanf(fh, fmt, ap);
+		r = vfscanf(fh, fmt, ap);
 		va_end(ap);
     }
     return r;
