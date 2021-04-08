@@ -123,14 +123,15 @@ struct TObjectVector {
 
 class TObject {
 protected:
-	std::string name;
 	PObject owner;
+	std::string name;
 
 public:
 	void setName(const std::string& name) { this->name = name; };
 	const std::string& getName() const { return name; };
 
 	void setOwner(PObject owner) { this->owner = owner; };
+	void setOwner(TObject& owner) { this->owner = &owner; };
 	PObject getOwner() const { return owner; };
 	bool hasOwner() const { return nil != owner; };
 
