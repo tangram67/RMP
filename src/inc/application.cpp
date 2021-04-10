@@ -3318,17 +3318,17 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	// See http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 	uid_t uid;
 	gid_t gid;
-	int errnum;
+	int errnum, fd;
 	userChanged = false;
 	capabilityNames.clear();
 	groupNames.clear();
 
-	/* Fork off the parent process */
+	// Fork off the parent process
 	pid = fork();
 	if (pid < 0)
 		throw app_error("TApplication::daemonizer::fork() failed.");
 
-	/* If we got a good PID, then we can exit the parent process. */
+	// If we got a good PID, then we can exit the parent process
 	if (pid > 0)
 		exit(EXIT_SUCCESS);
 
@@ -3346,26 +3346,35 @@ void TApplication::daemonizer(const std::string& runAsUser, const std::string& r
 	 */
 	umask(022);
 
-	/* Create a new SID for the child process */
+	// Create a new SID for the child process
 	pid_t sid = setsid();
 	if (sid < 0)
 		throw app_error("TApplication::daemonizer::setsid() failed.");
 
-	/* Change the current working directory */
+	// Change the current working directory
 	const char* pwd = sysdat.app.setTempDir ? sysdat.app.tmpFolder.c_str() : sysdat.app.currentFolder.c_str();
 	if (chdir(pwd) < 0)
 		throw app_error("TApplication::daemonizer::chdir() Failed to set current directory <" + std::string(pwd) + ">");
 
-	/* Redirect C++ stdin, stdout, and stderr streams to /dev/null */
+	// Redirect C sytle default I/O handles to "/dev/null"
+    if(EXIT_ERROR != (fd = open("/dev/null", O_RDWR, 0))) {
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        if (fd > 2)
+            close(fd);
+    }
+
+	// Redirect C++ stdin, stdout, and stderr streams to "/dev/null"
 	fsin  = freopen("/dev/null", "r", stdin);
 	fsout = freopen("/dev/null", "a", stdout);
 	fserr = freopen("/dev/null", "a", stderr);
 
-	/* Get new PID (after spawn) */
+	// Get new PID (after spawn)
 	pid = getpid();
 	tid = TThreadUtil::gettid();
 
-	/* Change user if started as root */
+	// Change user if started as root
 	if (!runAsUser.empty()) {
 		uid = getuid();
 		if (uid == 0) {
