@@ -1622,10 +1622,13 @@ void TSocketController::start() {
 
 void TSocketController::terminate() {
 	shutdown = true;
-	if (util::assigned(timer))
+	if (util::assigned(timer)) {
 		timer->stop();
-	if (util::assigned(thread))
+	}
+	if (util::assigned(thread)) {
 		thread->setTerminate(true);
+	}
+	thread->wait();
 }
 
 

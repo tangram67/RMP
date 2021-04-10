@@ -1151,11 +1151,14 @@ ssize_t TWebSockets::send(const app::THandle handle, void const * const data, si
 
 
 void TWebSockets::waitFor() {
-	while (running)
+	while (running) {
 		util::wait(50);
-	if (util::assigned(thread))
+	}
+	if (util::assigned(thread)) {
 		while (!thread->isTerminated())
 			util::wait(75);
+	}
+	thread->wait();
 }
 
 bool TWebSockets::isTerminated() const {
