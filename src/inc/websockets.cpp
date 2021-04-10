@@ -1157,8 +1157,8 @@ void TWebSockets::waitFor() {
 	if (util::assigned(thread)) {
 		while (!thread->isTerminated())
 			util::wait(75);
+		thread->wait();
 	}
-	thread->wait();
 }
 
 bool TWebSockets::isTerminated() const {

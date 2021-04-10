@@ -1627,8 +1627,8 @@ void TSocketController::terminate() {
 	}
 	if (util::assigned(thread)) {
 		thread->setTerminate(true);
+		thread->wait();
 	}
-	thread->wait();
 }
 
 
