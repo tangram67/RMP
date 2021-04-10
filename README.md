@@ -25,7 +25,7 @@ These are only the basic features, there are lots of functions and possibilities
 
 Change to the folder **"setup"** and execute the following scripts as root:
 
-1. **install_languages.sh** ... Installs the needed system languages (see also the documentation of your Linux distribution)
+1. **install_languages.sh** ... Installs the needed system languages (see also the documentation for your Linux distribution)
 2. **install_prerequsites.sh** ... Install all necessary libraries (the names or version might differ in your ditribution)
 3. **setup_folders.sh \<username\>** ... Setup the needed folders in your system and set the ownership for the given non-root user
   
