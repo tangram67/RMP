@@ -55,12 +55,14 @@ static app::PApplication FApplication = nil;
 
 
 static void signalDispatcher(int signal) {
-	application.signalHandler(signal);
+	if (util::assigned(FApplication)) {
+		static_cast<app::TBaseApplication*>(FApplication)->signalHandler(signal);
+	}
 }
 
 static void* signalThreadDispatcher(void *thread) {
 	if (util::assigned(thread)) {
-		return (void *)(long)(static_cast<app::TApplication*>(thread))->signalThreadHandler();
+		return (void *)(long)(static_cast<app::TBaseApplication*>(thread))->signalThreadHandler();
 	} else {
 		return (void *)(long)(EXIT_FAILURE);
 	}
@@ -68,7 +70,7 @@ static void* signalThreadDispatcher(void *thread) {
 
 static void* watchThreadDispatcher(void *thread) {
 	if (util::assigned(thread)) {
-		return (void *)(long)(static_cast<app::TApplication*>(thread))->watchThreadHandler();
+		return (void *)(long)(static_cast<app::TBaseApplication*>(thread))->watchThreadHandler();
 	} else {
 		return (void *)(long)(EXIT_FAILURE);
 	}
@@ -76,7 +78,7 @@ static void* watchThreadDispatcher(void *thread) {
 
 static void* udevThreadDispatcher(void *thread) {
 	if (util::assigned(thread)) {
-		return (void *)(long)(static_cast<app::TApplication*>(thread))->udevThreadHandler();
+		return (void *)(long)(static_cast<app::TBaseApplication*>(thread))->udevThreadHandler();
 	} else {
 		return (void *)(long)(EXIT_FAILURE);
 	}
@@ -84,7 +86,7 @@ static void* udevThreadDispatcher(void *thread) {
 
 static void* commThreadDispatcher(void *thread) {
 	if (util::assigned(thread)) {
-		return (void *)(long)(static_cast<app::TApplication*>(thread))->commThreadHandler();
+		return (void *)(long)(static_cast<app::TBaseApplication*>(thread))->commThreadHandler();
 	} else {
 		return (void *)(long)(EXIT_FAILURE);
 	}
@@ -396,7 +398,7 @@ public:
 #endif
 
 
-TApplication::TApplication() : TThreadAffinity(), args(false) {
+TApplication::TApplication() : args(false) {
 	if (util::assigned(FApplication))
 		throw util::app_error("TApplication::TApplication(): Only one class instance allowed.");
 	FApplication = this;
@@ -642,6 +644,24 @@ app::TTimeoutController& TApplication::getTimeouts() const {
 		return *sysdat.obj.timeouts;
 	}
 	throw util::app_error("TApplication::getTimeouts() Timeout controller not available.");
+}
+
+
+TModule* TApplication::find(const std::string& name) const {
+	app::TLockGuard<app::TMutex> lock(namesMtx);
+	TAppModuleMap::const_iterator it = names.find(name);
+	if (it != names.end()) {
+		return it->second;
+	}
+	return nil;
+}
+
+TModule* TApplication::operator [] (const std::string& name) const {
+	return find(name);
+}
+
+bool TApplication::hasModule(const std::string& name) const {
+	return util::assigned(find(name));
 }
 
 
@@ -2190,7 +2210,10 @@ int TApplication::execute(TModule& module) {
 					std::string sText = "Module [" + sName + "] failed, Error code = " + sError;
 					errorLog(sText);
 				} else {
+					// Add module to mapped list by fully qualified call name, e.g. "app::TExplorer"
 					writeLog("[Application] Executed module <" + sName + ">");
+					app::TLockGuard<app::TMutex> lock(namesMtx);
+					names[sName] = &module;
 				}
 			} catch (const std::exception& e) {
 				std::string sExcept = e.what();

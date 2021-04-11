@@ -80,6 +80,7 @@ using TWatchNotifyHandler = std::function<void(const std::string&, bool&)>;
 using TWatchNotifyList = std::vector<app::TWatchNotifyHandler>;
 
 using TAppModuleList = std::vector<app::TModule*>;
+using TAppModuleMap = std::map<std::string, app::TModule*>;
 
 #else
 
@@ -95,6 +96,7 @@ typedef std::function<void(const std::string&, bool&)> TWatchNotifyHandler;
 typedef std::vector<app::TWatchNotifyHandler> TWatchNotifyList;
 
 typedef std::vector<app::TModule&> TAppModuleList;
+typedef std::map<std::string, app::TModule*> TAppModuleMap;
 
 #endif
 
@@ -102,7 +104,21 @@ typedef std::vector<app::TModule&> TAppModuleList;
 enum ELogBase { LOG_APP, LOG_EXCEPT, LOG_THREAD, LOG_SOCKET, LOG_TIMER, LOG_TASKS, LOG_WEB, LOG_DATABASE };
 enum ESystemState { SYS_READY, SYS_RELOAD, SYS_STOP };
 
-class TApplication : public TModule, public TThreadAffinity, private TThreadUtil, private TCapabilities {
+
+class TBaseApplication : public TModule, protected TThreadAffinity, protected TThreadUtil, protected TCapabilities {
+public:
+	virtual void signalHandler(int signal) = 0;
+	virtual int signalThreadHandler() = 0;
+	virtual int watchThreadHandler() = 0;
+	virtual int udevThreadHandler() = 0;
+	virtual int commThreadHandler() = 0;
+
+	TBaseApplication() : TThreadAffinity() {};
+	virtual ~TBaseApplication() {};
+};
+
+
+class TApplication : public TBaseApplication {
 private:
 	uid_t uid;
 	pid_t tid;
@@ -119,6 +135,7 @@ private:
 	mutable app::TMutex terminateMtx;
 	mutable app::TMutex configMtx;
 	mutable app::TMutex systemMtx;
+	mutable app::TMutex namesMtx;
 	app::TMutex stopMtx;
 	app::TMutex haltedMtx;
 	app::TMutex shutdownMtx;
@@ -169,6 +186,7 @@ private:
     size_t executed;
 	TAppModuleList modules;
 	TAppModuleList prepared;
+	TAppModuleMap names;
 	size_t changes;
 
 	TWatchNotifyList watches;
@@ -270,6 +288,12 @@ private:
 	bool getAndSetUnprepared();
 
 	bool backupConfigurationFilesWithNolock();
+
+	void signalHandler(int signal);
+	int signalThreadHandler();
+	int watchThreadHandler();
+	int udevThreadHandler();
+	int commThreadHandler();
 
 	template<typename signal_t, typename class_t>
 		TEventHandler bindSignalHandler(signal_t &&onSignal, class_t &&owner) {
@@ -792,11 +816,9 @@ public:
 
 	int result() const { return error; };
 
-	void signalHandler(int signal);
-	int signalThreadHandler();
-	int watchThreadHandler();
-	int udevThreadHandler();
-	int commThreadHandler();
+	TModule* find(const std::string& name) const;
+	TModule* operator [] (const std::string& name) const;
+	bool hasModule(const std::string& name) const;
 
 	util::TTimePart getDeallocateTime() const;
 	util::TTimePart getHeapDelay() const;
@@ -816,7 +838,6 @@ public:
 	TApplication();
 	virtual ~TApplication();
 };
-
 
 } /* namespace app */
 
