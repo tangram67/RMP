@@ -435,11 +435,14 @@ void TWebSockets::debugOutputEpoll(size_t size) {
 int TWebSockets::eloop(app::TManagedThread& sender) {
 	int rcount = 0;
 	epoll_event* p;
+	bool goon;
 	size_t n;
 
 	// Be sure to reset running flag...
 	util::TBooleanGuard<bool> bg(running);
 	do {
+		goon = true;
+
 		// Create new polling list from master events
 		n = createEpollEvents();
 
@@ -463,7 +466,6 @@ int TWebSockets::eloop(app::TManagedThread& sender) {
 			reader.clear();
 			p = revents;
 			for (int i=0; i<rcount; ++i, ++p) {
-				bool invalidated = false;
 
 				// No event on this socket
 				if (p->events == 0)
@@ -472,6 +474,29 @@ int TWebSockets::eloop(app::TManagedThread& sender) {
 				// Get listening socket from data pointer
 				PWebSocket socket = (PWebSocket)p->data.ptr;
 				app::THandle handle = socket->handle;
+
+				// Client has disconnected
+				if (goon && (p->events & POLLHUP)) {
+					// Remove from current socket polling list
+					// if socket is not listening socket!
+					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLHUP.", handle);
+					invalidateSocket(socket);
+					goon = false;
+				}
+
+				// Error on socket
+				if (goon && (p->events & POLLERR)) {
+					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLERR.", handle);
+					invalidateSocket(socket);
+					goon = false;
+				}
+
+				// Invalid socket descriptor
+				if (goon && (p->events & POLLNVAL)) {
+					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLNVAL.", handle);
+					invalidateSocket(socket);
+					goon = false;
+				}
 
 				// Received data from socket
 				if (p->events & POLLIN) {
@@ -483,40 +508,17 @@ int TWebSockets::eloop(app::TManagedThread& sender) {
 
 				} // if (p->revents & POLLIN)
 
-				// Client has disconnected
-				if (!invalidated && (p->events & POLLHUP)) {
-					// Remove from current socket polling list
-					// if socket is not listening socket!
-					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLHUP.", handle);
-					invalidateSocket(socket);
-					invalidated = true;
-				}
-
-				// Error on socket
-				if (!invalidated && (p->events & POLLERR)) {
-					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLERR.", handle);
-					invalidateSocket(socket);
-					invalidated = true;
-				}
-
-				// Invalid socket descriptor
-				if (!invalidated && (p->events & POLLNVAL)) {
-					writeLogFmt("TWebSockets::eloop() Client socket <%> closed on POLLNVAL.", handle);
-					invalidateSocket(socket);
-					invalidated = true;
-				}
-
 				p->events = 0;
 
 			} // for (i=0; i<events.size(); ++i, ++p)
 
-			if (!shutdown) {
+			if (goon && !shutdown) {
 				// Executer reader
 				roundRobinReader();
-
-				// Removed invalid web sockets
-				removeInvalidatedSockets();
 			}
+
+			// Removed invalid web sockets
+			removeInvalidatedSockets();
 
 			if (debug) std::cout << "TWebSockets::eloop() End of polling events." << std::endl;
 

@@ -814,7 +814,14 @@ public:
 	bool reboot();
 	bool shutdown();
 
-	int result() const { return error; };
+	template<typename class_t>
+		class_t* getModule(const std::string& name) {
+			TModule* m = find(name);
+			if (util::assigned(m)) {
+				return dynamic_cast<class_t*>(m);
+			}
+			return nil;
+		}
 
 	TModule* find(const std::string& name) const;
 	TModule* operator [] (const std::string& name) const;
@@ -834,6 +841,8 @@ public:
 
 	void commitApplicationSettings();
 	bool backupConfigurationFiles();
+
+	int result() const { return error; };
 
 	TApplication();
 	virtual ~TApplication();

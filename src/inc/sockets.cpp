@@ -669,6 +669,7 @@ int TBaseSocket::open(const std::string& host, const std::string& service, const
 
 	assign(fd);
 	setSelf(fd);
+	setService(service);
 	if (hnd != handle())
 		change();
 
@@ -710,7 +711,7 @@ void TBaseSocket::close() {
 		// Unlink server socket file for local UNIX sockets
 		bool failed = false;
 		if (inet::EAddressFamily::AT_UNIX == getFamily() && isServer()) {
-			std::cout << "TBaseSocket::close() Unlink UNIX socket file." << std::endl;
+			if (debug) std::cout << "TBaseSocket::close() Unlink UNIX socket file." << std::endl;
 			const std::string& host = getHost();
 			if (!host.empty()) {
 				int r = unlink(host.c_str());
@@ -779,6 +780,25 @@ void TBaseSocket::shutdown(int how) {
 void TBaseSocket::setSelf(const app::THandle socket) {
 	self.server = socket;
 	self.client = socket;
+}
+
+void TBaseSocket::setPort(const int port) {
+	this->port = port;
+}
+
+void TBaseSocket::setService(const std::string& service) {
+	port = -1;
+	if (!service.empty()) {
+		const char* p = service.c_str();
+		if (util::assigned(p)) {
+			char* q;
+			errno = EXIT_SUCCESS;
+			port = strtol(p, &q, 10);
+			if (EXIT_SUCCESS != errno || p == q) {
+				port = -1;
+			}
+		}
+	}
 }
 
 
@@ -1198,15 +1218,16 @@ PSocketConnection TBaseSocket::addClient(PSocketConnection connection) {
 }
 
 void TBaseSocket::removeClient(const app::THandle client) {
+	bool debugger = debug;
 	app::TLockGuard<app::TMutex> lock(clientMtx);
 	TConnectionMap::iterator it = clients.find(client);
 	if (it != clients.end()) {
 		util::freeAndNil(it->second);
 		clients.erase(it);
-		if (debug) std::cout << "TBaseSocket::removeClient() Client <" << client << "> removed from client list." << std::endl;
+		if (debugger) std::cout << "TBaseSocket::removeClient() Client <" << client << "> removed from client list." << std::endl;
 	}
 	__s_close(client);
-	if (debug) std::cout << "TBaseSocket::removeClient() Client <" << client << "> closed." << std::endl;
+	if (debugger) std::cout << "TBaseSocket::removeClient() Client <" << client << "> closed." << std::endl;
 }
 
 bool TBaseSocket::hasClients() const {
@@ -1469,7 +1490,7 @@ void TSocketController::prime() {
 	scount = 0;
 	mask = SOCKET_EPOLL_MASK;
 	rsize = 10;
-	revents = new epoll_event[rsize];
+	revents = new struct epoll_event[rsize];
 #endif
 }
 
@@ -1567,7 +1588,7 @@ void TSocketController::closeEpollHandle() {
 	epollfd = INVALID_HANDLE_VALUE;
 }
 
-int TSocketController::addEpollHandle(epoll_event* event, const app::THandle hnd) {
+int TSocketController::addEpollHandle(struct epoll_event* event, const app::THandle hnd) {
 	writeLog("TSocketList::start()::addEpollHandle() Add handle <" + std::to_string((size_s)hnd) + ">");
 	int r;
 	do {
@@ -1577,7 +1598,7 @@ int TSocketController::addEpollHandle(epoll_event* event, const app::THandle hnd
 	return r;
 }
 
-int TSocketController::removeEpollHandle(epoll_event* event, const app::THandle hnd) {
+int TSocketController::removeEpollHandle(struct epoll_event* event, const app::THandle hnd) {
 	int r;
 	do {
 		errno = EXIT_SUCCESS;
@@ -1641,9 +1662,11 @@ PSocketConnection TSocketController::addHandle(PSocket socket, util::PSSLConnect
 		writeLogFmt("TSocketList::addHandle() Add new client [%] for Socket $/%, handle = %", remote, socket->getName(), socket->handle(), client);
 	}
 	PSocketConnection connection = addHandle(socket, client, remote);
+	connection->socket = socket;
 	connection->ssl = ssl;
-	if (useEpoll && util::assigned(connection))
+	if (useEpoll && util::assigned(connection)) {
 		addEpollEvent(connection, client, mask);
+	}
 	return connection;
 }
 
@@ -1730,18 +1753,19 @@ void TSocketController::removeSocket(PSocket socket) {
 #ifdef HAS_EPOLL
 
 void TSocketController::addEpollEvent(PSocketConnection connection, const app::THandle hnd, const uint32_t mask) {
-	// Prevent reassigning socket to polling list
-	if (util::assigned(connection->event))
-		return;
 
-	epoll_event * p = new epoll_event;
-	connection->event = p;
+	// Create new event object if needed...
+	if (!util::assigned(connection->event)) {
+		connection->event = new (struct epoll_event);
+	}
+
+	// Setup correct data for new/existing event object
+	connection->event->data.ptr = (void*)connection;
+	connection->event->events = mask;
 	connection->client = hnd;
-	p->data.ptr = (void *)connection;
-	p->events = mask;
 
-	int r = addEpollHandle(p, hnd);
-	if (r != EXIT_SUCCESS)
+	// Register new poll event object data
+	if (EXIT_SUCCESS != addEpollHandle(connection->event, hnd))
 		throw util::sys_error("TSocketList::addEpollEvent()::addEpollHandle() failed.");
 
 	// Increment event count
@@ -1751,16 +1775,19 @@ void TSocketController::addEpollEvent(PSocketConnection connection, const app::T
 
 void TSocketController::removeEpollEvent(PSocketConnection connection, const app::THandle hnd) {
 	// First remove epoll entry
+	bool ok = false;
 	if (util::assigned(connection)) {
-		epoll_event* p = connection->event;
-		if (util::assigned(p)) {
-			removeEpollHandle(p, hnd);
-			util::freeAndNil(connection->event);
+		if (util::assigned(connection->event)) {
+			removeEpollHandle(connection->event, hnd);
+			connection->event->data.ptr = nil;
+			ok = true;
 		}
 	}
-	if (ecount)
-		--ecount;
-	writeLogFmt("TSocketList::removeEpollEvent() Socket <%> removed from epolling list.", hnd);
+	if (ok) {
+		if (ecount)
+			--ecount;
+		writeLogFmt("TSocketList::removeEpollEvent() Socket <%> removed from epolling list.", hnd);
+	}
 }
 
 #endif
@@ -2116,14 +2143,14 @@ size_t TSocketController::createEpollEvents() {
 		size_t n = 5 * sockets.size() + 2 * ecount;
 		if (!util::assigned(revents)) {
 			rsize = n;
-			revents = new epoll_event[rsize];
+			revents = new struct epoll_event[rsize];
 			resized = true;
 			if (debug) std::cout << "TSocketList::createEpollEvents() Create event list with " << rsize << " entries." << std::endl;
 		} else {
 			if (rsize < n) {
 				rsize = n;
 				delete[] revents;
-				revents = new epoll_event[rsize];
+				revents = new struct epoll_event[rsize];
 				resized = true;
 				if (debug) std::cout << "TSocketList::createEpollEvents() Resized event list to " << rsize << " entries." << std::endl;
 			}
@@ -2131,7 +2158,10 @@ size_t TSocketController::createEpollEvents() {
 
 		// Initialize new array
 		if (resized) {
-			memset(revents, 0, rsize * sizeof(epoll_event));
+			for (size_t i=0; i<rsize; ++i) {
+				revents[i].data.ptr = nil;
+				revents[i].events = 0;
+			}
 		}
 
 	}
@@ -2144,7 +2174,7 @@ void TSocketController::debugOutputEpoll(size_t size) {
 		if (size == 0)
 			size = rsize;
 		PSocketConnection connection;
-		epoll_event* p = revents;
+		struct epoll_event* p = revents;
 		for (size_t i=0; i<size; ++i, ++p) {
 			size_t k = util::succ(i);
 			if (util::assigned(p)) {
@@ -2173,7 +2203,8 @@ void TSocketController::debugOutputEpoll(size_t size) {
 int TSocketController::eloop(app::TManagedThread& sender) {
 	int rcount = 0;
 	size_t n;
-	epoll_event* p;
+	bool error, goon;
+	struct epoll_event* p;
 
 	// Be sure to reset running...
 	util::TBooleanGuard<bool> bg(running);
@@ -2182,14 +2213,17 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 		if (enabled) {
 			// Create new polling list from master events
 			n = createEpollEvents();
-			//std::cout << "TSocketList::eloop() Watched events (" << n << ")" << std::endl;
+			if (debug) std::cout << "TSocketList::eloop() Watched events (" << n << ")" << std::endl;
 
 			// Check for data on sockets
 			rcount = epoll();
 			if (rcount < 0)
 				throw util::sys_error("TSocketList::eloop()::epoll() failed.");
+			error = false;
+			goon = true;
 
 			if (rcount > 0 && n > 0 && running && !sender.isTerminating()) {
+
 				if (debug) {
 					std::cout << "TSocketList::eloop() Watched events           = " << n << std::endl;
 					std::cout << "TSocketList::eloop() Fired events (rcount)    = " << rcount << std::endl;
@@ -2201,7 +2235,7 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 				}
 
 				// Find socket with data signaled
-				if (!reader.empty()) reader.clear();
+				reader.clear();
 				p = revents;
 				for (int i=0; i<rcount; ++i, ++p) {
 
@@ -2214,6 +2248,46 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 					PSocket socket = connection->socket;
 					app::THandle server = connection->server;
 					app::THandle client = connection->client;
+
+					// Client has disconnected
+					if (goon && (p->events & POLLHUP)) {
+						// Remove from current socket polling list if socket is not listening socket!
+						writeLogFmt("TSocketList::eloop() Received signal POLLHUP for socket <%>", client);
+						// List entries may be invalidated by revoving client handle
+						// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
+						// invalidateReader(client);
+						doDisconnectAction(connection, socket, server, client);
+						error = true;
+						goon = false;
+					}
+
+					// Error on socket
+					if (goon && (p->events & POLLERR)) {
+						if (debug) std::cout << "TSocketList::eloop() Received signal POLLERR for socket <" << client << ">" << std::endl;
+						if (server != client && util::assigned(socket)) {
+							writeLogFmt("TSocketList::eloop() Client socket <%> closed on POLLERR.", client);
+							// List entries may be invalidated by revoving client handle
+							// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
+							// invalidateReader(client);
+							removeHandle(connection, socket, client);
+							error = true;
+							goon = false;
+						}
+					}
+
+					// Invalid socket descriptor
+					if (goon && (p->events & POLLNVAL)) {
+						if (debug) std::cout << "TSocketList::eloop() Received signal POLLNVAL for socket <" << client << ">" << std::endl;
+						if (server != client) {
+							writeLogFmt("TSocketList::eloop() Client socket <%> closed on POLLNVAL.", client);
+							// List entries may be invalidated by revoving client handle
+							// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
+							// invalidateReader(client);
+							removeHandle(connection, socket, client);
+							error = true;
+							goon = false;
+						}
+					}
 
 					// Received data from socket
 					if (p->events & POLLIN) {
@@ -2267,39 +2341,19 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 
 					} // if (p->revents & POLLIN)
 
-					// Client has disconnected
-					if (p->events & POLLHUP) {
-						// Remove from current socket polling list
-						// if socket is not listening socket!
-						writeLogFmt("TSocketList::eloop() Received signal POLLHUP for socket <%>", client);
-						doDisconnectAction(connection, socket, server, client);
-					}
-
-					// Error on socket
-					if (p->events & POLLERR) {
-						if (debug) std::cout << "TSocketList::eloop() Received signal POLLERR for socket <" << client << ">" << std::endl;
-						if (server != client && util::assigned(socket)) {
-							writeLogFmt("TSocketList::eloop() Client socket <%> closed on POLLERR.", client);
-							removeHandle(connection, socket, client);
-						}
-					}
-
-					// Invalid socket descriptor
-					if (p->events & POLLNVAL) {
-						if (debug) std::cout << "TSocketList::eloop() Received signal POLLNVAL for socket <" << client << ">" << std::endl;
-						if (server != client) {
-							writeLogFmt("TSocketList::eloop() Client socket <%> closed on POLLNVAL.", client);
-							removeHandle(connection, socket, client);
-						}
-					}
-
 					p->events = 0;
 
 				} // for (i=0; i<events.size(); ++i, ++p)
 
+				// Invalidate readers on error
+				if (error) {
+					reader.clear();
+				}
+
 				// Executer reader
-				if (!shutdown)
+				if (!shutdown && !error) {
 					roundRobinReader();
+				}
 
 				if (debug) std::cout << "TSocketList::eloop() End of polling events." << std::endl;
 
@@ -2326,6 +2380,17 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 
 	writeLog("TSocketList::eloop() Reached end of thread.");
 	return EXIT_SUCCESS;
+}
+
+void TSocketController::invalidateReader(const app::THandle client) {
+
+	auto eraser = [client] (const PSocketConnection& connection) {
+		bool b = connection->client == client;
+		// std::cout << "TSocketController::invalidateReader() Remove " << connection->client << " of " << client << " ==> " << b << std::endl;
+		return b;
+	};
+
+	reader.erase(std::remove_if(reader.begin(), reader.end(), eraser), reader.end());
 }
 
 void TSocketController::roundRobinReader() {
@@ -2357,17 +2422,17 @@ void TSocketController::roundRobinReader() {
 						// --> No close action for datagram type UDP and native UNIX file sockets!
 						if (!socket->isDatagram() && !socket->isUnix()) {
 
+							// Data signaled, but socket blocked
+							// --> No more data available
+							if (socket->recerr() == EWOULDBLOCK) {
+								if (debug) std::cout << "TSocketList::roundRobinReader() No more data from client Socket <" << client << "> available." << std::endl;
+							}
+
 							// Data signaled for TCP socket, but no data received
 							// --> Connection closed by foreign host
 							if (socket->recerr() == EXIT_SUCCESS) {
 								writeLogFmt("TSocketList::roundRobinReader() Client Socket <%> closed (EOF on POLLIN)", client);
 								doDisconnectAction(connection, socket, server, client);
-							}
-
-							// Data signaled, but socket blocked
-							// --> No more data available
-							if (socket->recerr() == EWOULDBLOCK) {
-								if (debug) std::cout << "TSocketList::roundRobinReader() No more data from client Socket <" << client << "> available." << std::endl;
 							}
 						}
 
@@ -2375,6 +2440,7 @@ void TSocketController::roundRobinReader() {
 						connection->state &= ~POLLIN;
 
 					} else {
+
 						if (r > (ssize_t)0) {
 							// Try to receive more data on native (unencrypted) sockets only
 							if (!socket->isSecure())
@@ -2383,6 +2449,7 @@ void TSocketController::roundRobinReader() {
 							// Result < 0 --> Error on socket read
 							connection->state &= ~POLLIN;
 						}
+
 					}
 
 				} // if (connection->state & POLLIN)
@@ -2559,7 +2626,8 @@ ssize_t TSocketController::onSocketData(const app::THandle client) {
 ssize_t TSocketController::onSocketData(PSocket socket, PSocketConnection connection, const app::THandle client) {
 	if (util::assigned(socket)) {
 		try {
-			return socket->executeDataWrapper(connection, client);
+			ssize_t r = socket->executeDataWrapper(connection, client);
+			return r;
 		} catch (const std::exception& e)	{
 			std::string sExcept = e.what();
 			errorLogFmt("TSocketList::onSocketData() Receive [%] from client socket <%> failed: $",
@@ -2724,8 +2792,10 @@ bool TServerSocket::open(const std::string& bindTo, const int port, const inet::
 }
 
 ssize_t TServerSocket::executeDataWrapper(PSocketConnection connection, app::THandle client) {
-	if (client > 0)
-		return executeDataMethod(client);
+	if (client > 0) {
+		ssize_t r = executeDataMethod(client);
+		return r;
+	}
 	throw util::app_error_fmt("TServerSocket::executeDataWrapper(%) failed: Invalid parameter.", getName());
 }
 

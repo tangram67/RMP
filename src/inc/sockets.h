@@ -230,6 +230,8 @@ private:
 
 protected:
 	void setSelf(const app::THandle socket);
+	void setPort(const int port);
+	void setService(const std::string& service);
 
 public:
 	typedef typename TConnectionMap::const_iterator const_iterator;
@@ -275,6 +277,7 @@ public:
 	inline const std::string& getService() const { return TInetAddress::getService(); };
 	inline EAddressFamily getFamily() const { return TInetAddress::getFamily(); };
 	const std::string& getDescription() const;
+	int getPort() const { return port; };
 	int getID() const { return id; };
 
 	void setServer() { listener = true; }
@@ -404,6 +407,7 @@ public:
 	inline void setConnected(const bool connected) { socket.setConnected(connected); };
 	inline bool wasConnected() const { return socket.wasConnected(); };
 	inline bool hasClients() const { return socket.hasClients(); };
+	inline int getPort() const { return socket.getPort(); };
 	inline int getID() const { return socket.getID(); };
 
 	inline bool isFamily4() const { return socket.isFamily4(); };
@@ -485,7 +489,8 @@ private:
 
 #ifdef HAS_EPOLL
 	app::THandle epollfd;
-	epoll_event* revents;
+	struct epoll_event eevent;
+	struct epoll_event* revents;
 	size_t rsize;
 	size_t ecount;
 	size_t scount;
@@ -522,8 +527,8 @@ private:
 	void closeEpollHandle();
 
 	void addSocketHandle(PSocket socket);
-	int addEpollHandle(epoll_event* event, const app::THandle hnd);
-	int removeEpollHandle(epoll_event* event, const app::THandle hnd);
+	int addEpollHandle(struct epoll_event* event, const app::THandle hnd);
+	int removeEpollHandle(struct epoll_event* event, const app::THandle hnd);
 
 	void addEpollEvent(PSocketConnection connection, const app::THandle hnd, const uint32_t mask);
 	void removeEpollEvent(PSocketConnection connection, const app::THandle hnd);
@@ -531,6 +536,7 @@ private:
 	int epoll();
 	size_t createEpollEvents();
 	void roundRobinReader();
+	void invalidateReader(const app::THandle client);
 	void doDisconnectAction(PSocketConnection connection, PSocket socket, const app::THandle server, const app::THandle client);
 
 	void debugOutputEpoll(size_t size);
