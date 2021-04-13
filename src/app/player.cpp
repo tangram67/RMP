@@ -30,6 +30,7 @@
 #include "../inc/typeid.h"
 #include "../inc/flac.h"
 #include "storeconsts.h"
+#include "upnp.h"
 
 
 using namespace std;
@@ -396,6 +397,16 @@ int TPlayer::execute() {
 			server6 = application.addSocket<inet::TServerSocket>("Remote Telnet Socket IPv6",
 						&app::TPlayer::onSocketData, &app::TPlayer::onSocketConnect, &app::TPlayer::onSocketClose, this);
 			server6->open("any", 2300, inet::EAddressFamily::AT_INET6);
+		}
+	}
+
+	// Add service for network discovery
+	if (util::assigned(server4)) {
+		if (server4->isOpen()) {
+			auto module = application.getModule<upnp::TUPnP>("upnp::TUPnP");
+			if (util::assigned(module)) {
+				module->addServiceEntry("_telnet._tcp", "*", server4->getPort());
+			}
 		}
 	}
 
@@ -9742,32 +9753,32 @@ void TPlayer::sendSocketMessage(const inet::TServerSocket& socket, const app::TH
 }
 
 void TPlayer::onSocketConnect(inet::TSocket& socket, const app::THandle client) {
-	logger("[" + socket.getName() + "/" + socket.getService() + "] Client connected.");
+	logger("[" + socket.getName() + "/" + socket.getService() + "] Client connected (" + std::to_string((size_s)client) + ")");
 	addClientSocket(socket, client);
 }
 
 void TPlayer::onSocketClose(inet::TSocket& socket, const app::THandle client) {
-	logger("[" + socket.getName() + "/" + socket.getService() + "] Client disconnected.");
+	logger("[" + socket.getName() + "/" + socket.getService() + "] Client disconnected (" + std::to_string((size_s)client) + ")");
 	deleteClientSocket(socket, client);
 }
 
 ssize_t TPlayer::onSocketData(const inet::TServerSocket& socket, const app::THandle client, bool& drop) {
-	ssize_t retVal;
-	std::string command, result;
-	command.resize(1024);
-	void* p = (void*)command.c_str();
-	retVal = socket.receive(client, p, command.size());
-	if (retVal > 0 && !terminate) {
+	util::TBuffer buffer(1024);
+	ssize_t received = socket.receive(client, buffer(), buffer.size());
+	if (received > 0 && received <= MAX_COMMAND_SIZE && !terminate) {
+		size_t length = strnlen(buffer(), std::min(MAX_COMMAND_SIZE, received));
+		std::string command(buffer(), length);
 
 		// Execute telnet command
+		std::string result;
 		executeTelnetCommand(command, result, drop);
 
 		// Send data back to sender
-		if (!drop && !result.empty())
+		if (!drop && !result.empty()) {
 			sendClientMessage(socket, client, result);
-
+		}
 	}
-	return retVal;
+	return received;
 }
 
 void TPlayer::executeTelnetCommand(const std::string data, std::string& result, bool& drop) {
