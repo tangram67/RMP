@@ -2385,9 +2385,7 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 void TSocketController::invalidateReader(const app::THandle client) {
 
 	auto eraser = [client] (const PSocketConnection& connection) {
-		bool b = connection->client == client;
-		// std::cout << "TSocketController::invalidateReader() Remove " << connection->client << " of " << client << " ==> " << b << std::endl;
-		return b;
+		return connection->client == client;
 	};
 
 	reader.erase(std::remove_if(reader.begin(), reader.end(), eraser), reader.end());
