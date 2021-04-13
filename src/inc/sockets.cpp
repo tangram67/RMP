@@ -2201,14 +2201,13 @@ void TSocketController::debugOutputEpoll(size_t size) {
 
 
 int TSocketController::eloop(app::TManagedThread& sender) {
-	int rcount = 0;
-	size_t n;
-	bool error, goon;
 	struct epoll_event* p;
+	int rcount = 0;
+	bool goon;
+	size_t n;
 
 	// Be sure to reset running...
 	util::TBooleanGuard<bool> bg(running);
-
 	do {
 		if (enabled) {
 			// Create new polling list from master events
@@ -2219,7 +2218,6 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 			rcount = epoll();
 			if (rcount < 0)
 				throw util::sys_error("TSocketList::eloop()::epoll() failed.");
-			error = false;
 			goon = true;
 
 			if (rcount > 0 && n > 0 && running && !sender.isTerminating()) {
@@ -2257,7 +2255,6 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 						// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
 						// invalidateReader(client);
 						doDisconnectAction(connection, socket, server, client);
-						error = true;
 						goon = false;
 					}
 
@@ -2270,7 +2267,6 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 							// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
 							// invalidateReader(client);
 							removeHandle(connection, socket, client);
-							error = true;
 							goon = false;
 						}
 					}
@@ -2284,7 +2280,6 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 							// --> Remove invalidated client from list first, otherwise segemtation fault will most likely happen!!!
 							// invalidateReader(client);
 							removeHandle(connection, socket, client);
-							error = true;
 							goon = false;
 						}
 					}
@@ -2346,12 +2341,12 @@ int TSocketController::eloop(app::TManagedThread& sender) {
 				} // for (i=0; i<events.size(); ++i, ++p)
 
 				// Invalidate readers on error
-				if (error) {
+				if (!goon) {
 					reader.clear();
 				}
 
 				// Executer reader
-				if (!shutdown && !error) {
+				if (goon && !shutdown) {
 					roundRobinReader();
 				}
 
