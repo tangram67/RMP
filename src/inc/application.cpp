@@ -730,11 +730,15 @@ const std::string& TApplication::getHostName() const {
 	return sysdat.app.hostName;
 }
 void TApplication::setHostName(const std::string& hostName) {
-	app::TLockGuard<app::TMutex> lock(configMtx);
-	if (hostName != sysdat.app.hostName) {
-		sysdat.app.hostName = hostName;
-		++changes;
+	{
+		app::TLockGuard<app::TMutex> lock(configMtx);
+		if (hostName != sysdat.app.hostName) {
+			sysdat.app.hostName = hostName;
+			++changes;
+		}
 	}
+	// Keep modules informed about hostanme change...
+	update(ER_HOSTNAME);
 }
 
 const std::string& TApplication::getDisplayName() const {

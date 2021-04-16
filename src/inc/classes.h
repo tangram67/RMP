@@ -55,7 +55,7 @@ namespace app {
 
 static const size_t nsizet = static_cast<size_t>(-1);
 
-enum EUpdateReason { ER_DATETIME, ER_LANGUAGE, ER_REFRESH };
+enum EUpdateReason { ER_DATETIME, ER_LANGUAGE, ER_HOSTNAME, ER_REFRESH };
 
 class TObject;
 class TModule;
@@ -156,6 +156,10 @@ public:
 	virtual void cleanup() = 0;
 
 	explicit TModule() {};
+	TModule(TModule&) = delete;
+	TModule(TModule&&) = delete;
+	TModule(const TModule&) = delete;
+	TModule(const TModule&&) = delete;
 	virtual ~TModule() = default;
 };
 
