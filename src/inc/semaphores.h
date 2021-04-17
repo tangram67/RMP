@@ -98,6 +98,10 @@ public:
 	ELockScope getScope() const { return scope; };
 
 	explicit TBaseLock();
+	TBaseLock(TBaseLock&) = delete;
+	TBaseLock(TBaseLock&&) = delete;
+	TBaseLock(const TBaseLock&) = delete;
+	TBaseLock(const TBaseLock&&) = delete;
 	virtual ~TBaseLock() {}
 };
 

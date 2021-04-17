@@ -202,8 +202,11 @@ private:
 protected:
 	bool opened;
 	bool inTransaction;
+	mutable app::TMutex mtx;
 
 public:
+	app::TMutex& mutex() { return mtx; };
+
 	// Specialized methods depending on database type
 	// --> To be implemented in derived class
 	virtual void open() = 0;
