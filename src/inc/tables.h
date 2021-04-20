@@ -46,6 +46,7 @@ public:
 	void debugOutput(const std::string& preamble = "");
 
 	TColumn();
+	TColumn(TColumn &value);
 	TColumn(const TColumn &value);
 	virtual ~TColumn() = default;
 };
@@ -94,6 +95,7 @@ public:
 	void debugOutput(const std::string& preamble = "", const std::string& name = "Column") const;
 
 	THeader();
+	THeader(THeader &value);
 	THeader(const THeader &value);
 	virtual ~THeader();
 };
@@ -140,6 +142,7 @@ public:
 	std::string asJSON(const std::string& preamble = "");
 
 	TField();
+	TField(TField& value);
 	TField(const TField& value);
 	virtual ~TField();
 };
@@ -211,7 +214,8 @@ public:
 	void debugOutput(const std::string& preamble = "", const std::string& name = "Field") const;
 
 	TRecord();
-	TRecord(const data::TRecord& value);
+	TRecord(TRecord& value);
+	TRecord(const TRecord& value);
 	virtual ~TRecord();
 };
 
@@ -303,6 +307,7 @@ public:
 	TRecord& operator [] (const std::size_t index) const;
 	TRecord& operator [] (const std::string value) const;
 
+	TTable& operator = (const TTable &table);
 	TTable& operator = (const std::string &json);
 
 	void operator () (TRecord& record);
@@ -312,6 +317,8 @@ public:
 	void debugOutputColumns(const std::string& preamble = "") const;
 
 	TTable();
+	TTable(TTable& table);
+	TTable(const TTable& table);
 	TTable(const std::string& json);
 	virtual ~TTable();
 };

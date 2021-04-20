@@ -18,6 +18,10 @@ TColumn::TColumn() {
 	clear();
 }
 
+TColumn::TColumn(TColumn &value) {
+	assign(value);
+}
+
 TColumn::TColumn(const TColumn &value) {
 	assign(value);
 }
@@ -64,6 +68,11 @@ void TColumn::debugOutput(const std::string& preamble) {
 
 THeader::THeader() {
 	columns.setOwner(this);
+}
+
+THeader::THeader(THeader &value) {
+	columns.setOwner(this);
+	assign(value);
 }
 
 THeader::THeader(const THeader &value) {
@@ -266,6 +275,11 @@ TField::TField() {
 	defVal = "<unknown>";
 }
 
+TField::TField(TField& value) {
+	assign(value);
+	defVal = "<unknown>";
+}
+
 TField::TField(const TField& value) {
 	assign(value);
 	defVal = "<unknown>";
@@ -371,6 +385,15 @@ TTable::TTable() {
 	bindDataHandler(&TTable::onJsonDataField, this);
 }
 
+TTable::TTable(TTable& table) {
+	*this = table;
+}
+
+TTable::TTable(const TTable& table) {
+	*this = table;
+}
+
+
 TTable::TTable(const std::string& json) : TTable() {
 	*this = json;
 };
@@ -432,6 +455,23 @@ void TTable::operator () (TRecord& record) {
 
 TTable& TTable::operator = (const std::string &json) {
 	parseJSON(json);
+	return *this;
+}
+
+TTable& TTable::operator = (const TTable &table) {
+	clear();
+	this->locale = table.locale;
+	this->dateTimeType = table.dateTimeType;
+	this->dateTimePrecision = table.dateTimePrecision;
+	if (!table.empty()) {
+		PRecord record;
+		for (size_t idx=0; idx<size(); idx++) {
+			record = table.getRecord(idx);
+			if (util::assigned(record)) {
+				records.push_back(new TRecord(*record));
+			}
+		}
+	}
 	return *this;
 }
 
@@ -800,7 +840,14 @@ TRecord::TRecord() {
 }
 
 
-TRecord::TRecord(const data::TRecord& value) {
+TRecord::TRecord(TRecord& value) {
+	assign(value);
+	fields.setOwner(this);
+	defVar.setType(util::EVT_INVALID);
+	defField.value.setType(util::EVT_INVALID);
+}
+
+TRecord::TRecord(const TRecord& value) {
 	assign(value);
 	fields.setOwner(this);
 	defVar.setType(util::EVT_INVALID);
