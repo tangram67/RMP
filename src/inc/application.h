@@ -288,6 +288,8 @@ private:
 	bool getAndSetUnprepared();
 
 	bool backupConfigurationFilesWithNolock();
+	void removeModuleByName(const std::string& name);
+	void addModuleName(const std::string& name, TModule& module);
 
 	void signalHandler(int signal);
 	int signalThreadHandler();

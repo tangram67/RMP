@@ -2209,6 +2209,7 @@ int TApplication::execute(TModule& module) {
 		// Execute given module when successfully prepared
 		if (util::checkSucceeded(error)) {
 			try {
+				addModuleName(sName, module);
 				writeLog("[Application] Execute module <" + sName + ">");
 				if (!isDaemonized())
 					std::cout << app::green << "[" << executed << "] Execute module <" << sName << ">" << app::reset << std::endl;
@@ -2221,17 +2222,18 @@ int TApplication::execute(TModule& module) {
 					// Add module to mapped list by fully qualified call name, e.g. "app::TExplorer"
 					writeLog("[Application] Executed module <" + sName + ">");
 					app::TLockGuard<app::TMutex> lock(namesMtx);
-					names[sName] = &module;
 				}
 			} catch (const std::exception& e) {
 				std::string sExcept = e.what();
 				std::string sText = "Exception in module [" + sName + "] \"" + sExcept + "\"";
 				errorLog(sText);
 				error = EXIT_FAILURE;
+				removeModuleByName(sName);
 			} catch (...) {
 				std::string sText = "Unknown exception in module [" + sName + "]";
 				errorLog(sText);
 				error = EXIT_FAILURE;
+				removeModuleByName(sName);
 			}
 			if (!isDaemonized()) {
 				if (util::checkSucceeded(error)) {
@@ -2254,6 +2256,19 @@ int TApplication::execute(TModule& module) {
 		}
 	}
 	return error;
+}
+
+void TApplication::addModuleName(const std::string& name, TModule& module) {
+	app::TLockGuard<app::TMutex> lock(namesMtx);
+	names[name] = &module;
+}
+
+void TApplication::removeModuleByName(const std::string& name) {
+	app::TLockGuard<app::TMutex> lock(namesMtx);
+	TAppModuleMap::const_iterator it = names.find(name);
+	if (it != names.end()) {
+		names.erase(it);
+	}
 }
 
 void TApplication::update(const EUpdateReason reason) {
@@ -2297,6 +2312,7 @@ void TApplication::unprepare() {
 			TModule* module = prepared[i];
 			std::string sName = util::nameOf(*module);
 			writeLog("[Application] Unrepare module <" + sName + ">");
+			removeModuleByName(sName);
 
 			// Call unprepare method for given module
 			try {

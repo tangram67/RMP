@@ -91,7 +91,7 @@ public:
 	void operator() (PColumn& column);
 	void operator() (const TColumn& column);
 
-	void debugOutput(const std::string& preamble = "", const std::string& name = "Column");
+	void debugOutput(const std::string& preamble = "", const std::string& name = "Column") const;
 
 	THeader();
 	THeader(const THeader &value);
@@ -308,8 +308,8 @@ public:
 	void operator () (TRecord& record);
 	void operator () (PRecord& record);
 
-	void debugOutputData(const std::string& preamble = "", size_t count = 0);
-	void debugOutputColumns(const std::string& preamble = "");
+	void debugOutputData(const std::string& preamble = "", size_t count = 0) const;
+	void debugOutputColumns(const std::string& preamble = "") const;
 
 	TTable();
 	TTable(const std::string& json);

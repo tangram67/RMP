@@ -208,7 +208,7 @@ void THeader::addColumn(const TColumn& column) {
 	addColumn(o);
 }
 
-void THeader::debugOutput(const std::string& preamble, const std::string& name) {
+void THeader::debugOutput(const std::string& preamble, const std::string& name) const {
 	if (!empty()) {
 		for (size_t idx=0; idx<size(); idx++) {
 			PColumn o = getColumn(idx);
@@ -458,7 +458,7 @@ void TTable::setHeader(THeader& header) {
 	this->header = header;
 }
 
-void TTable::debugOutputData(const std::string& preamble, size_t count) {
+void TTable::debugOutputData(const std::string& preamble, size_t count) const {
 	if (!empty()) {
 		size_t max = size();
 		if (count > 0 && count < size()) {
@@ -511,7 +511,7 @@ const util::TStringList& TTable::asHTML() const {
 }
 
 
-void TTable::debugOutputColumns(const std::string& preamble) {
+void TTable::debugOutputColumns(const std::string& preamble) const {
 	if (!header.empty()) {
 		if (!name.empty())
 			std::cout << preamble << "Header of table [" << name << "]" << std::endl;
