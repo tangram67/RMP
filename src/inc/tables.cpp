@@ -468,7 +468,7 @@ TTable& TTable::operator = (const TTable &table) {
 		for (size_t idx=0; idx<size(); idx++) {
 			record = table.getRecord(idx);
 			if (util::assigned(record)) {
-				records.push_back(new TRecord(*record));
+				addRecord(*record);
 			}
 		}
 	}
