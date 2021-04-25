@@ -465,7 +465,7 @@ TTable& TTable::operator = (const TTable &table) {
 	this->dateTimePrecision = table.dateTimePrecision;
 	if (!table.empty()) {
 		PRecord record;
-		for (size_t idx=0; idx<size(); idx++) {
+		for (size_t idx=0; idx<table.size(); idx++) {
 			record = table.getRecord(idx);
 			if (util::assigned(record)) {
 				addRecord(*record);

@@ -2228,12 +2228,12 @@ int TApplication::execute(TModule& module) {
 				std::string sText = "Exception in module [" + sName + "] \"" + sExcept + "\"";
 				errorLog(sText);
 				error = EXIT_FAILURE;
-				removeModuleByName(sName);
+				removeModuleName(sName);
 			} catch (...) {
 				std::string sText = "Unknown exception in module [" + sName + "]";
 				errorLog(sText);
 				error = EXIT_FAILURE;
-				removeModuleByName(sName);
+				removeModuleName(sName);
 			}
 			if (!isDaemonized()) {
 				if (util::checkSucceeded(error)) {
@@ -2263,7 +2263,7 @@ void TApplication::addModuleName(const std::string& name, TModule& module) {
 	names[name] = &module;
 }
 
-void TApplication::removeModuleByName(const std::string& name) {
+void TApplication::removeModuleName(const std::string& name) {
 	app::TLockGuard<app::TMutex> lock(namesMtx);
 	TAppModuleMap::const_iterator it = names.find(name);
 	if (it != names.end()) {
@@ -2312,7 +2312,7 @@ void TApplication::unprepare() {
 			TModule* module = prepared[i];
 			std::string sName = util::nameOf(*module);
 			writeLog("[Application] Unrepare module <" + sName + ">");
-			removeModuleByName(sName);
+			removeModuleName(sName);
 
 			// Call unprepare method for given module
 			try {

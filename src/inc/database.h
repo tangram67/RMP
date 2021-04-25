@@ -203,6 +203,7 @@ protected:
 	bool opened;
 	bool inTransaction;
 	mutable app::TMutex mtx;
+	mutable app::TMutex transact;
 
 public:
 	app::TMutex& mutex() { return mtx; };
