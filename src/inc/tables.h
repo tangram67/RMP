@@ -48,6 +48,8 @@ public:
 	TColumn();
 	TColumn(TColumn &value);
 	TColumn(const TColumn &value);
+	TColumn(TColumn &&value) = delete;
+	TColumn(const TColumn &&value) = delete;
 	virtual ~TColumn() = default;
 };
 
@@ -97,6 +99,8 @@ public:
 	THeader();
 	THeader(THeader &value);
 	THeader(const THeader &value);
+	THeader(THeader &&value) = delete;
+	THeader(const THeader &&value) = delete;
 	virtual ~THeader();
 };
 
@@ -144,6 +148,8 @@ public:
 	TField();
 	TField(TField& value);
 	TField(const TField& value);
+	TField(TField &&value) = delete;
+	TField(const TField &&value) = delete;
 	virtual ~TField();
 };
 
@@ -216,6 +222,8 @@ public:
 	TRecord();
 	TRecord(TRecord& value);
 	TRecord(const TRecord& value);
+	TRecord(TRecord &&value) = delete;
+	TRecord(const TRecord &&value) = delete;
 	virtual ~TRecord();
 };
 
@@ -260,6 +268,9 @@ private:
 	void addField(const std::string& key, const std::string& value, const size_t row, const util::EVariantType type);
 	void addPrime(const std::string& value, PRecord record);
 	PRecord recordNeeded(const size_t row);
+
+	void copy(const TTable& table);
+	void move(TTable& table);
 
 public:
 	typedef TRecordList::const_iterator const_iterator;
@@ -307,8 +318,10 @@ public:
 	TRecord& operator [] (const std::size_t index) const;
 	TRecord& operator [] (const std::string value) const;
 
-	TTable& operator = (const TTable &table);
-	TTable& operator = (const std::string &json);
+	TTable& operator = (TTable& table);
+	TTable& operator = (const TTable& table);
+	TTable& operator = (std::string& json);
+	TTable& operator = (const std::string& json);
 
 	void operator () (TRecord& record);
 	void operator () (PRecord& record);
@@ -319,7 +332,12 @@ public:
 	TTable();
 	TTable(TTable& table);
 	TTable(const TTable& table);
+	TTable(TTable &&value);
+	TTable(const TTable &&value);
+	TTable(std::string& json);
 	TTable(const std::string& json);
+	TTable(std::string&& json);
+	TTable(const std::string&& json);
 	virtual ~TTable();
 };
 

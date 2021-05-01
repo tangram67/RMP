@@ -68,14 +68,14 @@ void TTagList::invalidate() {
 
 void TTagList::add(const std::string& text, size_t tag) {
 	THtmlList::add(text);
-	icons.push_back("*");
+	icons.push_back("*"); // Add one glyphicon placeholder per entry!
 	tags.push_back(tag);
 }
 
 void TTagList::add(const util::TStringList& items) {
 	THtmlList::add(items);
 	for (size_t i=0; i<items.size(); ++i) {
-		icons.push_back("*");
+		icons.push_back("*"); // Add one glyphicon placeholder per entry!
 		tags.push_back(i);
 	}
 }
@@ -605,14 +605,15 @@ const std::string& TListBox::text(const std::string& caption) const {
 			item = items.at(i);
 			glyph.clear();
 			if (util::validListIndex(glyphs, i)) {
-				const std::string& name = glyphs[i];
-				if (!name.empty()) {
-					if ('/' == name[0]) {
+				// Ignore placeholders like "*"
+				const std::string& image = glyphs[i];
+				if (image.size() > 1) {
+					if ('/' == image[0]) {
 						// Add link to an image
-						glyph = "<span style=\"pointer-events:none;\" aria-hidden=\"true\"><img src=\"" + name + "\"></span>&nbsp;&nbsp;";
+						glyph = "<span style=\"pointer-events:none;\" aria-hidden=\"true\"><img src=\"" + image + "\"></span>&nbsp;&nbsp;";
 					} else {
 						// Add glyphicon by name
-						glyph = "<span class=\"glyphicon " + name + "\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;";
+						glyph = "<span class=\"glyphicon " + image + "\" style=\"pointer-events:none;\" aria-hidden=\"true\"></span>&nbsp;&nbsp;";
 					}
 				}
 			}

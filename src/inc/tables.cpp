@@ -386,17 +386,38 @@ TTable::TTable() {
 }
 
 TTable::TTable(TTable& table) {
-	*this = table;
+	copy(table);
 }
 
 TTable::TTable(const TTable& table) {
-	*this = table;
+	copy(table);
 }
 
+TTable::TTable(TTable&& table) {
+	move(table);
+}
+
+TTable::TTable(const TTable&& table) {
+	copy(table);
+}
+
+
+TTable::TTable(std::string& json) : TTable() {
+	*this = json;
+};
 
 TTable::TTable(const std::string& json) : TTable() {
 	*this = json;
 };
+
+TTable::TTable(std::string&& json) : TTable() {
+	*this = json;
+};
+
+TTable::TTable(const std::string&& json) : TTable() {
+	*this = json;
+};
+
 
 TTable::~TTable() {
 	clear();
@@ -453,12 +474,30 @@ void TTable::operator () (TRecord& record) {
 }
 
 
-TTable& TTable::operator = (const std::string &json) {
+TTable& TTable::operator = (std::string& json) {
 	parseJSON(json);
 	return *this;
 }
 
-TTable& TTable::operator = (const TTable &table) {
+TTable& TTable::operator = (TTable& table) {
+	copy(table);
+	return *this;
+}
+
+
+TTable& TTable::operator = (const std::string& json) {
+	parseJSON(json);
+	return *this;
+}
+
+TTable& TTable::operator = (const TTable& table) {
+	copy(table);
+	return *this;
+}
+
+
+void TTable::copy(const TTable& table) {
+	// TODO Copy header content
 	clear();
 	this->locale = table.locale;
 	this->dateTimeType = table.dateTimeType;
@@ -472,7 +511,23 @@ TTable& TTable::operator = (const TTable &table) {
 			}
 		}
 	}
-	return *this;
+}
+
+void TTable::move(TTable& table) {
+	// TODO Move header content
+	clear();
+	this->locale = table.locale;
+	this->dateTimeType = table.dateTimeType;
+	this->dateTimePrecision = table.dateTimePrecision;
+	if (!table.empty()) {
+		PRecord record;
+		for (size_t idx=0; idx<table.size(); idx++) {
+			record = table.getRecord(idx);
+			records.push_back(record);
+			table.records[idx] = nil;
+		}
+		table.clear();
+	}
 }
 
 

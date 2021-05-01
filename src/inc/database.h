@@ -54,7 +54,7 @@ protected:
 	mutable util::TStringList html;
 
 	void clear();
-	bool validCursor();
+	bool validCursor() const;
 	void databaseNeeded();
 	void sessionNeeded();
 	util::hash_type calcHash();
@@ -77,8 +77,8 @@ public:
 	const data::TRecords& getRecords() const { return getTable().getRecords(); };
 
 	// Data cursor handling
-	data::TTable::const_iterator begin() { return getTable().getRecords().begin(); };
-	data::TTable::const_iterator end() { return getTable().getRecords().end(); };
+	data::TTable::const_iterator begin() const { return getTable().getRecords().begin(); };
+	data::TTable::const_iterator end() const { return getTable().getRecords().end(); };
 
 	// Debugging and informational output methods
 	void debugOutputColumns(const std::string& preamble = "");
@@ -133,10 +133,10 @@ protected:
 	size_t parseParameters();
 
 public:
-	// Transact SQL list
+	// Transact SQL text
 	util::TStringList SQL;
 
-	// Properties
+	// Object properties
 	const std::string& getUUID() const { return uuid; };
 
 	// Specialized methods depending on database type
@@ -153,34 +153,41 @@ public:
 	void addColumn(const std::string& name, util::EVariantType type);
 	util::EVariantType getColumn(const std::string& name);
 
-	// Database type independent getter() and setter()
+	// Database type independent getters and setters
 	bool isPrepred() const { return prepared; };
 	bool isBuffered() const { return buffered; };
 	bool hasData() const { return !table.empty(); };
 	size_t getRecordCount() const { return table.size(); };
 
-	// Localization
+	// Localization support
 	void imbue(const app::TLocale& locale);
 	void setTimeFormat(const util::EDateTimeFormat value);
 	void setTimePrecision(const util::EDateTimePrecision value);
 
-	// Result set access methods
-	data::PRecord getRecord();
-	data::TRecord& record();
+	// Result set access methods (const)
+	const data::PRecord getRecord() const;
+	const data::TRecord& record() const;
 
-	data::PField getField(const std::string name);
-	data::PField getField(const size_t index);
-	data::TField& field(const std::string name);
-	data::TField& field(const size_t index);
+	const data::PField getField(const std::string name) const;
+	const data::PField getField(const size_t index) const;
+	const data::TField& field(const std::string name) const;
+	const data::TField& field(const size_t index) const;
 
-	util::TVariant& value(const std::string name);
-	util::TVariant& value(const size_t index);
+	const util::TVariant& value(const std::string name) const;
+	const util::TVariant& value(const size_t index) const;
 
+	const util::TVariant& operator[] (const std::string& name) const;
+	const util::TVariant& operator[] (const std::size_t index) const;
+
+	// Query parameter setters (non-const, no explicit const getters)
 	util::TVariant& param(const std::string name, const EParameterType type = EPT_DEFAULT);
 	util::TVariant& param(const size_t index, const EParameterType type = EPT_DEFAULT);
 
-	util::TVariant& operator[] (const std::string& name);
-	util::TVariant& operator[] (const std::size_t index);
+	// No copy/move constructors
+	TDataQuery(TDataQuery& value) = delete;
+	TDataQuery(const TDataQuery& value) = delete;
+	TDataQuery(TDataQuery &&value) = delete;
+	TDataQuery(const TDataQuery &&value) = delete;
 
 	// Generic owner defined database types
 	TDataQuery() : TDataSet(), locale(nil) { prime(); };
@@ -219,9 +226,26 @@ public:
 	virtual void commit() = 0;
 
 	bool isOpen() const { return opened; };
-	bool isInTransaction() const { return inTransaction; };
 
-	TDataConnector() : TPersistent() { clear();};
+	bool isInTransaction() const {
+		app::TLockGuard<app::TMutex> lock(transact);
+		return inTransaction;
+	};
+	bool checkInTransaction() const {
+		app::TLockGuard<app::TMutex> lock(transact);
+		if (inTransaction) {
+			throw util::app_error("sql::TDataConnector::checkInTransaction() : Connection is in transaction.");
+		}
+		return inTransaction;
+	};
+
+	// No copy/move constructors
+	TDataConnector(TDataConnector& value) = delete;
+	TDataConnector(const TDataConnector& value) = delete;
+	TDataConnector(TDataConnector &&value) = delete;
+	TDataConnector(const TDataConnector &&value) = delete;
+
+	TDataConnector() : TPersistent() { clear(); };
 	virtual ~TDataConnector() = default;
 };
 
@@ -258,6 +282,12 @@ public:
 
 	PContainer open(const std::string& name, EDatabaseType type);
 	void close();
+
+	// No copy/move constructors
+	TSession(TSession& value) = delete;
+	TSession(const TSession& value) = delete;
+	TSession(TSession &&value) = delete;
+	TSession(const TSession &&value) = delete;
 
 	TSession(const std::string& configFolder, const std::string& dataFolder, app::TLogFile& infoLog, app::TLogFile& exceptionLog);
 	virtual ~TSession();

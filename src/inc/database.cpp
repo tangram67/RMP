@@ -154,7 +154,7 @@ void TDataSet::sessionNeeded() {
 	}
 }
 
-bool TDataSet::validCursor() {
+bool TDataSet::validCursor() const {
 	return (cursor != end());
 }
 
@@ -349,55 +349,55 @@ util::EVariantType TDataQuery::getColumn(const std::string& name) {
 	return util::EVT_INVALID;
 }
 
-data::PRecord TDataQuery::getRecord() {
+const data::PRecord TDataQuery::getRecord() const {
 	if (!validCursor())
 		throw util::app_error("TQuery::getRecord() : Invalid cursor value for field <" + name + ">");
 	return *cursor;
 }
 
-data::PField TDataQuery::getField(const std::string name) {
+const data::PField TDataQuery::getField(const std::string name) const {
 	data::PRecord o = getRecord();
 	if (!util::assigned(o))
 		throw util::app_error("TQuery::getField() : No cursor content for field <" + name + ">");
 	return o->getField(name);
 }
 
-data::PField TDataQuery::getField(const size_t index) {
+const data::PField TDataQuery::getField(const size_t index) const {
 	data::PRecord o = getRecord();
 	if (!util::assigned(o))
 		throw util::app_error("TQuery::getField() : No cursor content for field (" + std::to_string((size_s)index) + ")");
 	return o->getField(index);
 }
 
-data::TField& TDataQuery::field(const std::string name) {
+const data::TField& TDataQuery::field(const std::string name) const {
 	data::PField o = getField(name);
 	if (!util::assigned(o))
 		return defField;
 	return *o;
 }
 
-data::TField& TDataQuery::field(const size_t index) {
+const data::TField& TDataQuery::field(const size_t index) const {
 	data::PField o = getField(index);
 	if (!util::assigned(o))
 		return defField;
 	return *o;
 }
 
-util::TVariant& TDataQuery::value(const std::string name) {
+const util::TVariant& TDataQuery::value(const std::string name) const {
 	data::PField o = getField(name);
 	if (util::assigned(o))
 		return o->value;
 	return defVal;
 }
 
-util::TVariant& TDataQuery::value(const size_t index) {
+const util::TVariant& TDataQuery::value(const size_t index) const {
 	data::PField o = getField(index);
 	if (util::assigned(o))
 		return o->value;
 	return defVal;
 }
 
-data::TRecord& TDataQuery::record() {
+const data::TRecord& TDataQuery::record() const {
 	if (!validCursor())
 		throw util::app_error("TQuery::record() : Invalid cursor.");
 	return **cursor;
@@ -429,11 +429,11 @@ util::TVariant& TDataQuery::param(const size_t index, const EParameterType type)
 	throw util::app_error("TQuery::param() : Invalid parameter index (" + std::to_string((size_s)index) + ")");
 }
 
-util::TVariant& TDataQuery::operator[] (const std::string& name) {
+const util::TVariant& TDataQuery::operator[] (const std::string& name) const {
 	return value(name);
 }
 
-util::TVariant& TDataQuery::operator[] (const std::size_t index) {
+const util::TVariant& TDataQuery::operator[] (const std::size_t index) const {
 	return value(index);
 }
 
