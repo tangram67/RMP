@@ -583,6 +583,10 @@ public:
 
 	friend std::ostream& operator << (std::ostream& out, TDateTime& o);
 
+	TDateTime(TDateTime& value);
+	TDateTime(const TDateTime& value);
+	TDateTime(TDateTime&& value) = delete;
+	TDateTime(const TDateTime&& value) = delete;
 	TDateTime(const EDateTimeFormat type = EDT_DEFAULT);
 	TDateTime(const TTimePart value);
 	virtual ~TDateTime() {};

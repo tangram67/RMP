@@ -1099,6 +1099,17 @@ TDateTime::TDateTime(const TTimePart value) : locale(&syslocale) {
 	setTime(value);
 }
 
+TDateTime::TDateTime(TDateTime& value) {
+	prime();
+	*this = value;
+}
+
+TDateTime::TDateTime(const TDateTime& value) {
+	prime();
+	*this = value;
+}
+
+
 void TDateTime::clear() {
 	reset();
 	ts.clear();
@@ -1515,8 +1526,7 @@ TDateTime& TDateTime::operator = (const std::string& value) {
 	return *this;
 }
 
-TDateTime& TDateTime::operator = (const TDateTime &value)
-{
+TDateTime& TDateTime::operator = (const TDateTime &value) {
 	setFormat(value.type);
 	ts.time = value.ts.time;
 	timezone = value.getTimeZone();
@@ -1524,8 +1534,7 @@ TDateTime& TDateTime::operator = (const TDateTime &value)
 	return *this;
 }
 
-TDateTime& TDateTime::operator = (const TTime &value)
-{
+TDateTime& TDateTime::operator = (const TTime &value) {
 	setTime(value);
 	return *this;
 }

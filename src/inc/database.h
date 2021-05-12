@@ -168,26 +168,26 @@ public:
 	const data::PRecord getRecord() const;
 	const data::TRecord& record() const;
 
-	const data::PField getField(const std::string name) const;
+	const data::PField getField(const std::string& name) const;
 	const data::PField getField(const size_t index) const;
-	const data::TField& field(const std::string name) const;
+	const data::TField& field(const std::string& name) const;
 	const data::TField& field(const size_t index) const;
 
-	const util::TVariant& value(const std::string name) const;
+	const util::TVariant& value(const std::string& name) const;
 	const util::TVariant& value(const size_t index) const;
 
 	const util::TVariant& operator[] (const std::string& name) const;
-	const util::TVariant& operator[] (const std::size_t index) const;
+	const util::TVariant& operator[] (const size_t index) const;
 
 	// Query parameter setters (non-const, no explicit const getters)
-	util::TVariant& param(const std::string name, const EParameterType type = EPT_DEFAULT);
+	util::TVariant& param(const std::string& name, const EParameterType type = EPT_DEFAULT);
 	util::TVariant& param(const size_t index, const EParameterType type = EPT_DEFAULT);
 
 	// No copy/move constructors
 	TDataQuery(TDataQuery& value) = delete;
 	TDataQuery(const TDataQuery& value) = delete;
-	TDataQuery(TDataQuery &&value) = delete;
-	TDataQuery(const TDataQuery &&value) = delete;
+	TDataQuery(TDataQuery&& value) = delete;
+	TDataQuery(const TDataQuery&& value) = delete;
 
 	// Generic owner defined database types
 	TDataQuery() : TDataSet(), locale(nil) { prime(); };
@@ -242,8 +242,8 @@ public:
 	// No copy/move constructors
 	TDataConnector(TDataConnector& value) = delete;
 	TDataConnector(const TDataConnector& value) = delete;
-	TDataConnector(TDataConnector &&value) = delete;
-	TDataConnector(const TDataConnector &&value) = delete;
+	TDataConnector(TDataConnector&& value) = delete;
+	TDataConnector(const TDataConnector&& value) = delete;
 
 	TDataConnector() : TPersistent() { clear(); };
 	virtual ~TDataConnector() = default;
@@ -286,8 +286,8 @@ public:
 	// No copy/move constructors
 	TSession(TSession& value) = delete;
 	TSession(const TSession& value) = delete;
-	TSession(TSession &&value) = delete;
-	TSession(const TSession &&value) = delete;
+	TSession(TSession&& value) = delete;
+	TSession(const TSession&& value) = delete;
 
 	TSession(const std::string& configFolder, const std::string& dataFolder, app::TLogFile& infoLog, app::TLogFile& exceptionLog);
 	virtual ~TSession();
@@ -322,7 +322,6 @@ public:
 };
 
 
-
 template<typename T>
 class TTransactionGuard
 {
@@ -351,8 +350,6 @@ public:
 	TTransactionGuard(const TTransactionGuard&) = delete;
 	~TTransactionGuard() { rollback(); }
 };
-
-
 
 } /* namespace sql */
 

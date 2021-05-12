@@ -277,8 +277,8 @@ size_t TDataQuery::parseParameters() {
 						state = 10;
 						break;
 					}
-					// Look for parameter value
-					// e.g. "xyz col=$1"
+					// Look for parameter value:
+					// --> e.g. "xyz col=$1", "xyz ($1,$2)", "xyz = $1", ...
 					if (c == paramFormatter && (p == ' ' || p == '=' || p == '(' || p == ',' || p == '\n' || p == '\r')) {
 						state = 20;
 						start = i;
@@ -355,7 +355,7 @@ const data::PRecord TDataQuery::getRecord() const {
 	return *cursor;
 }
 
-const data::PField TDataQuery::getField(const std::string name) const {
+const data::PField TDataQuery::getField(const std::string& name) const {
 	data::PRecord o = getRecord();
 	if (!util::assigned(o))
 		throw util::app_error("TQuery::getField() : No cursor content for field <" + name + ">");
@@ -369,7 +369,7 @@ const data::PField TDataQuery::getField(const size_t index) const {
 	return o->getField(index);
 }
 
-const data::TField& TDataQuery::field(const std::string name) const {
+const data::TField& TDataQuery::field(const std::string& name) const {
 	data::PField o = getField(name);
 	if (!util::assigned(o))
 		return defField;
@@ -383,7 +383,7 @@ const data::TField& TDataQuery::field(const size_t index) const {
 	return *o;
 }
 
-const util::TVariant& TDataQuery::value(const std::string name) const {
+const util::TVariant& TDataQuery::value(const std::string& name) const {
 	data::PField o = getField(name);
 	if (util::assigned(o))
 		return o->value;
@@ -403,7 +403,7 @@ const data::TRecord& TDataQuery::record() const {
 	return **cursor;
 }
 
-util::TVariant& TDataQuery::param(const std::string name, const EParameterType type) {
+util::TVariant& TDataQuery::param(const std::string& name, const EParameterType type) {
 	if (params.empty())
 		throw util::app_error("TQuery::param() : Parameter list empty.");
 
@@ -433,7 +433,7 @@ const util::TVariant& TDataQuery::operator[] (const std::string& name) const {
 	return value(name);
 }
 
-const util::TVariant& TDataQuery::operator[] (const std::size_t index) const {
+const util::TVariant& TDataQuery::operator[] (const size_t index) const {
 	return value(index);
 }
 
