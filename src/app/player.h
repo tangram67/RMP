@@ -56,6 +56,8 @@ STATIC_CONST size_t STREAM_BUFFER_SIZE = 1390; // Lower than PPPoE MTU 1492
 
 STATIC_CONST size_t MP3_BUFFERING_THRESHOLD = 44100 * 2 * 2 * 3; // = 44100 Samples/sec * 2 channels * 2 Byte (16 Bit / 8 Bit) * 3 sec
 
+STATIC_CONST ssize_t MAX_COMMAND_SIZE = 64;
+
 #ifdef STL_HAS_TEMPLATE_ALIAS
 
 using TFileCacheMap = std::map<std::string, util::PFile>;
