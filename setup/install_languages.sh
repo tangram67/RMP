@@ -8,4 +8,6 @@ fi
 locale-gen fr_FR.UTF-8
 locale-gen it_IT.UTF-8
 locale-gen es_ES.UTF-8
+locale-gen pl_PL.UTF-8
+locale-gen zh_CN.UTF-8
 

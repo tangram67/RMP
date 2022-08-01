@@ -7,11 +7,10 @@ fi
 
 apt-get install libgnutls28-dev libgcrypt20-dev \
   libssl-dev libjpeg-dev libasound2-dev \
-  libpng-dev libexif-dev libcurl4-gnutls-dev \
-  libflac-dev libiberty-dev binutils-dev \
-  libpng-dev libudev-dev libcap-dev \
-  binutils-dev cifs-utils \
-  autoconf libtool cmake
-#  libpng12-dev \
-#  libpq-dev
+  libpng-dev \
+  libexif-dev libcurl4-gnutls-dev libflac-dev \
+  libiberty-dev binutils-dev libudev-dev \
+  binutils-dev libcap-dev cifs-utils \
+  libpq-dev \
+  libpng-dev autoconf libtool cmake
 
