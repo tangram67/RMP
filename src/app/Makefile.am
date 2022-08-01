@@ -3,6 +3,8 @@ noinst_LIBRARIES = libapplication.a
 libapplication_a_SOURCES = \
 	auxiliary.cpp \
 	auxiliary.h \
+	avahi.cpp \
+	avahi.h \
 	control.cpp \
 	control.h \
 	controltypes.cpp \
