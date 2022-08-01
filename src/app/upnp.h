@@ -16,6 +16,7 @@
 #include "../inc/gcc.h"
 #include "upnptypes.h"
 #include "upnpservices.h"
+#include "avahi.h"
 
 namespace upnp {
 
@@ -61,11 +62,13 @@ private:
 	app::TNotifyEvent event;
 	TMessageQueue messages;
 	TUPnPServices services;
+	avahi::TAvahiClient* avahi;
 	app::PTimeout toBroadcast;
 	app::TMutex sendMtx;
 	app::TMutex eventMtx;
 	app::TIniFile config;
 	std::string response;
+	bool bonjour;
 	bool discovery;
 	bool enabled;
 	bool running;
@@ -122,6 +125,8 @@ public:
 	void broadcastUPnPDevice();
 	void broadcastUPnPServices();
 	void broadcastExitMessage();
+
+	void addServiceEntry(const std::string& type, const std::string& page, int port);
 
 	bool isOnline();
 

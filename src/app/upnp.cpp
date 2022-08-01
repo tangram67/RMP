@@ -9,8 +9,8 @@
 #include "../inc/globals.h"
 #include "../inc/variant.h"
 #include "../inc/compare.h"
-#include "../inc/stringutils.h"
 #include "../inc/sysutils.h"
+#include "../inc/stringutils.h"
 #include "../inc/ansi.h"
 #include "upnpconsts.h"
 #include "upnp.h"
@@ -147,7 +147,9 @@ TUPnP::TUPnP() {
 	mcast4 = nil;
 	toBroadcast = nil;
 	thread = nil;
+	avahi = nil;
 	timeout = 0;
+	bonjour = false;
 	discovery = false;
 	enabled = true;
 	running = false;
@@ -251,6 +253,16 @@ int TUPnP::execute() {
 
 	}
 
+	// Enable Avahi Zerconf/Bonjour support
+	if (bonjour && application.hasWebServer()) {
+		avahi = new avahi::TAvahiClient(application.getThreads(), application.getApplicationLogger());
+		if (util::assigned(avahi)) {
+			std::string service = application.getWebServer().isSecure() ? "_https._tcp" : "_http._tcp";
+			avahi->start();
+			avahi->addGroupEntry(friendlyName, service, "index.html", application.getWebServer().getPort());
+		}
+	}
+
 	// Leave after initialization
 	return EXIT_SUCCESS;
 }
@@ -259,12 +271,18 @@ void TUPnP::unprepare() {
 	running = false;
 	toBroadcast->stop();
 	broadcastExitMessage();
+	if (util::assigned(avahi)) {
+		avahi->terminate();
+	}
 }
 
 
 void TUPnP::cleanup() {
 	// UPnP brodcast terminated, say "Bye bye"...
 	while (active) util::wait(SEND_DELAY / 2);
+	if (util::assigned(avahi)) {
+		avahi->waitFor();
+	}
 }
 
 
@@ -278,11 +296,16 @@ void TUPnP::openConfig(const std::string& configPath) {
 void TUPnP::readConfig() {
 	config.setSection("UPnP");
 	uuid = config.readString("GUID", util::fastCreateUUID(true, true));
-	description = config.readString("Description", application.getDescription());
-	friendlyName = config.readString("FriendlyName", description + " on " + util::capitalize(application.getHostName()) + " [" + application.getSerialKey() + "]");
+	// description = config.readString("Description", application.getDescription());
+	// friendlyName = config.readString("FriendlyName", description + " on " + util::capitalize(application.getHostName()) + " [" + application.getSerialKey() + "]");
+	description = application.getDescription();
+	friendlyName = description + " @ " + util::capitalize(application.getHostName());
 	enabled = config.readBool("Enabled", enabled);
 	discovery = config.readBool("Discovery", discovery);
 	debug = config.readBool("Debug", debug);
+
+	config.setSection("Zeroconf");
+	bonjour = config.readBool("Enabled", bonjour || enabled);
 }
 
 void TUPnP::writeConfig() {
@@ -294,6 +317,9 @@ void TUPnP::writeConfig() {
 	config.writeBool("Discovery", discovery, app::INI_BLYES);
 	config.writeBool("Debug", debug, app::INI_BLYES);
 
+	config.setSection("Zeroconf");
+	config.writeBool("Enabled", bonjour, app::INI_BLYES);
+
 	// Save changes to disk
 	config.flush();
 }
@@ -301,6 +327,13 @@ void TUPnP::writeConfig() {
 void TUPnP::reWriteConfig() {
 	readConfig();
 	writeConfig();
+}
+
+
+void TUPnP::addServiceEntry(const std::string& type, const std::string& page, int port) {
+	if (util::assigned(avahi)) {
+		avahi->addGroupEntry(friendlyName, type, page, port);
+	}
 }
 
 
