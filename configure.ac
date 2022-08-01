@@ -71,6 +71,8 @@ AC_CHECK_LIB([bfd],[bfd_get_stab_name], [], [AC_MSG_ERROR([The BFD (bfd) library
 AC_CHECK_LIB([iberty],[fnmatch], [], [AC_MSG_ERROR([The Iberty (iberty) library is required.])])
 AC_CHECK_LIB([udev],[udev_device_unref], [], [AC_MSG_ERROR([The UDEV (udev) library is required.])])
 AC_CHECK_LIB([cap],[cap_get_proc], [], [AC_MSG_ERROR([The Capabilities (cap) library is required.])])
+AC_CHECK_LIB([avahi-common],[avahi_strerror], [], [AC_MSG_ERROR([The Avahi common (avahi-common) library is required.])])
+AC_CHECK_LIB([avahi-client],[avahi_client_new], [], [AC_MSG_ERROR([The Avahi client (avahi-client) library is required.])])
 
 if test x"$curl_https" = x"true"; then
 AC_CHECK_LIB([idn2],[idn2_lookup_ul], [], [AC_MSG_ERROR([The IDN2 (idn2) library is required.])])
