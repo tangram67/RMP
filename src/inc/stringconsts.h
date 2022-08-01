@@ -11,6 +11,8 @@
 #include "gcc.h"
 #include "windows.h"
 
+#include <string>
+
 namespace util {
 
 STATIC_CONST int DEFAULT_STRING_TAG = 0;
